@@ -9,11 +9,13 @@ import pool from './connection';
  * Dogs with no walks are included (LEFT JOIN).
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+	console.log('[dogs-walks] Request:', req.method);
 	setCorsHeaders(res);
 	if (req.method === 'OPTIONS') return res.status(200).end();
 
 	try {
 		if (req.method === 'GET') {
+			console.log('[dogs-walks] Querying database...');
 			const result = await pool.query(`
 				SELECT
 					d.id,
@@ -45,12 +47,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 				ORDER BY this_week_walks ASC, d.id
 			`);
 
+			console.log('[dogs-walks] Got', result.rows.length, 'rows');
 			return res.status(200).json(result.rows);
 		}
 
 		res.setHeader('Allow', ['GET']);
 		return res.status(405).json({ error: `Method ${req.method} Not Allowed` });
 	} catch (error) {
+		console.error('[dogs-walks] Error:', error);
 		handleError(error, res);
 	}
 }
