@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/api/api_providers.dart';
 import '../../../shared/domain/volunteer.dart';
 import '../../data/planner_repository.dart';
 import '../../domain/planner_dog.dart';
@@ -10,7 +11,7 @@ import '../../domain/volunteer_assignment.dart';
 // ---------------------------------------------------------------------------
 
 final plannerRepositoryProvider = Provider<PlannerRepository>((ref) {
-  return MockPlannerRepository();
+  return ApiPlannerRepository(ref.watch(apiClientProvider));
 });
 
 // ---------------------------------------------------------------------------

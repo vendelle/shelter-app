@@ -1,24 +1,104 @@
+import '../../../core/api/api_client.dart';
 import '../../shared/domain/volunteer.dart';
 import '../domain/planner_dog.dart';
 import '../domain/volunteer_assignment.dart';
 
 abstract class PlannerRepository {
-  /// Loads assignments for a given date.
   Future<List<VolunteerAssignment>> getAssignments(DateTime date);
-
-  /// Saves all assignments for a given date (replaces existing).
   Future<void> saveAssignments(
       DateTime date, List<VolunteerAssignment> assignments);
-
-  /// Returns all available volunteers.
   Future<List<Volunteer>> getVolunteers();
-
-  /// Returns all available (non-archived) dogs with walk stats and familiarity
-  /// for the given volunteer.
   Future<List<PlannerDog>> getDogsForVolunteer(int volunteerId);
-
-  /// Returns the total number of available (non-archived) dogs.
   Future<int> getDogCount();
+}
+
+// ---------------------------------------------------------------------------
+// Real API repository
+// ---------------------------------------------------------------------------
+
+class ApiPlannerRepository implements PlannerRepository {
+  ApiPlannerRepository(this._api);
+  final ApiClient _api;
+
+  @override
+  Future<List<VolunteerAssignment>> getAssignments(DateTime date) async {
+    final dateStr = _dateKey(date);
+    final data = await _api.get('/api/dayplan', queryParams: {'date': dateStr}) as List;
+
+    // Group rows by volunteer_id
+    final Map<int, VolunteerAssignment> byVolunteer = {};
+    for (final row in data) {
+      final m = row as Map<String, dynamic>;
+      final volunteerId = m['volunteer_id'] as int?;
+      if (volunteerId == null) continue;
+
+      byVolunteer.putIfAbsent(
+        volunteerId,
+        () => VolunteerAssignment(
+          volunteerId: volunteerId,
+          volunteerName: m['volunteer_name'] as String? ?? 'Unknown',
+        ),
+      );
+
+      byVolunteer[volunteerId]!.dogs.add(DogEntry(
+        dogId: m['dog_id'] as int,
+        dogName: m['dog_name'] as String? ?? 'Unknown',
+        kennel: m['kennel'] as String?,
+      ));
+    }
+
+    return byVolunteer.values.toList();
+  }
+
+  @override
+  Future<void> saveAssignments(
+      DateTime date, List<VolunteerAssignment> assignments) async {
+    final walks = <Map<String, dynamic>>[];
+    for (final a in assignments) {
+      for (final d in a.dogs) {
+        walks.add({
+          'dog_id': d.dogId,
+          'volunteer_id': a.volunteerId,
+        });
+      }
+    }
+
+    await _api.post('/api/dayplan', body: {
+      'walk_date': _dateKey(date),
+      'walks': walks,
+    });
+  }
+
+  @override
+  Future<List<Volunteer>> getVolunteers() async {
+    final data = await _api.get('/api/volunteers') as List;
+    return data.map((json) => Volunteer.fromJson(json as Map<String, dynamic>)).toList();
+  }
+
+  @override
+  Future<List<PlannerDog>> getDogsForVolunteer(int volunteerId) async {
+    // For now, return all dogs with walk stats (familiarity not yet in DB)
+    final data = await _api.get('/api/dogs-walks') as List;
+    return data.map((json) {
+      final m = json as Map<String, dynamic>;
+      return PlannerDog(
+        id: m['id'] as int,
+        name: m['name'] as String,
+        kennel: m['kennel'] as String? ?? '',
+        thisWeekWalks: m['this_week_walks'] as int? ?? 0,
+        lastWeekWalks: m['last_week_walks'] as int? ?? 0,
+      );
+    }).toList();
+  }
+
+  @override
+  Future<int> getDogCount() async {
+    final data = await _api.get('/api/dogs') as List;
+    return data.length;
+  }
+
+  String _dateKey(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 }
 
 class MockPlannerRepository implements PlannerRepository {

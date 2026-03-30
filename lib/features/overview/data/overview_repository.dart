@@ -1,11 +1,32 @@
+import '../../../core/api/api_client.dart';
 import '../domain/dog_walk_summary.dart';
 
 abstract class OverviewRepository {
   Future<List<DogWalkSummary>> getDogWalkSummaries();
 }
 
+/// Fetches real walk data from the Vercel API.
+class ApiOverviewRepository implements OverviewRepository {
+  ApiOverviewRepository(this._api);
+  final ApiClient _api;
+
+  @override
+  Future<List<DogWalkSummary>> getDogWalkSummaries() async {
+    final data = await _api.get('/api/dogs-walks') as List;
+    return data.map((json) {
+      final m = json as Map<String, dynamic>;
+      return DogWalkSummary(
+        dogId: m['id'] as int,
+        dogName: m['name'] as String,
+        kennel: m['kennel'] as String? ?? '',
+        thisWeekWalks: m['this_week_walks'] as int? ?? 0,
+        lastWeekWalks: m['last_week_walks'] as int? ?? 0,
+      );
+    }).toList();
+  }
+}
+
 /// Mock data for local development.
-/// Replace with [ApiOverviewRepository] when connecting to the real API.
 class MockOverviewRepository implements OverviewRepository {
   @override
   Future<List<DogWalkSummary>> getDogWalkSummaries() async {

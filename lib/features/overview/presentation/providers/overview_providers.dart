@@ -1,11 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/api/api_providers.dart';
 import '../../data/overview_repository.dart';
 import '../../domain/dog_walk_summary.dart';
 
-/// Provides the repository instance. Swap to ApiOverviewRepository when ready.
 final overviewRepositoryProvider = Provider<OverviewRepository>((ref) {
-  return MockOverviewRepository();
+  return ApiOverviewRepository(ref.watch(apiClientProvider));
 });
 
 /// Fetches and caches the dog walk summaries.
