@@ -42,7 +42,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 				LEFT JOIN walks w ON d.id = w.dog_id
 					AND w.deleted_at IS NULL
 					AND w.walk_date >= date_trunc('week', current_date - interval '1 week')
-				WHERE NOT d.archived
+				WHERE d.archived IS NOT TRUE
 				GROUP BY d.id, d.name, d.kennel, d.shelterid
 				ORDER BY this_week_walks ASC, d.id
 			`);

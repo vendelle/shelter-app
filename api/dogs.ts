@@ -9,7 +9,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 	try {
 		if (req.method === 'GET') {
 			const result = await pool.query(
-				'SELECT id, name, shelterid, kennel FROM dogs WHERE NOT archived ORDER BY id',
+				'SELECT id, name, shelterid, kennel FROM dogs WHERE archived IS NOT TRUE ORDER BY id',
 			);
 			return res.status(200).json(result.rows);
 		}
