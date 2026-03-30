@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/overview/presentation/overview_screen.dart';
+import '../features/planner/presentation/planner_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -25,8 +26,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/planner',
-                builder: (context, state) =>
-                    const _PlaceholderScreen(title: 'Walk Planner'),
+                builder: (context, state) => const PlannerScreen(),
               ),
             ],
           ),
