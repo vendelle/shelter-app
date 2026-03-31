@@ -3,6 +3,7 @@ class Dog {
   final String name;
   final String shelterId;
   final String kennel;
+  final String? region;
   final bool archived;
 
   const Dog({
@@ -10,6 +11,7 @@ class Dog {
     required this.name,
     required this.shelterId,
     required this.kennel,
+    this.region,
     this.archived = false,
   });
 
@@ -19,6 +21,7 @@ class Dog {
       name: json['name'] as String,
       shelterId: json['shelterid'] as String,
       kennel: json['kennel'] as String,
+      region: json['region'] as String?,
       archived: json['archived'] as bool? ?? false,
     );
   }

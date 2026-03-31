@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../features/overview/presentation/overview_screen.dart';
 import '../features/planner/presentation/planner_screen.dart';
+import '../features/manage/presentation/manage_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -33,9 +34,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/walk-log',
-                builder: (context, state) =>
-                    const _PlaceholderScreen(title: 'Walk Log'),
+                path: '/manage',
+                builder: (context, state) => const ManageScreen(),
               ),
             ],
           ),
@@ -70,44 +70,11 @@ class _AppShell extends StatelessWidget {
             label: 'Planner',
           ),
           NavigationDestination(
-            icon: Icon(Icons.history_outlined),
-            selectedIcon: Icon(Icons.history),
-            label: 'Walk Log',
+            icon: Icon(Icons.settings_outlined),
+            selectedIcon: Icon(Icons.settings),
+            label: 'Manage',
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _PlaceholderScreen extends StatelessWidget {
-  const _PlaceholderScreen({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.construction_rounded,
-              size: 64,
-              color: theme.colorScheme.outline,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Coming soon',
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: theme.colorScheme.outline,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

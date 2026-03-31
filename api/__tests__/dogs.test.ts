@@ -31,7 +31,10 @@ describe('GET /api/dogs', () => {
 		await handler(mockRequest({ method: 'GET' }), res);
 
 		expect(res._status).toBe(200);
-		expect(res._body).toEqual(dogs);
+		expect(res._body).toEqual([
+			{ ...dogs[0], region: null },
+			{ ...dogs[1], region: null },
+		]);
 		expect(mockPool.query).toHaveBeenCalledWith(
 			expect.stringContaining('archived IS NOT TRUE'),
 		);
@@ -65,11 +68,11 @@ describe('GET /api/dogs', () => {
 	});
 
 	it('rejects non-GET methods with 405', async () => {
-		await handler(mockRequest({ method: 'DELETE' }), res);
+		await handler(mockRequest({ method: 'HEAD' }), res);
 
 		expect(res._status).toBe(405);
 		expect(res._body).toEqual({
-			error: 'Method DELETE Not Allowed',
+			error: 'Method HEAD Not Allowed',
 		});
 	});
 

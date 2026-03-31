@@ -49,8 +49,8 @@ describe('GET /api/volunteers', () => {
 		expect(res.end).toHaveBeenCalled();
 	});
 
-	it('rejects POST with 405', async () => {
-		await handler(mockRequest({ method: 'POST' }), res);
+	it('rejects DELETE with 405', async () => {
+		await handler(mockRequest({ method: 'DELETE' }), res);
 
 		expect(res._status).toBe(405);
 	});

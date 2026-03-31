@@ -315,8 +315,8 @@ class _DogPickerTile extends StatelessWidget {
       DogFamiliarityLevel familiarity, ColorScheme colorScheme) {
     return switch (familiarity) {
       DogFamiliarityLevel.good => const Color(0xFF2A9D8F),
-      DogFamiliarityLevel.neutral => const Color(0xFFE8A317),
-      DogFamiliarityLevel.caution => colorScheme.error,
+      DogFamiliarityLevel.difficult => const Color(0xFFE8A317),
+      DogFamiliarityLevel.never => colorScheme.error,
       DogFamiliarityLevel.unknown => Colors.transparent,
     };
   }
