@@ -61,23 +61,22 @@ Within each feature, we use a lightweight `data/domain/presentation` split:
 
 ---
 
-## API Strategy: Mock repositories first, swap later
+## API Strategy: Repository pattern with swappable implementations
 
-**Decision**: Use abstract repository interfaces with mock implementations for v1 development.
+**Decision**: Use abstract repository interfaces, start with mock implementations, swap to real API calls when ready.
 
 **Why?**
-- The puszek Vue app already owns the Vercel API layer. When we're ready, the Flutter app will call those same endpoints.
-- Building against mock data lets us iterate on UI independently of API/infra work.
-- The repository pattern means swapping to real HTTP calls is a one-line change in the provider definition.
-- Mock data also makes testing trivial — no network dependencies.
+- Building against mock data let us iterate on UI independently of API/infra work.
+- The repository pattern meant swapping to real HTTP calls was a one-line provider override.
+- Mock implementations remain useful for testing — no network dependencies.
 
-**Future plan**: When connecting to the real API, we'll add an `ApiOverviewRepository` that calls the Vercel endpoints and swap the provider binding.
+**Current state**: Mock repositories have been replaced with `ApiOverviewRepository` and `ApiPlannerRepository` that call the Vercel endpoints. The provider binding was the only change needed — all UI code remained untouched.
 
 ---
 
-## HTTP Client: http (planned, not dio)
+## HTTP Client: http (not dio)
 
-**Decision**: Use the `http` package when real API calls are needed.
+**Decision**: Use the `http` package for API calls.
 
 **Why not dio?**
 - `http` is a first-party Dart package, minimal API surface, no extra dependencies.
@@ -121,3 +120,119 @@ Within each feature, we use a lightweight `data/domain/presentation` split:
 - `ColorScheme.fromSeed()` generates a cohesive, accessible color palette from a single color.
 - Teal/green palette feels appropriate for an animal welfare app — calming, nature-oriented.
 - Material 3 components (NavigationBar, Cards, etc.) have better defaults for mobile-first design.
+
+---
+
+## Backend: Vercel Serverless Functions (not Express/Fastify)
+
+**Decision**: Use Vercel serverless functions (TypeScript) instead of a traditional Node.js server.
+
+**Why?**
+- Zero infrastructure management — no servers to provision, patch, or scale.
+- Scales to zero when unused — stays within free tier for a small shelter app.
+- Each endpoint is a standalone file (`api/dogs.ts`, `api/dayplan.ts`) — simple to reason about.
+- Vercel's filesystem routing maps URLs to files automatically.
+- The Vue app (puszek) already uses this pattern — shared conventions across projects.
+
+**Trade-offs:**
+- Cold starts (~200ms) — acceptable for an internal tool.
+- No WebSocket support — all data is request/response, which fits the workflow.
+- No shared in-memory state between requests — each invocation is isolated.
+
+---
+
+## Lazy Database Pool via Proxy Pattern
+
+**Decision**: Use a JavaScript `Proxy` to lazily initialize the PostgreSQL connection pool on first query, not at module import time.
+
+**Why?**
+- Vercel executes module-level code at import time. If the pool is created at import and the DB is unreachable, *every* endpoint fails — including the health check.
+- Lazy init defers pool creation to the first actual query. The health endpoint can detect and report failures gracefully.
+- Discovered after debugging `FUNCTION_INVOCATION_FAILED` errors in production where top-level pool creation crashed all routes.
+
+**Alternatives considered:**
+- Top-level try/catch: still crashes at import time in some cases.
+- Per-request pool creation: too expensive, loses connection pooling.
+
+---
+
+## Soft Deletes for Walks
+
+**Decision**: Use a `deleted_at` timestamp instead of `DELETE FROM walks`.
+
+**Why?**
+- Walk history is valuable — the shelter may want to audit "who walked which dog when."
+- Soft deletes are reversible — accidental removals can be recovered.
+- The planner's save logic diffs existing vs. new walks: soft-delete makes the comparison straightforward (mark removed walks, don't physically delete).
+
+**Trade-off:** Queries must filter `WHERE deleted_at IS NULL` — mitigated by consistent query patterns across all endpoints.
+
+---
+
+## Debug Mode API Routing
+
+**Decision**: In debug mode (`flutter run`), route API calls to the deployed Vercel instance instead of localhost.
+
+**Why?**
+- Flutter's dev server doesn't serve `/api/*` routes — it returns `index.html` for everything.
+- Running a local Node server alongside Flutter adds friction for development.
+- The Vercel deployment is always available and matches production behavior.
+- Override available via `--dart-define=API_BASE_URL=...` for custom setups.
+
+**Trade-off:** Local dev hits the real DEV database — acceptable since it's the DEV instance, not production.
+
+---
+
+## Group Index as Column (not a separate table)
+
+**Decision**: Store walk groups as an integer `group_index` column on the `walks` table, not as a separate `walk_groups` join table.
+
+**Why?**
+- Groups are per-date, per-volunteer — they describe a property of a walk assignment, not an independent entity.
+- Integer maps directly to a color palette array (0 = first color, 1 = second, etc.).
+- No need for group names or metadata — the meaning is simply "these dogs walk together."
+- Simpler queries: one column vs. a JOIN.
+
+**When to revisit:** If groups need names, shared notes, or other metadata.
+
+---
+
+## Idempotent Migrations (no framework)
+
+**Decision**: Use `IF NOT EXISTS` / `ADD COLUMN IF NOT EXISTS` in numbered SQL files instead of a migration framework.
+
+**Why?**
+- Single environment (DEV) with one developer — migration coordination isn't needed.
+- Idempotent SQL is safe to re-run — no risk of applying a migration twice.
+- Numbered filenames (`001_`, `002_`) establish execution order.
+- Avoids adding a migration framework dependency (Knex, Prisma) for a few schema changes.
+
+**When to revisit:** Multiple environments, team size > 1, or frequent schema changes.
+
+---
+
+## Testing Strategy: Unit + Widget Tests (no E2E)
+
+**Decision**: Prioritize unit tests and widget tests over end-to-end integration tests.
+
+**Why?**
+- Unit tests for domain models and API endpoints catch the most bugs per effort.
+- Widget tests verify UI rendering and interaction without a running backend.
+- E2E tests (`integration_test`) require a running app + API server — high CI setup cost for marginal benefit at this scale.
+- Backend tests mock the database pool (`jest.mock`) — fast, isolated, 100% line coverage.
+- Frontend tests use `ProviderScope` overrides to inject mock data — no HTTP calls.
+
+**Coverage targets:** 90% statements, 80% branches (enforced in CI via `jest --coverage`).
+
+---
+
+## CORS: Allow All Origins
+
+**Decision**: Set `Access-Control-Allow-Origin: *` on all API responses.
+
+**Why?**
+- In production, the Flutter web app and API are on the same Vercel domain — CORS isn't technically needed.
+- Wildcard simplifies local development (Flutter dev server runs on a different port).
+- No cookie-based auth — the API is stateless, so `*` is safe.
+
+**When to revisit:** If authentication with cookies/sessions is added (restrict to specific origins).
