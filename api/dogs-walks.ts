@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { handleError, setCorsHeaders } from './util';
 import pool from './connection';
+import { getRegionForKennel } from './kennel-regions';
 
 /**
  * GET /api/dogs-walks
@@ -48,7 +49,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 			`);
 
 			console.log('[dogs-walks] Got', result.rows.length, 'rows');
-			return res.status(200).json(result.rows);
+			const rows = result.rows.map((row: Record<string, unknown>) => ({
+				...row,
+				region: getRegionForKennel(row.kennel as string),
+			}));
+			return res.status(200).json(rows);
 		}
 
 		res.setHeader('Allow', ['GET']);

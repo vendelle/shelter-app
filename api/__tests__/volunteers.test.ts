@@ -33,6 +33,27 @@ describe('GET /api/volunteers', () => {
 		expect(res._body).toEqual(volunteers);
 	});
 
+	it('returns only archived volunteers when only_archived=true', async () => {
+		mockPool._setResults([{ rows: [] }]);
+
+		await handler(mockRequest({ method: 'GET', query: { only_archived: 'true' } }), res);
+
+		expect(res._status).toBe(200);
+		expect(mockPool.query).toHaveBeenCalledWith(
+			expect.stringContaining('archived = TRUE'),
+		);
+	});
+
+	it('returns all volunteers when include_archived=true', async () => {
+		mockPool._setResults([{ rows: [] }]);
+
+		await handler(mockRequest({ method: 'GET', query: { include_archived: 'true' } }), res);
+
+		expect(res._status).toBe(200);
+		const query = mockPool.query.mock.calls[0][0] as string;
+		expect(query).not.toContain('WHERE');
+	});
+
 	it('returns empty array when no volunteers exist', async () => {
 		mockPool._setResults([{ rows: [] }]);
 
@@ -49,8 +70,8 @@ describe('GET /api/volunteers', () => {
 		expect(res.end).toHaveBeenCalled();
 	});
 
-	it('rejects POST with 405', async () => {
-		await handler(mockRequest({ method: 'POST' }), res);
+	it('rejects DELETE with 405', async () => {
+		await handler(mockRequest({ method: 'DELETE' }), res);
 
 		expect(res._status).toBe(405);
 	});
@@ -63,5 +84,186 @@ describe('GET /api/volunteers', () => {
 
 		expect(res._status).toBe(500);
 		expect(res._body).toEqual({ error: 'timeout' });
+	});
+});
+
+describe('POST /api/volunteers', () => {
+	let res: MockResponse;
+
+	beforeEach(() => {
+		res = mockResponse();
+	});
+
+	it('creates a volunteer and returns 201', async () => {
+		const newVol = { id: 10, first_name: 'Anna', last_name: 'K', archived: false, role: 'supporter' };
+		mockPool._setResults([{ rows: [newVol] }]);
+
+		await handler(
+			mockRequest({ method: 'POST', body: { first_name: 'Anna', last_name: 'K', role: 'supporter' } }),
+			res,
+		);
+
+		expect(res._status).toBe(201);
+		expect(res._body).toEqual(newVol);
+	});
+
+	it('defaults role to new when not provided', async () => {
+		const newVol = { id: 11, first_name: 'Jan', last_name: 'N', archived: false, role: 'new' };
+		mockPool._setResults([{ rows: [newVol] }]);
+
+		await handler(
+			mockRequest({ method: 'POST', body: { first_name: 'Jan', last_name: 'N' } }),
+			res,
+		);
+
+		expect(res._status).toBe(201);
+		expect(mockPool.query).toHaveBeenCalledWith(
+			expect.any(String),
+			['Jan', 'N', 'new'],
+		);
+	});
+
+	it('returns 400 when first_name is missing', async () => {
+		await handler(
+			mockRequest({ method: 'POST', body: { last_name: 'K' } }),
+			res,
+		);
+
+		expect(res._status).toBe(400);
+		expect(res._body).toEqual({ error: 'first_name and last_name are required' });
+	});
+
+	it('returns 400 when last_name is missing', async () => {
+		await handler(
+			mockRequest({ method: 'POST', body: { first_name: 'Anna' } }),
+			res,
+		);
+
+		expect(res._status).toBe(400);
+	});
+});
+
+describe('PATCH /api/volunteers', () => {
+	let res: MockResponse;
+
+	beforeEach(() => {
+		res = mockResponse();
+	});
+
+	it('updates volunteer name', async () => {
+		const updated = { id: 1, first_name: 'Anna Maria', last_name: 'K', archived: false, role: 'new' };
+		mockPool._setResults([{ rows: [updated] }]);
+
+		await handler(
+			mockRequest({ method: 'PATCH', body: { id: 1, first_name: 'Anna Maria' } }),
+			res,
+		);
+
+		expect(res._status).toBe(200);
+		expect(res._body).toEqual(updated);
+	});
+
+	it('updates multiple fields including role', async () => {
+		const updated = { id: 1, first_name: 'Anna', last_name: 'Nowak', archived: false, role: 'senior' };
+		mockPool._setResults([{ rows: [updated] }]);
+
+		await handler(
+			mockRequest({ method: 'PATCH', body: { id: 1, first_name: 'Anna', last_name: 'Nowak', role: 'senior' } }),
+			res,
+		);
+
+		expect(res._status).toBe(200);
+		expect(mockPool.query).toHaveBeenCalledWith(
+			expect.stringContaining('first_name'),
+			expect.arrayContaining(['Anna', 'Nowak', 'senior', 1]),
+		);
+	});
+
+	it('returns 400 when id is missing', async () => {
+		await handler(
+			mockRequest({ method: 'PATCH', body: { first_name: 'Anna' } }),
+			res,
+		);
+
+		expect(res._status).toBe(400);
+		expect(res._body).toEqual({ error: 'id is required' });
+	});
+
+	it('returns 400 when no fields to update', async () => {
+		await handler(
+			mockRequest({ method: 'PATCH', body: { id: 1 } }),
+			res,
+		);
+
+		expect(res._status).toBe(400);
+		expect(res._body).toEqual({ error: 'No fields to update' });
+	});
+
+	it('returns 404 when volunteer not found', async () => {
+		mockPool._setResults([{ rows: [] }]);
+
+		await handler(
+			mockRequest({ method: 'PATCH', body: { id: 999, first_name: 'Ghost' } }),
+			res,
+		);
+
+		expect(res._status).toBe(404);
+		expect(res._body).toEqual({ error: 'Volunteer not found' });
+	});
+});
+
+describe('PUT /api/volunteers', () => {
+	let res: MockResponse;
+
+	beforeEach(() => {
+		res = mockResponse();
+	});
+
+	it('archives a volunteer', async () => {
+		const archived = { id: 1, first_name: 'Anna', last_name: 'K', archived: true, role: 'new' };
+		mockPool._setResults([{ rows: [archived] }]);
+
+		await handler(
+			mockRequest({ method: 'PUT', query: { id: '1', archive: 'true' } }),
+			res,
+		);
+
+		expect(res._status).toBe(200);
+		expect(res._body).toEqual(archived);
+	});
+
+	it('unarchives a volunteer', async () => {
+		const unarchived = { id: 1, first_name: 'Anna', last_name: 'K', archived: false, role: 'new' };
+		mockPool._setResults([{ rows: [unarchived] }]);
+
+		await handler(
+			mockRequest({ method: 'PUT', query: { id: '1', archive: 'false' } }),
+			res,
+		);
+
+		expect(res._status).toBe(200);
+		expect(res._body).toEqual(unarchived);
+	});
+
+	it('returns 400 when id query param is missing', async () => {
+		await handler(
+			mockRequest({ method: 'PUT', query: {} }),
+			res,
+		);
+
+		expect(res._status).toBe(400);
+		expect(res._body).toEqual({ error: 'id query param is required' });
+	});
+
+	it('returns 404 when volunteer not found', async () => {
+		mockPool._setResults([{ rows: [] }]);
+
+		await handler(
+			mockRequest({ method: 'PUT', query: { id: '999', archive: 'true' } }),
+			res,
+		);
+
+		expect(res._status).toBe(404);
+		expect(res._body).toEqual({ error: 'Volunteer not found' });
 	});
 });

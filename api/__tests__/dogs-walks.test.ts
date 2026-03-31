@@ -32,7 +32,10 @@ describe('GET /api/dogs-walks', () => {
 		await handler(mockRequest({ method: 'GET' }), res);
 
 		expect(res._status).toBe(200);
-		expect(res._body).toEqual(rows);
+		expect(res._body).toEqual([
+			{ ...rows[0], region: null },
+			{ ...rows[1], region: null },
+		]);
 		expect(res._body).toHaveLength(2);
 	});
 

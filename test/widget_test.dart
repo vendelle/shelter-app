@@ -30,7 +30,7 @@ void main() {
     // Bottom navigation should have all three tabs
     expect(find.text('Overview'), findsOneWidget);
     expect(find.text('Planner'), findsOneWidget);
-    expect(find.text('Walk Log'), findsOneWidget);
+    expect(find.text('Manage'), findsOneWidget);
   });
 
   testWidgets('Bottom navigation shows correct icons',

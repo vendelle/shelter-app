@@ -28,15 +28,15 @@ class PlannerDog {
 
 /// Familiarity level between a specific volunteer and a specific dog.
 enum DogFamiliarityLevel {
-  /// No data — never walked together
+  /// No data — haven't walked together yet
   unknown,
 
-  /// Walked together, good experience (default after first walk)
+  /// Green: "All good, I walk the dog without issues"
   good,
 
-  /// Manually set — needs caution or attention
-  neutral,
+  /// Yellow: "I have problems, but I'll go out if necessary"
+  difficult,
 
-  /// Manually set — not recommended
-  caution,
+  /// Red: "No chance"
+  never,
 }

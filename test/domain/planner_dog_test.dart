@@ -65,7 +65,8 @@ void main() {
     test('has expected values', () {
       expect(DogFamiliarityLevel.values, contains(DogFamiliarityLevel.unknown));
       expect(DogFamiliarityLevel.values, contains(DogFamiliarityLevel.good));
-      expect(DogFamiliarityLevel.values, contains(DogFamiliarityLevel.neutral));
+      expect(DogFamiliarityLevel.values, contains(DogFamiliarityLevel.difficult));
+      expect(DogFamiliarityLevel.values, contains(DogFamiliarityLevel.never));
     });
   });
 }

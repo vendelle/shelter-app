@@ -91,16 +91,39 @@ class ApiPlannerRepository implements PlannerRepository {
 
   @override
   Future<List<PlannerDog>> getDogsForVolunteer(int volunteerId) async {
-    // For now, return all dogs with walk stats (familiarity not yet in DB)
-    final data = await _api.get('/api/dogs-walks') as List;
-    return data.map((json) {
+    // Fetch dogs with walk stats
+    final dogsData = await _api.get('/api/dogs-walks') as List;
+
+    // Try to fetch familiarity (may not be deployed yet)
+    final familiarityMap = <int, DogFamiliarityLevel>{};
+    try {
+      final familiarityData = await _api.get('/api/familiarity',
+          queryParams: {'volunteer_id': volunteerId.toString()}) as List;
+      for (final entry in familiarityData) {
+        final m = entry as Map<String, dynamic>;
+        final dogId = m['dog_id'] as int;
+        final level = switch (m['level'] as String) {
+          'good' => DogFamiliarityLevel.good,
+          'difficult' => DogFamiliarityLevel.difficult,
+          'never' => DogFamiliarityLevel.never,
+          _ => DogFamiliarityLevel.unknown,
+        };
+        familiarityMap[dogId] = level;
+      }
+    } catch (_) {
+      // Familiarity endpoint not available yet — continue without it
+    }
+
+    return dogsData.map((json) {
       final m = json as Map<String, dynamic>;
+      final dogId = m['id'] as int;
       return PlannerDog(
-        id: m['id'] as int,
+        id: dogId,
         name: m['name'] as String,
         kennel: m['kennel'] as String? ?? '',
         thisWeekWalks: m['this_week_walks'] as int? ?? 0,
         lastWeekWalks: m['last_week_walks'] as int? ?? 0,
+        familiarity: familiarityMap[dogId] ?? DogFamiliarityLevel.unknown,
       );
     }).toList();
   }
@@ -121,23 +144,23 @@ class MockPlannerRepository implements PlannerRepository {
     1: {
       1: DogFamiliarityLevel.good,
       3: DogFamiliarityLevel.good,
-      5: DogFamiliarityLevel.caution,
-      8: DogFamiliarityLevel.neutral,
+      5: DogFamiliarityLevel.never,
+      8: DogFamiliarityLevel.difficult,
     },
     2: {
       2: DogFamiliarityLevel.good,
       4: DogFamiliarityLevel.good,
-      7: DogFamiliarityLevel.caution,
+      7: DogFamiliarityLevel.never,
     },
     3: {
-      1: DogFamiliarityLevel.neutral,
+      1: DogFamiliarityLevel.difficult,
       6: DogFamiliarityLevel.good,
       9: DogFamiliarityLevel.good,
     },
     4: {
       3: DogFamiliarityLevel.good,
       10: DogFamiliarityLevel.good,
-      12: DogFamiliarityLevel.caution,
+      12: DogFamiliarityLevel.never,
     },
   };
 

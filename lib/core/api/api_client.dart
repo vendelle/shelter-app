@@ -47,6 +47,32 @@ class ApiClient {
     throw ApiException(response.statusCode, response.body);
   }
 
+  Future<dynamic> patch(String path, {Object? body}) async {
+    final response = await _client.patch(
+      _uri(path),
+      headers: {'Content-Type': 'application/json'},
+      body: body != null ? jsonEncode(body) : null,
+    );
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return jsonDecode(response.body);
+    }
+    throw ApiException(response.statusCode, response.body);
+  }
+
+  Future<dynamic> put(String path,
+      {Map<String, String>? queryParams, Object? body}) async {
+    final response = await _client.put(
+      _uri(path, queryParams),
+      headers: {'Content-Type': 'application/json'},
+      body: body != null ? jsonEncode(body) : null,
+    );
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      if (response.body.isEmpty) return null;
+      return jsonDecode(response.body);
+    }
+    throw ApiException(response.statusCode, response.body);
+  }
+
   Future<void> delete(String path,
       {Map<String, String>? queryParams}) async {
     final response = await _client.delete(
