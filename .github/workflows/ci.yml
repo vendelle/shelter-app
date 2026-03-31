@@ -28,7 +28,7 @@ jobs:
         run: npx tsc --noEmit
 
       - name: Run API tests
-        run: npm test -- --ci --coverage
+        run: npm test -- --ci --coverage --coverageThreshold='{"global":{"statements":90,"branches":80,"functions":90,"lines":90}}'
 
       - name: Upload coverage
         if: always()

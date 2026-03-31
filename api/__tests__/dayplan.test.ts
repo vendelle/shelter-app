@@ -280,6 +280,105 @@ describe('/api/dayplan', () => {
 			expect(res._status).toBe(200);
 			expect(res._body).toEqual({ ok: true });
 		});
+
+		it('updates existing walks when data changes', async () => {
+			// Existing walk in DB
+			const existingWalks = [
+				{ id: 99, dog_id: 10, volunteer_id: 100, notes: null, group_index: null },
+			];
+
+			mockPool.query
+				.mockResolvedValueOnce({ rows: [] }) // BEGIN
+				.mockResolvedValueOnce({ rows: existingWalks }) // SELECT existing
+				.mockResolvedValueOnce({ rows: [] }) // UPDATE walk
+				.mockResolvedValueOnce({ rows: [] }); // COMMIT
+
+			await handler(
+				mockRequest({
+					method: 'POST',
+					body: {
+						walk_date: '2026-03-31',
+						walks: [{ dog_id: 10, volunteer_id: 200, dog_note: 'shy', group_index: 2 }],
+					},
+				}),
+				res,
+			);
+
+			expect(res._status).toBe(200);
+
+			// Verify UPDATE query was issued with new values
+			const updateCall = mockPool.query.mock.calls.find(
+				(c: unknown[]) => typeof c[0] === 'string' && (c[0] as string).includes('UPDATE walks SET'),
+			);
+			expect(updateCall).toBeDefined();
+			expect(updateCall![1]).toEqual([200, 'shy', 2, 99]);
+		});
+
+		it('skips update when data is unchanged', async () => {
+			const existingWalks = [
+				{ id: 99, dog_id: 10, volunteer_id: 100, notes: null, group_index: 1 },
+			];
+
+			mockPool.query
+				.mockResolvedValueOnce({ rows: [] }) // BEGIN
+				.mockResolvedValueOnce({ rows: existingWalks }) // SELECT existing
+				.mockResolvedValueOnce({ rows: [] }); // COMMIT
+
+			await handler(
+				mockRequest({
+					method: 'POST',
+					body: {
+						walk_date: '2026-03-31',
+						walks: [{ dog_id: 10, volunteer_id: 100, group_index: 1 }],
+					},
+				}),
+				res,
+			);
+
+			expect(res._status).toBe(200);
+
+			// No UPDATE should have been called
+			const updateCalls = mockPool.query.mock.calls.filter(
+				(c: unknown[]) => typeof c[0] === 'string' && (c[0] as string).includes('UPDATE walks SET'),
+			);
+			expect(updateCalls).toHaveLength(0);
+		});
+
+		it('soft-deletes walks removed from plan', async () => {
+			const existingWalks = [
+				{ id: 88, dog_id: 10, volunteer_id: 100, notes: null, group_index: null },
+				{ id: 89, dog_id: 11, volunteer_id: 100, notes: null, group_index: null },
+			];
+
+			mockPool.query
+				.mockResolvedValueOnce({ rows: [] }) // BEGIN
+				.mockResolvedValueOnce({ rows: existingWalks }) // SELECT existing
+				.mockResolvedValueOnce({ rows: [] }) // DELETE (soft) dog 11
+				.mockResolvedValueOnce({ rows: [] }); // COMMIT
+
+			await handler(
+				mockRequest({
+					method: 'POST',
+					body: {
+						walk_date: '2026-03-31',
+						// Only dog 10 remains — dog 11 should be soft-deleted
+						walks: [{ dog_id: 10, volunteer_id: 100 }],
+					},
+				}),
+				res,
+			);
+
+			expect(res._status).toBe(200);
+
+			// Verify soft-delete with deleted_at = NOW()
+			const softDeleteCalls = mockPool.query.mock.calls.filter(
+				(c: unknown[]) => typeof c[0] === 'string' && (c[0] as string).includes('SET deleted_at'),
+			);
+			expect(softDeleteCalls.length).toBe(1);
+			// The deleted IDs should include dog_id=11 (id=89)
+			const deleteArgs = softDeleteCalls[0][1] as unknown[];
+			expect(deleteArgs[0]).toEqual([89]);
+		});
 	});
 
 	// -----------------------------------------------------------------------
