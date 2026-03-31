@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../dog_detail/domain/dog_relationship.dart';
+import '../../../dog_detail/presentation/relationship_colors.dart';
 import '../../domain/volunteer_assignment.dart';
 import 'group_colors.dart';
 
@@ -14,6 +16,7 @@ class VolunteerColumn extends StatelessWidget {
     required this.onRemoveVolunteer,
     required this.onTapDog,
     required this.onEditVolunteerNote,
+    this.relationshipLookup,
   });
 
   final VolunteerAssignment assignment;
@@ -22,6 +25,7 @@ class VolunteerColumn extends StatelessWidget {
   final VoidCallback onRemoveVolunteer;
   final ValueChanged<int> onTapDog;
   final VoidCallback onEditVolunteerNote;
+  final Map<(int, int), DogRelationship>? relationshipLookup;
 
   @override
   Widget build(BuildContext context) {
@@ -74,11 +78,28 @@ class VolunteerColumn extends StatelessWidget {
             ),
           ),
           // Dog rows
-          ...assignment.dogs.map((entry) => _DogRow(
+          ...assignment.dogs.map((entry) {
+            // Find relationships with other dogs assigned to same volunteer
+            final rels = <(String, DogRelationshipLevel)>[];
+            if (relationshipLookup != null) {
+              for (final other in assignment.dogs) {
+                if (other.dogId == entry.dogId) continue;
+                final key = entry.dogId < other.dogId
+                    ? (entry.dogId, other.dogId)
+                    : (other.dogId, entry.dogId);
+                final rel = relationshipLookup![key];
+                if (rel != null) {
+                  rels.add((other.dogName, rel.level));
+                }
+              }
+            }
+            return _DogRow(
                 entry: entry,
                 onRemove: () => onRemoveDog(entry.dogId),
                 onTap: () => onTapDog(entry.dogId),
-              )),
+                relationships: rels,
+            );
+          }),
           // Add dog button
           InkWell(
             onTap: onAddDog,
@@ -109,11 +130,14 @@ class _DogRow extends StatelessWidget {
     required this.entry,
     required this.onRemove,
     required this.onTap,
+    this.relationships = const [],
   });
 
   final DogEntry entry;
   final VoidCallback onRemove;
   final VoidCallback onTap;
+  /// Relationships with other dogs assigned to the same volunteer: (dogName, level).
+  final List<(String, DogRelationshipLevel)> relationships;
 
   @override
   Widget build(BuildContext context) {
@@ -206,7 +230,59 @@ class _DogRow extends StatelessWidget {
                   textAlign: TextAlign.center,
                   overflow: TextOverflow.ellipsis,
                 ),
+              if (relationships.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 3),
+                  child: Wrap(
+                    spacing: 3,
+                    runSpacing: 2,
+                    alignment: WrapAlignment.center,
+                    children: relationships.map((r) {
+                      final (name, level) = r;
+                      return _RelationshipDot(
+                        dogName: name,
+                        level: level,
+                      );
+                    }).toList(),
+                  ),
+                ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RelationshipDot extends StatelessWidget {
+  const _RelationshipDot({
+    required this.dogName,
+    required this.level,
+  });
+
+  final String dogName;
+  final DogRelationshipLevel level;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = relationshipColor(level);
+    final textColor = relationshipTextColor(level);
+    final shortName = relationshipLevelDisplayName(level);
+
+    return Tooltip(
+      message: '$dogName: $shortName',
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Text(
+          shortName,
+          style: TextStyle(
+            color: textColor,
+            fontSize: 8,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
