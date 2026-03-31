@@ -117,35 +117,35 @@ class _StatsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
-      child: Row(
-        children: [
-          Expanded(
-            child: StatCard(
-              label: 'Dogs',
-              value: '${stats.totalDogs}',
-              icon: Icons.pets_rounded,
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: StatCard(
+                label: 'Dogs',
+                value: '${stats.totalDogs}',
+                icon: Icons.pets_rounded,
+              ),
             ),
-          ),
-          Expanded(
-            child: StatCard(
-              label: 'Walks this week',
-              value: '${stats.totalWalksThisWeek}',
-              icon: Icons.directions_walk_rounded,
+            Expanded(
+              child: StatCard(
+                label: 'This week',
+                value: '${stats.thisWeekDays}/${stats.goal}',
+                icon: Icons.calendar_today_rounded,
+              ),
             ),
-          ),
-          Expanded(
-            child: StatCard(
-              label: 'Need walks',
-              value: '${stats.dogsNeedingWalks}',
-              icon: Icons.warning_amber_rounded,
-              valueColor: stats.dogsNeedingWalks > 0 ? colorScheme.error : null,
+            Expanded(
+              child: StatCard(
+                label: 'Last week',
+                value: '${stats.lastWeekDays}/${stats.goal}',
+                icon: Icons.history_rounded,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

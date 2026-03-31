@@ -20,11 +20,15 @@ class DogsTab extends ConsumerWidget {
           child: Row(
             children: [
               const Spacer(),
-              FilterChip(
-                label: const Text('Show adopted'),
-                selected: showArchived,
-                onSelected: (value) {
-                  ref.read(showArchivedDogsProvider.notifier).state = value;
+              SegmentedButton<bool>(
+                segments: const [
+                  ButtonSegment(value: false, label: Text('Current')),
+                  ButtonSegment(value: true, label: Text('Adopted')),
+                ],
+                selected: {showArchived},
+                onSelectionChanged: (selected) {
+                  ref.read(showArchivedDogsProvider.notifier).state =
+                      selected.first;
                 },
               ),
             ],

@@ -209,7 +209,7 @@ class _DogPickerSheetState extends ConsumerState<_DogPickerSheet> {
       });
     } else {
       Navigator.pop(context, [
-        DogEntry(dogId: dog.id, dogName: dog.name, kennel: dog.kennel),
+        DogEntry(dogId: dog.id, dogName: dog.name, shelterId: dog.shelterId, kennel: dog.kennel, region: dog.region),
       ]);
     }
   }
@@ -230,7 +230,7 @@ class _DogPickerSheetState extends ConsumerState<_DogPickerSheet> {
     final allDogs = dogsAsync.valueOrNull ?? [];
     final entries = allDogs
         .where((d) => _selected.contains(d.id))
-        .map((d) => DogEntry(dogId: d.id, dogName: d.name, kennel: d.kennel))
+        .map((d) => DogEntry(dogId: d.id, dogName: d.name, shelterId: d.shelterId, kennel: d.kennel, region: d.region))
         .toList();
     Navigator.pop(context, entries);
   }
@@ -285,6 +285,24 @@ class _DogPickerTile extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
+          if (dog.shelterId.isNotEmpty) ...[
+            const SizedBox(width: 6),
+            Text(
+              dog.shelterId,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.outline,
+              ),
+            ),
+          ],
+          if (dog.region != null) ...[
+            const SizedBox(width: 6),
+            Text(
+              dog.region!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.outline,
+              ),
+            ),
+          ],
           if (showDot) ...[
             const SizedBox(width: 6),
             Container(

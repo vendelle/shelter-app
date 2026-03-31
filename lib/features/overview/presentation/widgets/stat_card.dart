@@ -5,13 +5,13 @@ class StatCard extends StatelessWidget {
     super.key,
     required this.label,
     required this.value,
-    required this.icon,
+    this.icon,
     this.valueColor,
   });
 
   final String label;
   final String value;
-  final IconData icon;
+  final IconData? icon;
   final Color? valueColor;
 
   @override
@@ -25,8 +25,10 @@ class StatCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 20, color: theme.colorScheme.outline),
-            const SizedBox(height: 8),
+            if (icon != null) ...[
+              Icon(icon, size: 20, color: theme.colorScheme.outline),
+              const SizedBox(height: 8),
+            ],
             Text(
               value,
               style: theme.textTheme.headlineMedium?.copyWith(

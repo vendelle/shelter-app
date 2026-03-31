@@ -15,12 +15,14 @@ void main() {
       expect(summary.dogId, 1);
       expect(summary.dogName, 'Burek');
       expect(summary.kennel, 'A1');
+      expect(summary.shelterId, '');
     });
 
     test('fromJson parses correctly', () {
       final summary = DogWalkSummary.fromJson({
         'dog_id': 1,
         'dog_name': 'Burek',
+        'shelterid': 'S001',
         'kennel': 'A1',
         'this_week_walks': 2,
         'last_week_walks': 3,
@@ -28,9 +30,22 @@ void main() {
 
       expect(summary.dogId, 1);
       expect(summary.dogName, 'Burek');
+      expect(summary.shelterId, 'S001');
       expect(summary.kennel, 'A1');
       expect(summary.thisWeekWalks, 2);
       expect(summary.lastWeekWalks, 3);
+    });
+
+    test('fromJson defaults shelterId when null', () {
+      final summary = DogWalkSummary.fromJson({
+        'dog_id': 1,
+        'dog_name': 'Burek',
+        'kennel': 'A1',
+        'this_week_walks': 0,
+        'last_week_walks': 0,
+      });
+
+      expect(summary.shelterId, '');
     });
 
     test('fromJson handles null kennel', () {
@@ -59,7 +74,7 @@ void main() {
     });
 
     group('urgency', () {
-      test('0 walks = urgent', () {
+      test('0 walk days = urgent', () {
         const summary = DogWalkSummary(
           dogId: 1, dogName: 'A', kennel: 'A1',
           thisWeekWalks: 0, lastWeekWalks: 3,
@@ -67,23 +82,31 @@ void main() {
         expect(summary.urgency, WalkUrgency.urgent);
       });
 
-      test('1-2 walks = moderate', () {
-        const s1 = DogWalkSummary(
+      test('1 walk day = urgent', () {
+        const summary = DogWalkSummary(
           dogId: 1, dogName: 'A', kennel: 'A1',
           thisWeekWalks: 1, lastWeekWalks: 0,
         );
+        expect(summary.urgency, WalkUrgency.urgent);
+      });
+
+      test('2-3 walk days = moderate', () {
+        const s1 = DogWalkSummary(
+          dogId: 1, dogName: 'A', kennel: 'A1',
+          thisWeekWalks: 2, lastWeekWalks: 0,
+        );
         const s2 = DogWalkSummary(
           dogId: 2, dogName: 'B', kennel: 'A2',
-          thisWeekWalks: 2, lastWeekWalks: 0,
+          thisWeekWalks: 3, lastWeekWalks: 0,
         );
         expect(s1.urgency, WalkUrgency.moderate);
         expect(s2.urgency, WalkUrgency.moderate);
       });
 
-      test('3+ walks = good', () {
+      test('4+ walk days = good', () {
         const summary = DogWalkSummary(
           dogId: 1, dogName: 'A', kennel: 'A1',
-          thisWeekWalks: 3, lastWeekWalks: 0,
+          thisWeekWalks: 4, lastWeekWalks: 0,
         );
         expect(summary.urgency, WalkUrgency.good);
       });

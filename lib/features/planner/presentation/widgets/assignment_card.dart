@@ -119,8 +119,11 @@ class _DogRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final bgColor = groupColor(entry.groupIndex);
+    final bgColor = groupColor(entry.groupIndex, Theme.of(context).brightness);
     final hasGroup = entry.groupIndex != null && entry.groupIndex! > 0;
+    final textColor = hasGroup
+        ? groupTextColor(entry.groupIndex, Theme.of(context).brightness)
+        : null;
 
     return Dismissible(
       key: ValueKey(entry.dogId),
@@ -152,17 +155,41 @@ class _DogRow extends StatelessWidget {
                 TextSpan(
                   children: [
                     TextSpan(text: entry.dogName),
+                    if (entry.shelterId != null && entry.shelterId!.isNotEmpty)
+                      TextSpan(
+                        text: '  ${entry.shelterId}',
+                        style: TextStyle(
+                          color: hasGroup
+                              ? textColor?.withValues(alpha: 0.7)
+                              : colorScheme.outline,
+                          fontSize: 11,
+                        ),
+                      ),
                     if (entry.kennel != null)
                       TextSpan(
                         text: '  ${entry.kennel}',
                         style: TextStyle(
-                          color: colorScheme.outline,
+                          color: hasGroup
+                              ? textColor?.withValues(alpha: 0.7)
+                              : colorScheme.outline,
+                          fontSize: 11,
+                        ),
+                      ),
+                    if (entry.region != null)
+                      TextSpan(
+                        text: '  ${entry.region}',
+                        style: TextStyle(
+                          color: hasGroup
+                              ? textColor?.withValues(alpha: 0.7)
+                              : colorScheme.outline,
                           fontSize: 11,
                         ),
                       ),
                   ],
                 ),
-                style: theme.textTheme.bodyMedium,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: textColor,
+                ),
                 textAlign: TextAlign.center,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -170,7 +197,9 @@ class _DogRow extends StatelessWidget {
                 Text(
                   entry.note!,
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
+                    color: hasGroup
+                        ? textColor?.withValues(alpha: 0.7)
+                        : colorScheme.onSurfaceVariant,
                     fontStyle: FontStyle.italic,
                     fontSize: 10,
                   ),

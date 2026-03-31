@@ -3,7 +3,9 @@
 class PlannerDog {
   final int id;
   final String name;
+  final String shelterId;
   final String kennel;
+  final String? region;
   final int thisWeekWalks;
   final int lastWeekWalks;
   final DogFamiliarityLevel familiarity;
@@ -11,7 +13,9 @@ class PlannerDog {
   const PlannerDog({
     required this.id,
     required this.name,
+    this.shelterId = '',
     required this.kennel,
+    this.region,
     required this.thisWeekWalks,
     required this.lastWeekWalks,
     this.familiarity = DogFamiliarityLevel.unknown,

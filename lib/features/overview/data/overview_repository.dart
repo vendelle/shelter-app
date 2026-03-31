@@ -18,7 +18,9 @@ class ApiOverviewRepository implements OverviewRepository {
       return DogWalkSummary(
         dogId: m['id'] as int,
         dogName: m['name'] as String,
+        shelterId: m['shelterid'] as String? ?? '',
         kennel: m['kennel'] as String? ?? '',
+        region: m['region'] as String?,
         thisWeekWalks: m['this_week_walks'] as int? ?? 0,
         lastWeekWalks: m['last_week_walks'] as int? ?? 0,
       );

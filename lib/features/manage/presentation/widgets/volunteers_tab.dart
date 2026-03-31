@@ -39,12 +39,15 @@ class VolunteersTab extends ConsumerWidget {
           child: Row(
             children: [
               const Spacer(),
-              FilterChip(
-                label: const Text('Show inactive'),
-                selected: showArchived,
-                onSelected: (value) {
+              SegmentedButton<bool>(
+                segments: const [
+                  ButtonSegment(value: false, label: Text('Active')),
+                  ButtonSegment(value: true, label: Text('Inactive')),
+                ],
+                selected: {showArchived},
+                onSelectionChanged: (selected) {
                   ref.read(showArchivedVolunteersProvider.notifier).state =
-                      value;
+                      selected.first;
                 },
               ),
             ],
@@ -128,13 +131,12 @@ class _VolunteerListTile extends ConsumerWidget {
         ),
       ),
       title: Text(volunteer.fullName),
-      subtitle: Text(volunteer.role.label),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (!volunteer.archived)
             IconButton(
-              icon: const Icon(Icons.favorite_outline),
+              icon: const Icon(Icons.pets_rounded),
               tooltip: 'Dog familiarity',
               onPressed: () => _showFamiliarityDialog(context, ref),
             ),

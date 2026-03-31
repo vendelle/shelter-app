@@ -17,6 +17,10 @@ class DateNavigator extends StatelessWidget {
     final isToday = date.year == today.year &&
         date.month == today.month &&
         date.day == today.day;
+    final maxDate = DateTime(today.year, today.month, today.day + 3);
+    final atMax = date.year == maxDate.year &&
+        date.month == maxDate.month &&
+        date.day == maxDate.day;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
@@ -34,7 +38,7 @@ class DateNavigator extends StatelessWidget {
           const SizedBox(width: 4),
           InkWell(
             borderRadius: BorderRadius.circular(12),
-            onTap: () => _pickDate(context),
+            onTap: () => _pickDate(context, maxDate),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
@@ -70,7 +74,9 @@ class DateNavigator extends StatelessWidget {
           const SizedBox(width: 4),
           IconButton(
             icon: const Icon(Icons.chevron_right_rounded),
-            onPressed: () => onDateChanged(date.add(const Duration(days: 1))),
+            onPressed: atMax
+                ? null
+                : () => onDateChanged(date.add(const Duration(days: 1))),
             style: IconButton.styleFrom(
               backgroundColor: theme.colorScheme.surfaceContainerHighest,
             ),
@@ -80,12 +86,12 @@ class DateNavigator extends StatelessWidget {
     );
   }
 
-  Future<void> _pickDate(BuildContext context) async {
+  Future<void> _pickDate(BuildContext context, DateTime maxDate) async {
     final picked = await showDatePicker(
       context: context,
       initialDate: date,
       firstDate: DateTime(2025),
-      lastDate: DateTime.now().add(const Duration(days: 1)),
+      lastDate: maxDate,
     );
     if (picked != null) {
       onDateChanged(picked);

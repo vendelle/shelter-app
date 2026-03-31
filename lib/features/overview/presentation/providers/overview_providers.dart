@@ -17,22 +17,33 @@ final dogWalkSummariesProvider = FutureProvider<List<DogWalkSummary>>((ref) {
 /// Derived stats for the summary cards.
 final overviewStatsProvider = Provider<AsyncValue<OverviewStats>>((ref) {
   return ref.watch(dogWalkSummariesProvider).whenData((summaries) {
+    final thisWeekDays =
+        summaries.fold<int>(0, (sum, s) => sum + s.thisWeekWalks);
+    final lastWeekDays =
+        summaries.fold<int>(0, (sum, s) => sum + s.lastWeekWalks);
+    final goal = summaries.length * 4;
     return OverviewStats(
       totalDogs: summaries.length,
-      totalWalksThisWeek: summaries.fold<int>(0, (sum, s) => sum + s.thisWeekWalks),
-      dogsNeedingWalks: summaries.where((s) => s.thisWeekWalks == 0).length,
+      thisWeekDays: thisWeekDays,
+      lastWeekDays: lastWeekDays,
+      goal: goal,
     );
   });
 });
 
 class OverviewStats {
   final int totalDogs;
-  final int totalWalksThisWeek;
-  final int dogsNeedingWalks;
+  final int thisWeekDays;
+  final int lastWeekDays;
+  final int goal;
 
   const OverviewStats({
     required this.totalDogs,
-    required this.totalWalksThisWeek,
-    required this.dogsNeedingWalks,
+    required this.thisWeekDays,
+    required this.lastWeekDays,
+    required this.goal,
   });
+
+  int get thisWeekPercent => goal == 0 ? 0 : (thisWeekDays * 100 / goal).round();
+  int get lastWeekPercent => goal == 0 ? 0 : (lastWeekDays * 100 / goal).round();
 }
