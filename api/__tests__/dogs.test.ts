@@ -74,6 +74,7 @@ describe('GET /api/dogs', () => {
 	});
 
 	it('returns 500 on database error', async () => {
+		jest.spyOn(console, 'error').mockImplementation(() => {});
 		mockPool.query.mockRejectedValueOnce(new Error('Connection refused'));
 
 		await handler(mockRequest({ method: 'GET' }), res);

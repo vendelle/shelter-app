@@ -18,6 +18,8 @@ describe('GET /api/dogs-walks', () => {
 
 	beforeEach(() => {
 		res = mockResponse();
+		// Suppress production logging noise ([dogs-walks] Request: GET, etc.)
+		jest.spyOn(console, 'log').mockImplementation(() => {});
 	});
 
 	it('returns dogs with walk counts', async () => {
@@ -77,6 +79,8 @@ describe('GET /api/dogs-walks', () => {
 	});
 
 	it('returns 500 on database error', async () => {
+		jest.spyOn(console, 'error').mockImplementation(() => {});
+		jest.spyOn(console, 'log').mockImplementation(() => {});
 		mockPool.query.mockRejectedValueOnce(new Error('connection lost'));
 
 		await handler(mockRequest({ method: 'GET' }), res);

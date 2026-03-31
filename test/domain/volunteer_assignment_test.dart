@@ -86,7 +86,7 @@ void main() {
       expect(assignment.volunteerName, 'Anna Kowalska');
       expect(assignment.dogs, isEmpty);
       expect(assignment.note, isNull);
-    });;
+    });
 
     test('creates with dogs and note', () {
       final assignment = VolunteerAssignment(

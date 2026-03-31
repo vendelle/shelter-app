@@ -21,7 +21,7 @@ void main() {
 
       expect(exception.statusCode, 404);
       expect(exception.body, 'Not found');
-    });;
+    });
 
     test('toString includes status code', () {
       final exception = ApiException(500, 'Server error');

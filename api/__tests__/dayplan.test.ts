@@ -241,6 +241,7 @@ describe('/api/dayplan', () => {
 		});
 
 		it('rolls back transaction on error', async () => {
+			jest.spyOn(console, 'error').mockImplementation(() => {});
 			mockPool.query
 				.mockResolvedValueOnce({ rows: [] }) // BEGIN
 				.mockRejectedValueOnce(new Error('constraint violation')); // SELECT fails
