@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/theme_providers.dart';
 import 'widgets/dogs_tab.dart';
+import 'widgets/relationships_tab.dart';
 import 'widgets/volunteers_tab.dart';
 
 class ManageScreen extends ConsumerWidget {
@@ -14,7 +15,7 @@ class ManageScreen extends ConsumerWidget {
     final brightness = Theme.of(context).brightness;
 
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Manage'),
@@ -43,6 +44,7 @@ class ManageScreen extends ConsumerWidget {
             tabs: [
               Tab(icon: Icon(Icons.pets), text: 'Dogs'),
               Tab(icon: Icon(Icons.people), text: 'Volunteers'),
+              Tab(icon: Icon(Icons.grid_on), text: 'Relations'),
             ],
           ),
         ),
@@ -50,6 +52,7 @@ class ManageScreen extends ConsumerWidget {
           children: [
             DogsTab(),
             VolunteersTab(),
+            RelationshipsTab(),
           ],
         ),
       ),
