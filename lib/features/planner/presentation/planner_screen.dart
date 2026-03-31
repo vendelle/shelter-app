@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../dog_detail/presentation/providers/dog_detail_providers.dart';
 import '../domain/volunteer_assignment.dart';
 import 'providers/planner_providers.dart';
 import 'widgets/assignment_card.dart';
@@ -123,6 +125,7 @@ class _ColumnsGrid extends StatelessWidget {
                   width: colWidth,
                   child: VolunteerColumn(
                     assignment: assignment,
+                    relationshipLookup: ref.watch(relationshipLookupProvider).valueOrNull,
                     onRemoveVolunteer: () =>
                         _confirmRemove(context, ref, assignment),
                     onRemoveDog: (dogId) => ref
@@ -130,7 +133,7 @@ class _ColumnsGrid extends StatelessWidget {
                         .removeDogFromVolunteer(
                             assignment.volunteerId, dogId),
                     onAddDog: () =>
-                        _addDogs(context, assignment.volunteerId),
+                        _addDogs(context, assignment),
                     onTapDog: (dogId) => _showDogActions(
                         context, ref, assignment, dogId),
                     onEditVolunteerNote: () =>
@@ -148,16 +151,17 @@ class _ColumnsGrid extends StatelessWidget {
     );
   }
 
-  Future<void> _addDogs(BuildContext context, int volunteerId) async {
+  Future<void> _addDogs(BuildContext context, VolunteerAssignment assignment) async {
     final entries = await showDogPicker(
       context: context,
-      volunteerId: volunteerId,
+      volunteerId: assignment.volunteerId,
       alreadyAssignedDogIds: plannerState.assignedDogIds,
+      volunteerDogs: assignment.dogs,
     );
     if (entries != null && entries.isNotEmpty) {
       ref
           .read(plannerNotifierProvider.notifier)
-          .addDogEntries(volunteerId, entries);
+          .addDogEntries(assignment.volunteerId, entries);
     }
   }
 
@@ -262,6 +266,21 @@ class _ColumnsGrid extends StatelessWidget {
                     Navigator.pop(ctx);
                     _editDogNote(
                         context, ref, assignment.volunteerId, entry);
+                  },
+                ),
+                // View profile
+                ListTile(
+                  leading: const Icon(Icons.pets_rounded),
+                  title: const Text('View profile'),
+                  contentPadding: EdgeInsets.zero,
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    context.push('/dog/$dogId', extra: {
+                      'dogName': entry.dogName,
+                      'shelterId': entry.shelterId,
+                      'kennel': entry.kennel,
+                      'region': entry.region,
+                    });
                   },
                 ),
                 // Remove

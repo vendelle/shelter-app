@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../shared/domain/dog.dart';
 import '../providers/manage_providers.dart';
@@ -97,6 +98,12 @@ class _DogListTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return ListTile(
+      onTap: () => context.push('/dog/${dog.id}', extra: {
+        'dogName': dog.name,
+        'shelterId': dog.shelterId,
+        'kennel': dog.kennel,
+        'region': dog.region,
+      }),
       title: Text(dog.name),
       subtitle: Text(
         [

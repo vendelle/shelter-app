@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../domain/dog_walk_summary.dart';
 import '../../../shared/presentation/walk_theme.dart';
@@ -14,7 +15,14 @@ class DogWalkTile extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final color = urgencyColor(summary.urgency, colorScheme);
 
-    return Card(
+    return GestureDetector(
+      onTap: () => context.push('/dog/${summary.dogId}', extra: {
+        'dogName': summary.dogName,
+        'shelterId': summary.shelterId,
+        'kennel': summary.kennel,
+        'region': summary.region,
+      }),
+      child: Card(
       clipBehavior: Clip.antiAlias,
       child: IntrinsicHeight(
         child: Row(
@@ -94,6 +102,7 @@ class DogWalkTile extends StatelessWidget {
           ],
         ),
       ),
+    ),
     );
   }
 }
