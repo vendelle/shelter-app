@@ -3,6 +3,7 @@ class DogWalkSummary {
   final String dogName;
   final String shelterId;
   final String kennel;
+  final String? region;
   final int thisWeekWalks;
   final int lastWeekWalks;
 
@@ -11,6 +12,7 @@ class DogWalkSummary {
     required this.dogName,
     this.shelterId = '',
     required this.kennel,
+    this.region,
     required this.thisWeekWalks,
     required this.lastWeekWalks,
   });
@@ -21,6 +23,7 @@ class DogWalkSummary {
       dogName: json['dog_name'] as String,
       shelterId: (json['shelterid'] as String?) ?? '',
       kennel: json['kennel'] as String? ?? '',
+      region: json['region'] as String?,
       thisWeekWalks: int.parse(json['this_week_walks'].toString()),
       lastWeekWalks: int.parse(json['last_week_walks'].toString()),
     );

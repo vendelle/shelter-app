@@ -44,7 +44,9 @@ class ApiPlannerRepository implements PlannerRepository {
       byVolunteer[volunteerId]!.dogs.add(DogEntry(
         dogId: m['dog_id'] as int,
         dogName: m['dog_name'] as String? ?? 'Unknown',
+        shelterId: m['shelterid'] as String?,
         kennel: m['kennel'] as String?,
+        region: m['region'] as String?,
         groupIndex: m['group_index'] as int?,
         note: m['dog_note'] as String?,
       ));
@@ -120,7 +122,9 @@ class ApiPlannerRepository implements PlannerRepository {
       return PlannerDog(
         id: dogId,
         name: m['name'] as String,
+        shelterId: m['shelterid'] as String? ?? '',
         kennel: m['kennel'] as String? ?? '',
+        region: m['region'] as String?,
         thisWeekWalks: m['this_week_walks'] as int? ?? 0,
         lastWeekWalks: m['last_week_walks'] as int? ?? 0,
         familiarity: familiarityMap[dogId] ?? DogFamiliarityLevel.unknown,

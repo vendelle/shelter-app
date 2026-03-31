@@ -155,9 +155,29 @@ class _DogRow extends StatelessWidget {
                 TextSpan(
                   children: [
                     TextSpan(text: entry.dogName),
+                    if (entry.shelterId != null && entry.shelterId!.isNotEmpty)
+                      TextSpan(
+                        text: '  ${entry.shelterId}',
+                        style: TextStyle(
+                          color: hasGroup
+                              ? textColor?.withValues(alpha: 0.7)
+                              : colorScheme.outline,
+                          fontSize: 11,
+                        ),
+                      ),
                     if (entry.kennel != null)
                       TextSpan(
                         text: '  ${entry.kennel}',
+                        style: TextStyle(
+                          color: hasGroup
+                              ? textColor?.withValues(alpha: 0.7)
+                              : colorScheme.outline,
+                          fontSize: 11,
+                        ),
+                      ),
+                    if (entry.region != null)
+                      TextSpan(
+                        text: '  ${entry.region}',
                         style: TextStyle(
                           color: hasGroup
                               ? textColor?.withValues(alpha: 0.7)

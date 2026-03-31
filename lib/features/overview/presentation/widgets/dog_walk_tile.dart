@@ -53,6 +53,10 @@ class DogWalkTile extends StatelessWidget {
                               ],
                               const SizedBox(width: 8),
                               _KennelBadge(kennel: summary.kennel),
+                              if (summary.region != null) ...[
+                                const SizedBox(width: 4),
+                                _KennelBadge(kennel: summary.region!),
+                              ],
                             ],
                           ),
                           const SizedBox(height: 6),
