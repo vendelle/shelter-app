@@ -60,13 +60,20 @@ class ApiClient {
 
   /// The correct base URL for the current platform.
   ///
-  /// - **Web**: empty string (same-origin relative URLs work).
-  /// - **Mobile/desktop local dev**: override via `--dart-define=API_BASE_URL=https://shelter-app.vercel.app`.
+  /// - **Deployed web** (Vercel): empty string — same-origin relative URLs.
+  /// - **Local dev** (`flutter run`): uses the Vercel deployment so API
+  ///   calls work without running a local Node server.
+  /// - **Override**: `--dart-define=API_BASE_URL=https://custom.example.com`
   static String get defaultBaseUrl {
-    if (kIsWeb) return ''; // same origin
-    // For local mobile dev, override via dart-define
     const env = String.fromEnvironment('API_BASE_URL');
-    return env.isNotEmpty ? env : '';
+    if (env.isNotEmpty) return env;
+
+    // In debug mode, Flutter's dev server doesn't serve /api/ routes,
+    // so we proxy to the deployed Vercel instance.
+    if (kDebugMode) return 'https://shelter-app-plum.vercel.app';
+
+    // In release (deployed on Vercel), use same-origin.
+    return '';
   }
 }
 

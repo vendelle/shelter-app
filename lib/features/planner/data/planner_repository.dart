@@ -37,6 +37,7 @@ class ApiPlannerRepository implements PlannerRepository {
         () => VolunteerAssignment(
           volunteerId: volunteerId,
           volunteerName: m['volunteer_name'] as String? ?? 'Unknown',
+          note: m['volunteer_note'] as String?,
         ),
       );
 
@@ -44,6 +45,8 @@ class ApiPlannerRepository implements PlannerRepository {
         dogId: m['dog_id'] as int,
         dogName: m['dog_name'] as String? ?? 'Unknown',
         kennel: m['kennel'] as String?,
+        groupIndex: m['group_index'] as int?,
+        note: m['dog_note'] as String?,
       ));
     }
 
@@ -59,13 +62,24 @@ class ApiPlannerRepository implements PlannerRepository {
         walks.add({
           'dog_id': d.dogId,
           'volunteer_id': a.volunteerId,
+          'dog_note': d.note,
+          'group_index': d.groupIndex,
         });
       }
     }
 
+    final volunteerNotes = assignments
+        .where((a) => a.note != null && a.note!.isNotEmpty)
+        .map((a) => {
+              'volunteer_id': a.volunteerId,
+              'note': a.note,
+            })
+        .toList();
+
     await _api.post('/api/dayplan', body: {
       'walk_date': _dateKey(date),
       'walks': walks,
+      'volunteer_notes': volunteerNotes,
     });
   }
 
