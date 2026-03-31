@@ -1,6 +1,7 @@
 class DogWalkSummary {
   final int dogId;
   final String dogName;
+  final String shelterId;
   final String kennel;
   final int thisWeekWalks;
   final int lastWeekWalks;
@@ -8,6 +9,7 @@ class DogWalkSummary {
   const DogWalkSummary({
     required this.dogId,
     required this.dogName,
+    this.shelterId = '',
     required this.kennel,
     required this.thisWeekWalks,
     required this.lastWeekWalks,
@@ -17,6 +19,7 @@ class DogWalkSummary {
     return DogWalkSummary(
       dogId: json['dog_id'] as int,
       dogName: json['dog_name'] as String,
+      shelterId: (json['shelterid'] as String?) ?? '',
       kennel: json['kennel'] as String? ?? '',
       thisWeekWalks: int.parse(json['this_week_walks'].toString()),
       lastWeekWalks: int.parse(json['last_week_walks'].toString()),
@@ -25,7 +28,7 @@ class DogWalkSummary {
 
   /// How urgent it is for this dog to get a walk.
   /// Goal: 4 walk days per week.
-  /// 0 days = urgent, 1-3 = moderate, 4+ = good.
+  /// 0-1 days = urgent, 2-3 = moderate, 4+ = good.
   WalkUrgency get urgency {
     if (thisWeekWalks <= 1) return WalkUrgency.urgent;
     if (thisWeekWalks < 4) return WalkUrgency.moderate;

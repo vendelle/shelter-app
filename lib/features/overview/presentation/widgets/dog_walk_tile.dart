@@ -42,6 +42,15 @@ class DogWalkTile extends StatelessWidget {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
+                              if (summary.shelterId.isNotEmpty) ...[
+                                const SizedBox(width: 6),
+                                Text(
+                                  summary.shelterId,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: colorScheme.outline,
+                                  ),
+                                ),
+                              ],
                               const SizedBox(width: 8),
                               _KennelBadge(kennel: summary.kennel),
                             ],
