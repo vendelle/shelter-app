@@ -225,7 +225,7 @@ class _ColumnsGrid extends StatelessWidget {
                   children: [
                     // "No group" option
                     _GroupChip(
-                      color: null,
+                      groupIndex: null,
                       label: 'Solo',
                       isSelected: entry.groupIndex == null ||
                           entry.groupIndex == 0,
@@ -238,7 +238,7 @@ class _ColumnsGrid extends StatelessWidget {
                     // Existing groups + one new
                     for (var i = 1; i <= maxGroup + 1; i++)
                       _GroupChip(
-                        color: groupColor(i),
+                        groupIndex: i,
                         label: 'Group $i',
                         isSelected: entry.groupIndex == i,
                         onTap: () {
@@ -409,13 +409,13 @@ class _AddVolunteerButton extends StatelessWidget {
 
 class _GroupChip extends StatelessWidget {
   const _GroupChip({
-    required this.color,
+    this.groupIndex,
     required this.label,
     required this.isSelected,
     required this.onTap,
   });
 
-  final Color? color;
+  final int? groupIndex;
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
@@ -423,12 +423,20 @@ class _GroupChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final brightness = theme.brightness;
+    final bgColor = groupIndex != null
+        ? groupColor(groupIndex, brightness)
+        : theme.colorScheme.surfaceContainerHighest;
+    final txtColor = groupIndex != null
+        ? groupTextColor(groupIndex, brightness)
+        : null;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: color ?? theme.colorScheme.surfaceContainerHighest,
+          color: bgColor,
           borderRadius: BorderRadius.circular(8),
           border: isSelected
               ? Border.all(color: theme.colorScheme.primary, width: 2)
@@ -438,6 +446,7 @@ class _GroupChip extends StatelessWidget {
           label,
           style: theme.textTheme.labelMedium?.copyWith(
             fontWeight: isSelected ? FontWeight.w600 : null,
+            color: txtColor,
           ),
         ),
       ),

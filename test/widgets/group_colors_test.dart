@@ -16,31 +16,49 @@ void main() {
       expect(groupColor(-1), Colors.transparent);
     });
 
-    test('returns first color for group 1', () {
-      expect(groupColor(1), groupColors[0]);
+    test('returns a non-transparent color for group 1 (light)', () {
+      expect(groupColor(1, Brightness.light), isNot(Colors.transparent));
     });
 
-    test('returns correct color for each group', () {
-      for (var i = 1; i <= groupColors.length; i++) {
-        expect(groupColor(i), groupColors[i - 1]);
-      }
+    test('returns a non-transparent color for group 1 (dark)', () {
+      expect(groupColor(1, Brightness.dark), isNot(Colors.transparent));
+    });
+
+    test('light and dark colors differ for same group', () {
+      expect(
+        groupColor(1, Brightness.light),
+        isNot(groupColor(1, Brightness.dark)),
+      );
     });
 
     test('wraps around when group index exceeds palette size', () {
-      final paletteSize = groupColors.length;
-      expect(groupColor(paletteSize + 1), groupColors[0]);
-      expect(groupColor(paletteSize + 2), groupColors[1]);
+      // Both light and dark palettes have 8 colors
+      expect(groupColor(9, Brightness.light), groupColor(1, Brightness.light));
+      expect(groupColor(9, Brightness.dark), groupColor(1, Brightness.dark));
+    });
+
+    test('defaults to light brightness', () {
+      expect(groupColor(1), groupColor(1, Brightness.light));
     });
   });
 
-  group('groupColors', () {
-    test('has at least 4 distinct colors', () {
-      expect(groupColors.length, greaterThanOrEqualTo(4));
+  group('groupTextColor', () {
+    test('returns transparent for null group', () {
+      expect(groupTextColor(null, Brightness.light), Colors.transparent);
     });
 
-    test('all colors are unique', () {
-      final unique = groupColors.toSet();
-      expect(unique.length, groupColors.length);
+    test('returns dark text for light mode', () {
+      final color = groupTextColor(1, Brightness.light);
+      expect(color, isNot(Colors.transparent));
+      // Dark text should have low luminance
+      expect(color.computeLuminance(), lessThan(0.2));
+    });
+
+    test('returns light text for dark mode', () {
+      final color = groupTextColor(1, Brightness.dark);
+      expect(color, isNot(Colors.transparent));
+      // Light text should have high luminance
+      expect(color.computeLuminance(), greaterThan(0.5));
     });
   });
 }
