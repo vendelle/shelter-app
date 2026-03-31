@@ -33,8 +33,8 @@ describe('GET /api/dogs-walks', () => {
 
 		expect(res._status).toBe(200);
 		expect(res._body).toEqual([
-			{ ...rows[0], region: null },
-			{ ...rows[1], region: null },
+			{ ...rows[0], region: 'R2' },
+			{ ...rows[1], region: 'R3' },
 		]);
 		expect(res._body).toHaveLength(2);
 	});
