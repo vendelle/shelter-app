@@ -113,7 +113,8 @@ class _KennelBadge extends StatelessWidget {
   }
 }
 
-/// Shows filled dots for each walk this week (max 7).
+/// Shows dots for walk days this week.
+/// 4 dots minimum (the goal), more dots if the dog exceeded the goal.
 class _WalkDotsRow extends StatelessWidget {
   const _WalkDotsRow({required this.count, required this.color});
 
@@ -123,11 +124,12 @@ class _WalkDotsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    const maxDots = 7; // one per day of the week
+    const goal = 4;
+    final totalDots = count > goal ? count : goal;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
-      children: List.generate(maxDots, (index) {
+      children: List.generate(totalDots, (index) {
         final isFilled = index < count;
         return Padding(
           padding: const EdgeInsets.only(right: 4),

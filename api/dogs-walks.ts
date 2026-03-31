@@ -24,18 +24,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 					d.kennel,
 					d.shelterid,
 					COALESCE(
-						COUNT(CASE
+						COUNT(DISTINCT CASE
 							WHEN w.walk_date BETWEEN date_trunc('week', current_date)
 							                      AND date_trunc('week', current_date) + interval '6 days'
-							THEN 1
+							THEN w.walk_date
 						END),
 						0
 					)::int AS this_week_walks,
 					COALESCE(
-						COUNT(CASE
+						COUNT(DISTINCT CASE
 							WHEN w.walk_date BETWEEN date_trunc('week', current_date - interval '1 week')
 							                      AND date_trunc('week', current_date) - interval '1 day'
-							THEN 1
+							THEN w.walk_date
 						END),
 						0
 					)::int AS last_week_walks

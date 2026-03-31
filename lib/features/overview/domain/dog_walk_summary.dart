@@ -24,10 +24,11 @@ class DogWalkSummary {
   }
 
   /// How urgent it is for this dog to get a walk.
-  /// 0 walks = urgent, 1-2 = moderate, 3+ = good.
+  /// Goal: 4 walk days per week.
+  /// 0 days = urgent, 1-3 = moderate, 4+ = good.
   WalkUrgency get urgency {
-    if (thisWeekWalks == 0) return WalkUrgency.urgent;
-    if (thisWeekWalks <= 2) return WalkUrgency.moderate;
+    if (thisWeekWalks <= 1) return WalkUrgency.urgent;
+    if (thisWeekWalks < 4) return WalkUrgency.moderate;
     return WalkUrgency.good;
   }
 

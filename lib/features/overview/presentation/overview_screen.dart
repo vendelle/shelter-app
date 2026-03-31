@@ -139,7 +139,7 @@ class _StatsRow extends StatelessWidget {
           ),
           Expanded(
             child: StatCard(
-              label: 'Need walks',
+              label: 'Dogs below the threshold',
               value: '${stats.dogsNeedingWalks}',
               icon: Icons.warning_amber_rounded,
               valueColor: stats.dogsNeedingWalks > 0 ? colorScheme.error : null,

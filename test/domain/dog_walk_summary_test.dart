@@ -59,7 +59,7 @@ void main() {
     });
 
     group('urgency', () {
-      test('0 walks = urgent', () {
+      test('0 walk days = urgent', () {
         const summary = DogWalkSummary(
           dogId: 1, dogName: 'A', kennel: 'A1',
           thisWeekWalks: 0, lastWeekWalks: 3,
@@ -67,23 +67,23 @@ void main() {
         expect(summary.urgency, WalkUrgency.urgent);
       });
 
-      test('1-2 walks = moderate', () {
+      test('1-3 walk days = moderate', () {
         const s1 = DogWalkSummary(
           dogId: 1, dogName: 'A', kennel: 'A1',
           thisWeekWalks: 1, lastWeekWalks: 0,
         );
         const s2 = DogWalkSummary(
           dogId: 2, dogName: 'B', kennel: 'A2',
-          thisWeekWalks: 2, lastWeekWalks: 0,
+          thisWeekWalks: 3, lastWeekWalks: 0,
         );
         expect(s1.urgency, WalkUrgency.moderate);
         expect(s2.urgency, WalkUrgency.moderate);
       });
 
-      test('3+ walks = good', () {
+      test('4+ walk days = good', () {
         const summary = DogWalkSummary(
           dogId: 1, dogName: 'A', kennel: 'A1',
-          thisWeekWalks: 3, lastWeekWalks: 0,
+          thisWeekWalks: 4, lastWeekWalks: 0,
         );
         expect(summary.urgency, WalkUrgency.good);
       });

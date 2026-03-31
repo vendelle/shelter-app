@@ -20,7 +20,7 @@ final overviewStatsProvider = Provider<AsyncValue<OverviewStats>>((ref) {
     return OverviewStats(
       totalDogs: summaries.length,
       totalWalksThisWeek: summaries.fold<int>(0, (sum, s) => sum + s.thisWeekWalks),
-      dogsNeedingWalks: summaries.where((s) => s.thisWeekWalks == 0).length,
+      dogsNeedingWalks: summaries.where((s) => s.thisWeekWalks < 4).length,
     );
   });
 });
