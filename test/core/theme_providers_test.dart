@@ -61,5 +61,57 @@ void main() {
       container.read(themeModeProvider.notifier).cycle();
       expect(container.read(themeModeProvider), ThemeMode.system);
     });
+
+    test('persists theme mode to SharedPreferences', () {
+      final container = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
+      addTearDown(container.dispose);
+
+      container.read(themeModeProvider.notifier).cycle(); // system -> dark
+      expect(prefs.getString('theme_mode'), 'dark');
+
+      container.read(themeModeProvider.notifier).cycle(); // dark -> light
+      expect(prefs.getString('theme_mode'), 'light');
+
+      container.read(themeModeProvider.notifier).cycle(); // light -> system
+      expect(prefs.getString('theme_mode'), 'system');
+    });
+
+    test('loads persisted dark mode from SharedPreferences', () async {
+      SharedPreferences.setMockInitialValues({'theme_mode': 'dark'});
+      prefs = await SharedPreferences.getInstance();
+
+      final container = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
+      addTearDown(container.dispose);
+
+      expect(container.read(themeModeProvider), ThemeMode.dark);
+    });
+
+    test('loads persisted light mode from SharedPreferences', () async {
+      SharedPreferences.setMockInitialValues({'theme_mode': 'light'});
+      prefs = await SharedPreferences.getInstance();
+
+      final container = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
+      addTearDown(container.dispose);
+
+      expect(container.read(themeModeProvider), ThemeMode.light);
+    });
+
+    test('falls back to system for unknown persisted value', () async {
+      SharedPreferences.setMockInitialValues({'theme_mode': 'garbage'});
+      prefs = await SharedPreferences.getInstance();
+
+      final container = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
+      addTearDown(container.dispose);
+
+      expect(container.read(themeModeProvider), ThemeMode.system);
+    });
   });
 }
