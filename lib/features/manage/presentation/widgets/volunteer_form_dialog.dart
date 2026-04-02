@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shelter_app/l10n/app_localizations.dart';
 import '../../../shared/domain/volunteer.dart';
 import 'volunteers_tab.dart';
 
@@ -52,8 +53,9 @@ class _VolunteerFormDialogState extends State<VolunteerFormDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AlertDialog(
-      title: Text(_isEditing ? 'Edit Volunteer' : 'Add Volunteer'),
+      title: Text(_isEditing ? l10n.editVolunteer : l10n.addVolunteerTitle),
       content: Form(
         key: _formKey,
         child: Column(
@@ -61,25 +63,25 @@ class _VolunteerFormDialogState extends State<VolunteerFormDialog> {
           children: [
             TextFormField(
               controller: _firstNameController,
-              decoration: const InputDecoration(labelText: 'First name'),
+              decoration: InputDecoration(labelText: l10n.firstName),
               validator: (v) => v == null || v.trim().isEmpty
-                  ? 'First name is required'
+                  ? l10n.firstNameRequired
                   : null,
               textCapitalization: TextCapitalization.words,
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _lastNameController,
-              decoration: const InputDecoration(labelText: 'Last name'),
+              decoration: InputDecoration(labelText: l10n.lastName),
               validator: (v) => v == null || v.trim().isEmpty
-                  ? 'Last name is required'
+                  ? l10n.lastNameRequired
                   : null,
               textCapitalization: TextCapitalization.words,
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<VolunteerRole>(
               initialValue: _selectedRole,
-              decoration: const InputDecoration(labelText: 'Role'),
+              decoration: InputDecoration(labelText: l10n.role),
               onChanged: (value) {
                 if (value != null) setState(() => _selectedRole = value);
               },
@@ -97,7 +99,7 @@ class _VolunteerFormDialogState extends State<VolunteerFormDialog> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Text(role.label),
+                      Text(role.localizedLabel(l10n)),
                     ],
                   ),
                 );
@@ -112,7 +114,7 @@ class _VolunteerFormDialogState extends State<VolunteerFormDialog> {
                   onPressed: _saving ? null : _toggleArchive,
                   icon: Icon(widget.isArchived ? Icons.undo : Icons.person_off_outlined,
                       size: 18),
-                  label: Text(widget.isArchived ? 'Reactivate' : 'Mark as inactive'),
+                  label: Text(widget.isArchived ? l10n.reactivate : l10n.markAsInactive),
                   style: TextButton.styleFrom(
                     foregroundColor: widget.isArchived
                         ? null
@@ -127,7 +129,7 @@ class _VolunteerFormDialogState extends State<VolunteerFormDialog> {
       actions: [
         TextButton(
           onPressed: _saving ? null : () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(l10n.cancel),
         ),
         FilledButton(
           onPressed: _saving ? null : _save,
@@ -137,7 +139,7 @@ class _VolunteerFormDialogState extends State<VolunteerFormDialog> {
                   height: 16,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : Text(_isEditing ? 'Save' : 'Add'),
+              : Text(_isEditing ? l10n.save : l10n.add),
         ),
       ],
     );
@@ -151,7 +153,7 @@ class _VolunteerFormDialogState extends State<VolunteerFormDialog> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed: $e')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.failed(e.toString()))),
         );
         setState(() => _saving = false);
       }
@@ -171,7 +173,7 @@ class _VolunteerFormDialogState extends State<VolunteerFormDialog> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save: $e')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.failedToSave(e.toString()))),
         );
         setState(() => _saving = false);
       }

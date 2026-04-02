@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shelter_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/planner_dog.dart';
@@ -78,7 +79,7 @@ class _DogPickerSheetState extends ConsumerState<_DogPickerSheet> {
               child: Row(
                 children: [
                   Text(
-                    _multiSelect ? 'Select dogs' : 'Add dog',
+                    _multiSelect ? AppLocalizations.of(context)!.selectDogs : AppLocalizations.of(context)!.addDog,
                     style: theme.textTheme.titleMedium
                         ?.copyWith(fontWeight: FontWeight.w600),
                   ),
@@ -109,7 +110,7 @@ class _DogPickerSheetState extends ConsumerState<_DogPickerSheet> {
                           _multiSelect = false;
                         });
                       },
-                      child: const Text('Cancel'),
+                      child: Text(AppLocalizations.of(context)!.cancel),
                     ),
                   IconButton(
                     icon: const Icon(Icons.close_rounded),
@@ -123,7 +124,7 @@ class _DogPickerSheetState extends ConsumerState<_DogPickerSheet> {
               Padding(
                 padding: const EdgeInsets.only(left: 16, right: 16, bottom: 4),
                 child: Text(
-                  'Tap to add  •  Long press to select multiple',
+                  AppLocalizations.of(context)!.tapToAddLongPress,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.outline,
                   ),
@@ -148,7 +149,7 @@ class _DogPickerSheetState extends ConsumerState<_DogPickerSheet> {
                       child: Padding(
                         padding: const EdgeInsets.all(32),
                         child: Text(
-                          'All dogs are already assigned',
+                          AppLocalizations.of(context)!.allDogsAssigned,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: theme.colorScheme.outline,
                           ),
@@ -186,7 +187,7 @@ class _DogPickerSheetState extends ConsumerState<_DogPickerSheet> {
                     child: FilledButton.icon(
                       onPressed: _selected.isEmpty ? null : _confirmMulti,
                       icon: const Icon(Icons.add_rounded),
-                      label: Text('Add ${_selected.length} dogs'),
+                      label: Text(AppLocalizations.of(context)!.addNDogs(_selected.length)),
                     ),
                   ),
                 ),

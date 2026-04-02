@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shelter_app/l10n/app_localizations.dart';
 
 class DateNavigator extends StatelessWidget {
   const DateNavigator({
@@ -59,7 +60,7 @@ class DateNavigator extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    _formatDate(date, isToday),
+                    _formatDate(context, date, isToday),
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w600,
                       color: isToday
@@ -98,13 +99,18 @@ class DateNavigator extends StatelessWidget {
     }
   }
 
-  String _formatDate(DateTime d, bool isToday) {
-    const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  String _formatDate(BuildContext context, DateTime d, bool isToday) {
+    final l10n = AppLocalizations.of(context)!;
+    final weekdays = [
+      l10n.weekdayMon, l10n.weekdayTue, l10n.weekdayWed, l10n.weekdayThu,
+      l10n.weekdayFri, l10n.weekdaySat, l10n.weekdaySun,
     ];
-    final prefix = isToday ? 'Today, ' : '${weekdays[d.weekday - 1]}, ';
+    final months = [
+      l10n.monthJan, l10n.monthFeb, l10n.monthMar, l10n.monthApr,
+      l10n.monthMay, l10n.monthJun, l10n.monthJul, l10n.monthAug,
+      l10n.monthSep, l10n.monthOct, l10n.monthNov, l10n.monthDec,
+    ];
+    final prefix = isToday ? '${l10n.today}, ' : '${weekdays[d.weekday - 1]}, ';
     return '$prefix${months[d.month - 1]} ${d.day}';
   }
 }

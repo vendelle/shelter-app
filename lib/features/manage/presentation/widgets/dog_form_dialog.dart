@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shelter_app/l10n/app_localizations.dart';
 
 class DogFormDialog extends StatefulWidget {
   const DogFormDialog({
@@ -51,8 +52,9 @@ class _DogFormDialogState extends State<DogFormDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AlertDialog(
-      title: Text(_isEditing ? 'Edit Dog' : 'Add Dog'),
+      title: Text(_isEditing ? l10n.editDog : l10n.addDogButton),
       content: Form(
         key: _formKey,
         child: Column(
@@ -60,29 +62,29 @@ class _DogFormDialogState extends State<DogFormDialog> {
           children: [
             TextFormField(
               controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Name'),
+              decoration: InputDecoration(labelText: l10n.name),
               validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'Name is required' : null,
+                  v == null || v.trim().isEmpty ? l10n.nameRequired : null,
               textCapitalization: TextCapitalization.words,
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _shelterIdController,
-              decoration: const InputDecoration(labelText: 'Shelter ID'),
+              decoration: InputDecoration(labelText: l10n.shelterId),
               validator: (v) => v == null || v.trim().isEmpty
-                  ? 'Shelter ID is required'
+                  ? l10n.shelterIdRequired
                   : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _kennelController,
-              decoration: const InputDecoration(
-                labelText: 'Kennel',
-                hintText: '3-digit number',
+              decoration: InputDecoration(
+                labelText: l10n.kennel,
+                hintText: l10n.kennelHint,
               ),
               keyboardType: TextInputType.number,
               validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'Kennel is required' : null,
+                  v == null || v.trim().isEmpty ? l10n.kennelRequired : null,
             ),
             if (_isEditing && widget.onArchiveToggle != null) ...[
               const SizedBox(height: 20),
@@ -93,7 +95,7 @@ class _DogFormDialogState extends State<DogFormDialog> {
                   onPressed: _saving ? null : _toggleArchive,
                   icon: Icon(widget.isArchived ? Icons.undo : Icons.home_outlined,
                       size: 18),
-                  label: Text(widget.isArchived ? 'Restore' : 'Mark as adopted'),
+                  label: Text(widget.isArchived ? l10n.restore : l10n.markAsAdopted),
                   style: TextButton.styleFrom(
                     foregroundColor: widget.isArchived
                         ? null
@@ -108,7 +110,7 @@ class _DogFormDialogState extends State<DogFormDialog> {
       actions: [
         TextButton(
           onPressed: _saving ? null : () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(l10n.cancel),
         ),
         FilledButton(
           onPressed: _saving ? null : _save,
@@ -118,7 +120,7 @@ class _DogFormDialogState extends State<DogFormDialog> {
                   height: 16,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : Text(_isEditing ? 'Save' : 'Add'),
+              : Text(_isEditing ? l10n.save : l10n.add),
         ),
       ],
     );
@@ -132,7 +134,7 @@ class _DogFormDialogState extends State<DogFormDialog> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed: $e')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.failed(e.toString()))),
         );
         setState(() => _saving = false);
       }
@@ -152,7 +154,7 @@ class _DogFormDialogState extends State<DogFormDialog> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save: $e')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.failedToSave(e.toString()))),
         );
         setState(() => _saving = false);
       }

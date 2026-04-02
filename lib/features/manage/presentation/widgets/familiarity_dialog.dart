@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shelter_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/domain/dog.dart';
@@ -27,7 +28,7 @@ class _FamiliarityDialogState extends ConsumerState<FamiliarityDialog> {
         ref.watch(familiarityProvider(widget.volunteer.id));
 
     return AlertDialog(
-      title: Text('${widget.volunteer.fullName} — Dog Familiarity'),
+      title: Text(AppLocalizations.of(context)!.dogFamiliarity(widget.volunteer.fullName)),
       content: SizedBox(
         width: double.maxFinite,
         height: 400,
@@ -64,7 +65,7 @@ class _FamiliarityDialogState extends ConsumerState<FamiliarityDialog> {
       actions: [
         TextButton(
           onPressed: _saving ? null : () => Navigator.pop(context),
-          child: const Text('Close'),
+          child: Text(AppLocalizations.of(context)!.close),
         ),
       ],
     );
@@ -96,7 +97,7 @@ class _FamiliarityDialogState extends ConsumerState<FamiliarityDialog> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save: $e')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.failedToSave(e.toString()))),
         );
       }
     } finally {
@@ -129,7 +130,7 @@ class _DogFamiliarityRow extends StatelessWidget {
                 Text(dog.name,
                     style: Theme.of(context).textTheme.bodyLarge),
                 Text(
-                  'Kennel: ${dog.kennel}',
+                  AppLocalizations.of(context)!.kennelLabel(dog.kennel),
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
@@ -140,7 +141,7 @@ class _DogFamiliarityRow extends StatelessWidget {
             currentLevel: level,
             color: const Color(0xFF2A9D8F),
             icon: Icons.sentiment_very_satisfied,
-            tooltip: 'All good',
+            tooltip: AppLocalizations.of(context)!.allGood,
             onTap: () => onChanged(
               level == DogFamiliarityLevel.good
                   ? DogFamiliarityLevel.unknown
@@ -153,7 +154,7 @@ class _DogFamiliarityRow extends StatelessWidget {
             currentLevel: level,
             color: const Color(0xFFE8A317),
             icon: Icons.sentiment_neutral,
-            tooltip: 'Difficult but possible',
+            tooltip: AppLocalizations.of(context)!.difficultButPossible,
             onTap: () => onChanged(
               level == DogFamiliarityLevel.difficult
                   ? DogFamiliarityLevel.unknown
@@ -166,7 +167,7 @@ class _DogFamiliarityRow extends StatelessWidget {
             currentLevel: level,
             color: Colors.red,
             icon: Icons.sentiment_very_dissatisfied,
-            tooltip: 'No chance',
+            tooltip: AppLocalizations.of(context)!.noChance,
             onTap: () => onChanged(
               level == DogFamiliarityLevel.never
                   ? DogFamiliarityLevel.unknown

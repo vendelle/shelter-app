@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shelter_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/domain/volunteer.dart';
@@ -31,6 +32,7 @@ class VolunteersTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final showArchived = ref.watch(showArchivedVolunteersProvider);
     final volunteersAsync = ref.watch(managedVolunteersProvider);
+    final l10n = AppLocalizations.of(context)!;
 
     return Column(
       children: [
@@ -40,9 +42,9 @@ class VolunteersTab extends ConsumerWidget {
             children: [
               const Spacer(),
               SegmentedButton<bool>(
-                segments: const [
-                  ButtonSegment(value: false, label: Text('Active')),
-                  ButtonSegment(value: true, label: Text('Inactive')),
+                segments: [
+                  ButtonSegment(value: false, label: Text(l10n.active)),
+                  ButtonSegment(value: true, label: Text(l10n.inactive)),
                 ],
                 selected: {showArchived},
                 onSelectionChanged: (selected) {
@@ -61,8 +63,8 @@ class VolunteersTab extends ConsumerWidget {
               if (volunteers.isEmpty) {
                 return Center(
                   child: Text(showArchived
-                      ? 'No inactive volunteers'
-                      : 'No volunteers found'),
+                      ? l10n.noInactiveVolunteers
+                      : l10n.noVolunteersFound),
                 );
               }
               return ListView.builder(
@@ -82,7 +84,7 @@ class VolunteersTab extends ConsumerWidget {
               child: FilledButton.icon(
                 onPressed: () => _showAddVolunteerDialog(context, ref),
                 icon: const Icon(Icons.add),
-                label: const Text('Add Volunteer'),
+                label: Text(l10n.addVolunteerTitle),
               ),
             ),
           ),
@@ -137,12 +139,12 @@ class _VolunteerListTile extends ConsumerWidget {
           if (!volunteer.archived)
             IconButton(
               icon: const Icon(Icons.pets_rounded),
-              tooltip: 'Dog familiarity',
+              tooltip: AppLocalizations.of(context)!.dogFamiliarity(volunteer.fullName),
               onPressed: () => _showFamiliarityDialog(context, ref),
             ),
           IconButton(
             icon: const Icon(Icons.edit_outlined),
-            tooltip: 'Edit',
+            tooltip: AppLocalizations.of(context)!.edit,
             onPressed: () => _showEditDialog(context, ref),
           ),
         ],

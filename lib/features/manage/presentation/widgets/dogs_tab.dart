@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shelter_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/domain/dog.dart';
@@ -12,6 +13,7 @@ class DogsTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final showArchived = ref.watch(showArchivedDogsProvider);
     final dogsAsync = ref.watch(managedDogsProvider);
+    final l10n = AppLocalizations.of(context)!;
 
     return Column(
       children: [
@@ -21,9 +23,9 @@ class DogsTab extends ConsumerWidget {
             children: [
               const Spacer(),
               SegmentedButton<bool>(
-                segments: const [
-                  ButtonSegment(value: false, label: Text('Current')),
-                  ButtonSegment(value: true, label: Text('Adopted')),
+                segments: [
+                  ButtonSegment(value: false, label: Text(l10n.current)),
+                  ButtonSegment(value: true, label: Text(l10n.adopted)),
                 ],
                 selected: {showArchived},
                 onSelectionChanged: (selected) {
@@ -42,8 +44,8 @@ class DogsTab extends ConsumerWidget {
               if (dogs.isEmpty) {
                 return Center(
                   child: Text(showArchived
-                      ? 'No adopted dogs'
-                      : 'No dogs found'),
+                      ? l10n.noAdoptedDogs
+                      : l10n.noDogsFound),
                 );
               }
               return ListView.builder(
@@ -63,7 +65,7 @@ class DogsTab extends ConsumerWidget {
               child: FilledButton.icon(
                 onPressed: () => _showAddDogDialog(context, ref),
                 icon: const Icon(Icons.add),
-                label: const Text('Add Dog'),
+                label: Text(l10n.addDogButton),
               ),
             ),
           ),
@@ -121,7 +123,7 @@ class _DogListTile extends ConsumerWidget {
             ),
           IconButton(
             icon: const Icon(Icons.edit_outlined),
-            tooltip: 'Edit',
+            tooltip: AppLocalizations.of(context)!.edit,
             onPressed: () => _showEditDialog(context, ref),
           ),
         ],
