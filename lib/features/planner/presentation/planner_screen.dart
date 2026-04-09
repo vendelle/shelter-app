@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shelter_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../domain/volunteer_assignment.dart';
@@ -26,7 +27,7 @@ class PlannerScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Walk Planner'),
+        title: Text(AppLocalizations.of(context)!.walkPlanner),
       ),
       body: Column(
         children: [
@@ -170,13 +171,13 @@ class _ColumnsGrid extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Remove ${a.volunteerName}?'),
+        title: Text(AppLocalizations.of(context)!.removeVolunteerTitle(a.volunteerName)),
         content: Text(
-            'This will unassign ${a.dogs.length} dog${a.dogs.length == 1 ? '' : 's'}.'),
+            AppLocalizations.of(context)!.removeVolunteerContent(a.dogs.length)),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel')),
+              child: Text(AppLocalizations.of(context)!.cancel)),
           FilledButton(
             onPressed: () {
               ref
@@ -184,7 +185,7 @@ class _ColumnsGrid extends StatelessWidget {
                   .removeVolunteer(a.volunteerId);
               Navigator.pop(ctx);
             },
-            child: const Text('Remove'),
+            child: Text(AppLocalizations.of(context)!.remove),
           ),
         ],
       ),
@@ -216,7 +217,7 @@ class _ColumnsGrid extends StatelessWidget {
                         ?.copyWith(fontWeight: FontWeight.w600)),
                 const SizedBox(height: 16),
                 // Group color picker
-                Text('Walk group',
+                Text(AppLocalizations.of(ctx)!.walkGroup,
                     style: theme.textTheme.labelMedium
                         ?.copyWith(color: theme.colorScheme.outline)),
                 const SizedBox(height: 8),
@@ -226,7 +227,7 @@ class _ColumnsGrid extends StatelessWidget {
                     // "No group" option
                     _GroupChip(
                       groupIndex: null,
-                      label: 'Solo',
+                      label: AppLocalizations.of(ctx)!.solo,
                       isSelected: entry.groupIndex == null ||
                           entry.groupIndex == 0,
                       onTap: () {
@@ -239,7 +240,7 @@ class _ColumnsGrid extends StatelessWidget {
                     for (var i = 1; i <= maxGroup + 1; i++)
                       _GroupChip(
                         groupIndex: i,
-                        label: 'Group $i',
+                        label: AppLocalizations.of(ctx)!.groupN(i),
                         isSelected: entry.groupIndex == i,
                         onTap: () {
                           notifier.updateDogGroup(
@@ -253,7 +254,7 @@ class _ColumnsGrid extends StatelessWidget {
                 // Add note
                 ListTile(
                   leading: const Icon(Icons.note_add_outlined),
-                  title: const Text('Add note'),
+                  title: Text(AppLocalizations.of(ctx)!.addNote),
                   subtitle: entry.note != null
                       ? Text(entry.note!)
                       : null,
@@ -268,7 +269,7 @@ class _ColumnsGrid extends StatelessWidget {
                 ListTile(
                   leading: Icon(Icons.delete_outline_rounded,
                       color: theme.colorScheme.error),
-                  title: Text('Remove',
+                  title: Text(AppLocalizations.of(ctx)!.remove,
                       style:
                           TextStyle(color: theme.colorScheme.error)),
                   contentPadding: EdgeInsets.zero,
@@ -292,19 +293,19 @@ class _ColumnsGrid extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Note for ${entry.dogName}'),
+        title: Text(AppLocalizations.of(context)!.noteFor(entry.dogName)),
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: const InputDecoration(
-            hintText: 'e.g. hospital, bring to vet',
+          decoration: InputDecoration(
+            hintText: AppLocalizations.of(context)!.noteHintDog,
           ),
           textCapitalization: TextCapitalization.sentences,
         ),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel')),
+              child: Text(AppLocalizations.of(context)!.cancel)),
           FilledButton(
             onPressed: () {
               final text = controller.text.trim();
@@ -314,7 +315,7 @@ class _ColumnsGrid extends StatelessWidget {
                   text.isEmpty ? null : text);
               Navigator.pop(ctx);
             },
-            child: const Text('Save'),
+            child: Text(AppLocalizations.of(context)!.save),
           ),
         ],
       ),
@@ -332,15 +333,15 @@ class _ColumnsGrid extends StatelessWidget {
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: const InputDecoration(
-            hintText: 'e.g. 10-13, 2 dogs only',
+          decoration: InputDecoration(
+            hintText: AppLocalizations.of(context)!.noteHintVolunteer,
           ),
           textCapitalization: TextCapitalization.sentences,
         ),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel')),
+              child: Text(AppLocalizations.of(context)!.cancel)),
           FilledButton(
             onPressed: () {
               final text = controller.text.trim();
@@ -351,7 +352,7 @@ class _ColumnsGrid extends StatelessWidget {
                       text.isEmpty ? null : text);
               Navigator.pop(ctx);
             },
-            child: const Text('Save'),
+            child: Text(AppLocalizations.of(context)!.save),
           ),
         ],
       ),
@@ -391,7 +392,7 @@ class _AddVolunteerButton extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              'Add volunteer',
+              AppLocalizations.of(context)!.addVolunteerButton,
               style: theme.textTheme.labelSmall?.copyWith(
                 color: theme.colorScheme.outline,
               ),
@@ -472,14 +473,14 @@ class _EmptyBody extends StatelessWidget {
           Icon(Icons.table_chart_outlined,
               size: 64, color: theme.colorScheme.outlineVariant),
           const SizedBox(height: 16),
-          Text('No walks planned yet',
+          Text(AppLocalizations.of(context)!.noWalksPlannedYet,
               style: theme.textTheme.titleMedium
                   ?.copyWith(color: theme.colorScheme.outline)),
           const SizedBox(height: 8),
           FilledButton.tonalIcon(
             onPressed: onAddVolunteer,
             icon: const Icon(Icons.person_add_rounded, size: 18),
-            label: const Text('Add first volunteer'),
+            label: Text(AppLocalizations.of(context)!.addFirstVolunteer),
           ),
         ],
       ),
@@ -509,7 +510,7 @@ class _ErrorBody extends StatelessWidget {
             Icon(Icons.error_outline_rounded,
                 size: 48, color: theme.colorScheme.error),
             const SizedBox(height: 16),
-            Text('Failed to load plan',
+            Text(AppLocalizations.of(context)!.failedToLoadPlan,
                 style: theme.textTheme.titleMedium),
             const SizedBox(height: 8),
             Text(message,
@@ -519,7 +520,7 @@ class _ErrorBody extends StatelessWidget {
             FilledButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Retry'),
+              label: Text(AppLocalizations.of(context)!.retry),
             ),
           ],
         ),
@@ -568,7 +569,7 @@ class _SaveBar extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                '$assignmentCount volunteers  •  $dogCount/$totalDogs dogs',
+                AppLocalizations.of(context)!.nVolunteersNDogs(assignmentCount, dogCount, totalDogs),
                 style: theme.textTheme.bodySmall
                     ?.copyWith(color: theme.colorScheme.outline),
               ),
@@ -582,7 +583,7 @@ class _SaveBar extends StatelessWidget {
                       child: CircularProgressIndicator(
                           strokeWidth: 2, color: Colors.white),
                     )
-                  : Text(isModified ? 'Save' : 'Saved'),
+                  : Text(isModified ? AppLocalizations.of(context)!.save : AppLocalizations.of(context)!.saved),
             ),
           ],
         ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shelter_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/domain/volunteer.dart';
@@ -63,7 +64,7 @@ class _VolunteerPickerSheetState extends ConsumerState<_VolunteerPickerSheet> {
               child: Row(
                 children: [
                   Text(
-                    'Add Volunteer',
+                    AppLocalizations.of(context)!.addVolunteer,
                     style: theme.textTheme.titleMedium
                         ?.copyWith(fontWeight: FontWeight.w600),
                   ),
@@ -81,7 +82,7 @@ class _VolunteerPickerSheetState extends ConsumerState<_VolunteerPickerSheet> {
               child: TextField(
                 autofocus: true,
                 decoration: InputDecoration(
-                  hintText: 'Search volunteers...',
+                  hintText: AppLocalizations.of(context)!.searchVolunteers,
                   prefixIcon: const Icon(Icons.search_rounded, size: 20),
                   isDense: true,
                   filled: true,
@@ -115,8 +116,8 @@ class _VolunteerPickerSheetState extends ConsumerState<_VolunteerPickerSheet> {
                         padding: const EdgeInsets.all(32),
                         child: Text(
                           assignedIds.length == volunteers.length
-                              ? 'All volunteers are already assigned'
-                              : 'No volunteers match your search',
+                              ? AppLocalizations.of(context)!.allVolunteersAssigned
+                              : AppLocalizations.of(context)!.noVolunteersMatch,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: theme.colorScheme.outline,
                           ),
