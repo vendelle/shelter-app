@@ -12,8 +12,10 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
 		status: 'ok',
 		timestamp: new Date().toISOString(),
 		node_version: process.version,
-		env_DEV_DATABASE_URL: !!process.env.DEV_DATABASE_URL,
+		env_DATABASE_URL_UNPOOLED: !!process.env.DATABASE_URL_UNPOOLED,
 		env_DATABASE_URL: !!process.env.DATABASE_URL,
+		env_DEV_DATABASE_URL_UNPOOLED: !!process.env.DEV_DATABASE_URL_UNPOOLED,
+		env_DEV_DATABASE_URL: !!process.env.DEV_DATABASE_URL,
 	};
 
 	try {
