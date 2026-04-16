@@ -11,6 +11,14 @@ jest.mock('../connection', () => {
 	};
 });
 
+jest.mock('../util', () => {
+	const actual = jest.requireActual('../util');
+	return {
+		...actual,
+		hasColumn: jest.fn().mockResolvedValue(true),
+	};
+});
+
 import handler from '../dayplan';
 
 describe('/api/dayplan', () => {

@@ -151,44 +151,28 @@ class _DogRow extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(text: entry.dogName),
-                    if (entry.shelterId != null && entry.shelterId!.isNotEmpty)
-                      TextSpan(
-                        text: '  ${entry.shelterId}',
-                        style: TextStyle(
-                          color: hasGroup
-                              ? textColor?.withValues(alpha: 0.7)
-                              : colorScheme.outline,
-                          fontSize: 11,
-                        ),
-                      ),
-                    if (entry.kennel != null)
-                      TextSpan(
-                        text: '  ${entry.kennel}',
-                        style: TextStyle(
-                          color: hasGroup
-                              ? textColor?.withValues(alpha: 0.7)
-                              : colorScheme.outline,
-                          fontSize: 11,
-                        ),
-                      ),
-                    if (entry.region != null)
-                      TextSpan(
-                        text: '  ${entry.region}',
-                        style: TextStyle(
-                          color: hasGroup
-                              ? textColor?.withValues(alpha: 0.7)
-                              : colorScheme.outline,
-                          fontSize: 11,
-                        ),
-                      ),
-                  ],
-                ),
+              Text(
+                entry.dogName,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: textColor,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 2),
+              Text(
+                [
+                  if (entry.shelterId != null && entry.shelterId!.isNotEmpty)
+                    entry.shelterId!,
+                  if (entry.kennel != null) entry.kennel!,
+                  if (entry.region != null) entry.region!,
+                ].join(' · '),
+                style: TextStyle(
+                  color: hasGroup
+                      ? textColor?.withValues(alpha: 0.7)
+                      : colorScheme.outline,
+                  fontSize: 11,
                 ),
                 textAlign: TextAlign.center,
                 overflow: TextOverflow.ellipsis,

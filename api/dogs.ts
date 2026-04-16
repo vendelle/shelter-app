@@ -24,6 +24,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 			const rows = result.rows.map((row: Record<string, unknown>) => ({
 				...row,
 				region: (row.region as string) || getRegionForKennel(row.kennel as string),
+				region_override: (row.region as string) || null,
 			}));
 			return res.status(200).json(rows);
 		}
@@ -46,7 +47,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 				);
 			}
 			const row = result.rows[0];
-			return res.status(201).json({ ...row, region: (row.region as string) || getRegionForKennel(row.kennel) });
+			return res.status(201).json({ ...row, region: (row.region as string) || getRegionForKennel(row.kennel), region_override: (row.region as string) || null });
 		}
 
 		if (req.method === 'PATCH') {
@@ -70,7 +71,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 			);
 			if (result.rows.length === 0) return res.status(404).json({ error: 'Dog not found' });
 			const row = result.rows[0];
-			return res.status(200).json({ ...row, region: (row.region as string) || getRegionForKennel(row.kennel) });
+			return res.status(200).json({ ...row, region: (row.region as string) || getRegionForKennel(row.kennel), region_override: (row.region as string) || null });
 		}
 
 		if (req.method === 'PUT') {
@@ -85,7 +86,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 			);
 			if (result.rows.length === 0) return res.status(404).json({ error: 'Dog not found' });
 			const row = result.rows[0];
-			return res.status(200).json({ ...row, region: (row.region as string) || getRegionForKennel(row.kennel) });
+			return res.status(200).json({ ...row, region: (row.region as string) || getRegionForKennel(row.kennel), region_override: (row.region as string) || null });
 		}
 
 		res.setHeader('Allow', ['GET', 'POST', 'PATCH', 'PUT']);

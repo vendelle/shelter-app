@@ -77,12 +77,13 @@ class DogsTab extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => DogFormDialog(
-        onSave: (name, shelterId, kennel) async {
+        onSave: (name, shelterId, kennel, {String? region, bool clearRegion = false}) async {
           final repo = ref.read(manageRepositoryProvider);
           await repo.createDog(
             name: name,
             shelterId: shelterId,
             kennel: kennel,
+            region: region,
           );
           ref.invalidate(managedDogsProvider);
         },
@@ -103,30 +104,14 @@ class _DogListTile extends ConsumerWidget {
       subtitle: Text(
         [
           dog.shelterId,
-          'K: ${dog.kennel}',
+          dog.kennel,
           if (dog.region != null) dog.region!,
         ].join(' · '),
       ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (dog.region != null)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: Chip(
-                label: Text(
-                  dog.region!,
-                  style: const TextStyle(fontSize: 12),
-                ),
-                visualDensity: VisualDensity.compact,
-              ),
-            ),
-          IconButton(
-            icon: const Icon(Icons.edit_outlined),
-            tooltip: AppLocalizations.of(context)!.edit,
-            onPressed: () => _showEditDialog(context, ref),
-          ),
-        ],
+      trailing: IconButton(
+        icon: const Icon(Icons.edit_outlined),
+        tooltip: AppLocalizations.of(context)!.edit,
+        onPressed: () => _showEditDialog(context, ref),
       ),
     );
   }
@@ -138,14 +123,18 @@ class _DogListTile extends ConsumerWidget {
         initialName: dog.name,
         initialShelterId: dog.shelterId,
         initialKennel: dog.kennel,
+        initialRegion: dog.region,
+        initialRegionOverride: dog.regionOverride,
         isArchived: dog.archived,
-        onSave: (name, shelterId, kennel) async {
+        onSave: (name, shelterId, kennel, {String? region, bool clearRegion = false}) async {
           final repo = ref.read(manageRepositoryProvider);
           await repo.updateDog(
             id: dog.id,
             name: name,
             shelterId: shelterId,
             kennel: kennel,
+            region: region,
+            clearRegion: clearRegion,
           );
           ref.invalidate(managedDogsProvider);
         },

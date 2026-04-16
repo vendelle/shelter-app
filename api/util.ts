@@ -29,3 +29,8 @@ export async function hasColumn(table: string, column: string): Promise<boolean>
 	_columnCache.set(key, exists);
 	return exists;
 }
+
+/** Clear the column cache (useful for testing). */
+export function clearColumnCache(): void {
+	_columnCache.clear();
+}

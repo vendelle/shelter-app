@@ -120,5 +120,15 @@
 
   "kennelLabel": "Kennel: {kennel}",
 
+  "region": "Region",
+  "regionAuto": "Auto: {region}",
+  "@regionAuto": {
+    "placeholders": {
+      "region": { "type": "String" }
+    }
+  },
+  "overrideRegion": "Override",
+  "resetRegion": "Reset to auto",
+
   "languageToggle": "Change language"
 }

@@ -7,6 +7,8 @@ class DogFormDialog extends StatefulWidget {
     this.initialName,
     this.initialShelterId,
     this.initialKennel,
+    this.initialRegion,
+    this.initialRegionOverride,
     this.isArchived = false,
     required this.onSave,
     this.onArchiveToggle,
@@ -15,8 +17,10 @@ class DogFormDialog extends StatefulWidget {
   final String? initialName;
   final String? initialShelterId;
   final String? initialKennel;
+  final String? initialRegion;
+  final String? initialRegionOverride;
   final bool isArchived;
-  final Future<void> Function(String name, String shelterId, String kennel) onSave;
+  final Future<void> Function(String name, String shelterId, String kennel, {String? region, bool clearRegion}) onSave;
   final Future<void> Function()? onArchiveToggle;
 
   @override
@@ -28,7 +32,9 @@ class _DogFormDialogState extends State<DogFormDialog> {
   late final TextEditingController _nameController;
   late final TextEditingController _shelterIdController;
   late final TextEditingController _kennelController;
+  late final TextEditingController _regionController;
   bool _saving = false;
+  bool _regionOverrideMode = false;
 
   bool get _isEditing => widget.initialName != null;
 
@@ -40,6 +46,10 @@ class _DogFormDialogState extends State<DogFormDialog> {
         TextEditingController(text: widget.initialShelterId ?? '');
     _kennelController =
         TextEditingController(text: widget.initialKennel ?? '');
+    _regionController =
+        TextEditingController(text: widget.initialRegionOverride ?? '');
+    _regionOverrideMode = widget.initialRegionOverride != null &&
+        widget.initialRegionOverride!.isNotEmpty;
   }
 
   @override
@@ -47,12 +57,14 @@ class _DogFormDialogState extends State<DogFormDialog> {
     _nameController.dispose();
     _shelterIdController.dispose();
     _kennelController.dispose();
+    _regionController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
     return AlertDialog(
       title: Text(_isEditing ? l10n.editDog : l10n.addDogButton),
       content: Form(
@@ -86,6 +98,60 @@ class _DogFormDialogState extends State<DogFormDialog> {
               validator: (v) =>
                   v == null || v.trim().isEmpty ? l10n.kennelRequired : null,
             ),
+            const SizedBox(height: 12),
+            // Region display / override
+            if (!_regionOverrideMode)
+              Row(
+                children: [
+                  Expanded(
+                    child: InputDecorator(
+                      decoration: InputDecoration(
+                        labelText: l10n.region,
+                        border: const OutlineInputBorder(),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                      ),
+                      child: Text(
+                        widget.initialRegion ?? '—',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.outline,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: () => setState(() {
+                      _regionOverrideMode = true;
+                    }),
+                    child: Text(l10n.overrideRegion),
+                  ),
+                ],
+              )
+            else
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _regionController,
+                      decoration: InputDecoration(
+                        labelText: l10n.region,
+                        hintText: widget.initialRegion != null
+                            ? l10n.regionAuto(widget.initialRegion!)
+                            : null,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: () => setState(() {
+                      _regionOverrideMode = false;
+                      _regionController.clear();
+                    }),
+                    child: Text(l10n.resetRegion),
+                  ),
+                ],
+              ),
             if (_isEditing && widget.onArchiveToggle != null) ...[
               const SizedBox(height: 20),
               const Divider(),
@@ -149,6 +215,10 @@ class _DogFormDialogState extends State<DogFormDialog> {
         _nameController.text.trim(),
         _shelterIdController.text.trim(),
         _kennelController.text.trim(),
+        region: _regionOverrideMode && _regionController.text.trim().isNotEmpty
+            ? _regionController.text.trim()
+            : null,
+        clearRegion: !_regionOverrideMode && widget.initialRegionOverride != null,
       );
       if (mounted) Navigator.pop(context);
     } catch (e) {
