@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { handleError, setCorsHeaders } from './util';
+import { handleError, setCorsHeaders, hasColumn } from './util';
 import pool from './connection';
+import { getRegionForKennel } from './kennel-regions';
 
 /**
  * GET  /api/dayplan?date=YYYY-MM-DD  → walks + volunteer notes for that date
@@ -18,6 +19,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 				return res.status(400).json({ error: 'date query parameter is required' });
 			}
 
+			const hasRegionCol = await hasColumn('dogs', 'region');
+			const regionSelect = hasRegionCol ? 'd.region AS db_region,' : '';
+
 			// Walks with dog info
 			const walksRes = await pool.query(
 				`SELECT
@@ -25,6 +29,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 					w.dog_id,
 					d.name AS dog_name,
 					d.kennel,
+					d.shelterid,
+					${regionSelect}
 					w.volunteer_id,
 					v.first_name || ' ' || v.last_name AS volunteer_name,
 					w.notes AS dog_note,
@@ -51,10 +57,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 				]),
 			);
 
-			// Attach volunteer_note to each walk row
+			// Attach volunteer_note and computed region to each walk row
 			const rows = walksRes.rows.map(
 				(r: { volunteer_id: number; [key: string]: unknown }) => ({
 					...r,
+					region: (r.db_region as string) || getRegionForKennel(r.kennel as string),
+					db_region: undefined,
 					volunteer_note: volNotes.get(r.volunteer_id) || null,
 				}),
 			);

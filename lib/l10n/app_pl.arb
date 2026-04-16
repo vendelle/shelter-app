@@ -40,12 +40,12 @@
   "save": "Zapisz",
   "saved": "Zapisano",
   "noWalksPlannedYet": "Brak zaplanowanych spacerów",
-  "addFirstVolunteer": "Dodaj pierwszego wolontariusza",
-  "addVolunteer": "Dodaj wolontariusza",
-  "addVolunteerButton": "Dodaj wolontariusza",
-  "searchVolunteers": "Szukaj wolontariuszy...",
-  "allVolunteersAssigned": "Wszyscy wolontariusze są już przypisani",
-  "noVolunteersMatch": "Brak wolontariuszy pasujących do wyszukiwania",
+  "addFirstVolunteer": "Dodaj pierwszego wolo",
+  "addVolunteer": "Dodaj wolo",
+  "addVolunteerButton": "Dodaj wolo",
+  "searchVolunteers": "Szukaj wolo...",
+  "allVolunteersAssigned": "Wszyscy wolo są już przypisani",
+  "noVolunteersMatch": "Brak wolo pasujących do wyszukiwania",
   "addDog": "Dodaj psa",
   "selectDogs": "Wybierz psy",
   "tapToAddLongPress": "Dotknij, aby dodać • Przytrzymaj, aby wybrać kilka",
@@ -69,7 +69,7 @@
     }
   },
   "failedToLoadPlan": "Nie udało się załadować planu",
-  "nVolunteersNDogs": "{volunteers} wolontariuszy  •  {dogs}/{total} psów",
+  "nVolunteersNDogs": "{volunteers} wolo  •  {dogs}/{total} psów",
   "@nVolunteersNDogs": {
     "placeholders": {
       "volunteers": { "type": "int" },
@@ -101,8 +101,8 @@
 
   "active": "Aktywni",
   "inactive": "Nieaktywni",
-  "addVolunteerTitle": "Dodaj wolontariusza",
-  "editVolunteer": "Edytuj wolontariusza",
+  "addVolunteerTitle": "Dodaj wolo",
+  "editVolunteer": "Edytuj wolo",
   "firstName": "Imię",
   "lastName": "Nazwisko",
   "role": "Rola",
@@ -110,8 +110,8 @@
   "lastNameRequired": "Nazwisko jest wymagane",
   "markAsInactive": "Oznacz jako nieaktywnego",
   "reactivate": "Reaktywuj",
-  "noVolunteersFound": "Nie znaleziono wolontariuszy",
-  "noInactiveVolunteers": "Brak nieaktywnych wolontariuszy",
+  "noVolunteersFound": "Nie znaleziono wolo",
+  "noInactiveVolunteers": "Brak nieaktywnych wolo",
   "dogFamiliarity": "{name} — Znajomość psów",
   "@dogFamiliarity": {
     "placeholders": {
@@ -171,6 +171,18 @@
       "kennel": { "type": "String" }
     }
   },
+
+  "region": "Rejon",
+  "regionAuto": "Auto: {region}",
+  "@regionAuto": {
+    "placeholders": {
+      "region": { "type": "String" }
+    }
+  },
+  "overrideRegion": "Zmień",
+  "resetRegion": "Przywróć auto",
+  "showMore": "Pokaż szczegóły",
+  "showLess": "Ukryj szczegóły",
 
   "languageToggle": "Zmień język"
 }

@@ -286,24 +286,6 @@ class _DogPickerTile extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          if (dog.shelterId.isNotEmpty) ...[
-            const SizedBox(width: 6),
-            Text(
-              dog.shelterId,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: colorScheme.outline,
-              ),
-            ),
-          ],
-          if (dog.region != null) ...[
-            const SizedBox(width: 6),
-            Text(
-              dog.region!,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: colorScheme.outline,
-              ),
-            ),
-          ],
           if (showDot) ...[
             const SizedBox(width: 6),
             Container(

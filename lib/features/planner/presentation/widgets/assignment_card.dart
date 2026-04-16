@@ -14,6 +14,7 @@ class VolunteerColumn extends StatelessWidget {
     required this.onRemoveVolunteer,
     required this.onTapDog,
     required this.onEditVolunteerNote,
+    this.compact = true,
   });
 
   final VolunteerAssignment assignment;
@@ -22,6 +23,7 @@ class VolunteerColumn extends StatelessWidget {
   final VoidCallback onRemoveVolunteer;
   final ValueChanged<int> onTapDog;
   final VoidCallback onEditVolunteerNote;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -76,6 +78,7 @@ class VolunteerColumn extends StatelessWidget {
           // Dog rows
           ...assignment.dogs.map((entry) => _DogRow(
                 entry: entry,
+                compact: compact,
                 onRemove: () => onRemoveDog(entry.dogId),
                 onTap: () => onTapDog(entry.dogId),
               )),
@@ -109,11 +112,13 @@ class _DogRow extends StatelessWidget {
     required this.entry,
     required this.onRemove,
     required this.onTap,
+    this.compact = true,
   });
 
   final DogEntry entry;
   final VoidCallback onRemove;
   final VoidCallback onTap;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -151,48 +156,59 @@ class _DogRow extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(text: entry.dogName),
+              if (compact)
+                // Compact: single line — name + kennel
+                Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(text: entry.dogName),
+                      if (entry.kennel != null)
+                        TextSpan(
+                          text: '  ${entry.kennel}',
+                          style: TextStyle(
+                            color: hasGroup
+                                ? textColor?.withValues(alpha: 0.7)
+                                : colorScheme.outline,
+                            fontSize: 11,
+                          ),
+                        ),
+                    ],
+                  ),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: textColor,
+                  ),
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                )
+              else ...[
+                // Detailed: two lines
+                Text(
+                  entry.dogName,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: textColor,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  [
                     if (entry.shelterId != null && entry.shelterId!.isNotEmpty)
-                      TextSpan(
-                        text: '  ${entry.shelterId}',
-                        style: TextStyle(
-                          color: hasGroup
-                              ? textColor?.withValues(alpha: 0.7)
-                              : colorScheme.outline,
-                          fontSize: 11,
-                        ),
-                      ),
-                    if (entry.kennel != null)
-                      TextSpan(
-                        text: '  ${entry.kennel}',
-                        style: TextStyle(
-                          color: hasGroup
-                              ? textColor?.withValues(alpha: 0.7)
-                              : colorScheme.outline,
-                          fontSize: 11,
-                        ),
-                      ),
-                    if (entry.region != null)
-                      TextSpan(
-                        text: '  ${entry.region}',
-                        style: TextStyle(
-                          color: hasGroup
-                              ? textColor?.withValues(alpha: 0.7)
-                              : colorScheme.outline,
-                          fontSize: 11,
-                        ),
-                      ),
-                  ],
+                      entry.shelterId!,
+                    if (entry.kennel != null) entry.kennel!,
+                    if (entry.region != null) entry.region!,
+                  ].join(' · '),
+                  style: TextStyle(
+                    color: hasGroup
+                        ? textColor?.withValues(alpha: 0.7)
+                        : colorScheme.outline,
+                    fontSize: 11,
+                  ),
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: textColor,
-                ),
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
-              ),
+              ],
               if (entry.note != null && entry.note!.isNotEmpty)
                 Text(
                   entry.note!,

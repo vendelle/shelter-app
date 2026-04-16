@@ -4,6 +4,7 @@ class Dog {
   final String shelterId;
   final String kennel;
   final String? region;
+  final String? regionOverride;
   final bool archived;
 
   const Dog({
@@ -12,6 +13,7 @@ class Dog {
     required this.shelterId,
     required this.kennel,
     this.region,
+    this.regionOverride,
     this.archived = false,
   });
 
@@ -22,6 +24,7 @@ class Dog {
       shelterId: json['shelterid'] as String,
       kennel: json['kennel'] as String,
       region: json['region'] as String?,
+      regionOverride: json['region_override'] as String?,
       archived: json['archived'] as bool? ?? false,
     );
   }

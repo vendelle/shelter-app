@@ -19,6 +19,7 @@ class PlannerScreen extends ConsumerWidget {
     final plannerState = ref.watch(plannerNotifierProvider);
     final notifier = ref.read(plannerNotifierProvider.notifier);
     final savedAsync = ref.watch(savedAssignmentsProvider);
+    final compact = ref.watch(plannerCompactProvider);
 
     final hasModifications = savedAsync.whenOrNull(
           data: (saved) => plannerState.isModified(saved),
@@ -28,6 +29,16 @@ class PlannerScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(AppLocalizations.of(context)!.walkPlanner),
+        actions: [
+          IconButton(
+            icon: Icon(compact ? Icons.unfold_more : Icons.unfold_less),
+            tooltip: compact
+                ? AppLocalizations.of(context)!.showMore
+                : AppLocalizations.of(context)!.showLess,
+            onPressed: () =>
+                ref.read(plannerCompactProvider.notifier).state = !compact,
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -55,6 +66,7 @@ class PlannerScreen extends ConsumerWidget {
                         : _ColumnsGrid(
                             plannerState: plannerState,
                             ref: ref,
+                            compact: compact,
                             onAddVolunteer: () =>
                                 _addVolunteer(context, ref),
                           ),
@@ -91,11 +103,13 @@ class _ColumnsGrid extends StatelessWidget {
     required this.plannerState,
     required this.ref,
     required this.onAddVolunteer,
+    this.compact = true,
   });
 
   final PlannerState plannerState;
   final WidgetRef ref;
   final VoidCallback onAddVolunteer;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -124,6 +138,7 @@ class _ColumnsGrid extends StatelessWidget {
                   width: colWidth,
                   child: VolunteerColumn(
                     assignment: assignment,
+                    compact: compact,
                     onRemoveVolunteer: () =>
                         _confirmRemove(context, ref, assignment),
                     onRemoveDog: (dogId) => ref

@@ -47,4 +47,17 @@ describe('GET /api/health', () => {
 		expect(body.db_connected).toBe(false);
 		expect(body.error).toBe('ECONNREFUSED');
 	});
+
+	it('returns 500 when DB connection fails with non-Error value', async () => {
+		mockPool.query.mockRejectedValueOnce('string error');
+
+		await handler(mockRequest({ method: 'GET' }), res);
+
+		expect(res._status).toBe(500);
+		const body = res._body as Record<string, unknown>;
+		expect(body.status).toBe('error');
+		expect(body.db_connected).toBe(false);
+		expect(body.error).toBe('string error');
+		expect(body.error_stack).toBeUndefined();
+	});
 });
