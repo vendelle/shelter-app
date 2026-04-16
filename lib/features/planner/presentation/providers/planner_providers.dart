@@ -24,6 +24,12 @@ final selectedDateProvider = StateProvider<DateTime>((ref) {
 });
 
 // ---------------------------------------------------------------------------
+// Planner detail level toggle (compact by default)
+// ---------------------------------------------------------------------------
+
+final plannerCompactProvider = StateProvider<bool>((ref) => true);
+
+// ---------------------------------------------------------------------------
 // Saved assignments (from "server") for the selected date
 // ---------------------------------------------------------------------------
 

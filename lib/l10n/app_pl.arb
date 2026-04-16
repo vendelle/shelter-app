@@ -181,6 +181,8 @@
   },
   "overrideRegion": "Zmień",
   "resetRegion": "Przywróć auto",
+  "showMore": "Pokaż szczegóły",
+  "showLess": "Ukryj szczegóły",
 
   "languageToggle": "Zmień język"
 }

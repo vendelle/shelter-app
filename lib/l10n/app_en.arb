@@ -129,6 +129,8 @@
   },
   "overrideRegion": "Override",
   "resetRegion": "Reset to auto",
+  "showMore": "Show details",
+  "showLess": "Hide details",
 
   "languageToggle": "Change language"
 }
