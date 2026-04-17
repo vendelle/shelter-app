@@ -115,7 +115,10 @@ class _ColumnsGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final usable = constraints.maxWidth - 24; // 12px padding each side
+        final maxWidth = constraints.maxWidth.isFinite && constraints.maxWidth > 0
+            ? constraints.maxWidth
+            : MediaQuery.sizeOf(context).width;
+        final usable = (maxWidth - 24).clamp(120.0, 1400.0); // 12px padding each side
         const gap = 8.0;
         int cols;
         if (usable < 360) {
