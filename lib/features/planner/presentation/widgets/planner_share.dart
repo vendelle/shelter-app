@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:shelter_app/l10n/app_localizations.dart';
 
 import '../../domain/volunteer_assignment.dart';
 import 'group_colors.dart';
@@ -42,7 +43,7 @@ Future<void> showSharePlanSheet({
                 leading: const Icon(Icons.short_text_rounded),
                 title: Text(l10n == 'pl' ? 'Kompaktowy' : 'Compact'),
                 subtitle: Text(l10n == 'pl'
-                    ? 'Imię psa + numer kojca'
+                    ? 'Imię psa + numer boksu'
                     : 'Dog name + kennel number'),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
@@ -55,7 +56,7 @@ Future<void> showSharePlanSheet({
                     ? 'Pełne informacje'
                     : 'Full details'),
                 subtitle: Text(l10n == 'pl'
-                    ? 'Imię, ID, kojec, region'
+                    ? 'Imię, ID, boks, region'
                     : 'Name, ID, kennel, region'),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
@@ -150,7 +151,8 @@ Future<List<int>?> _renderWidgetToImage({
   );
 
   final pipelineOwner = PipelineOwner();
-  final buildOwner = BuildOwner(focusManager: FocusManager());
+  final focusManager = FocusManager();
+  final buildOwner = BuildOwner(focusManager: focusManager);
 
   final renderView = RenderView(
     view: view,
@@ -192,18 +194,22 @@ Future<List<int>?> _renderWidgetToImage({
     ),
   ).attachToRenderTree(buildOwner);
 
-  buildOwner.buildScope(rootElement);
-  pipelineOwner.flushLayout();
-  pipelineOwner.flushCompositingBits();
-  pipelineOwner.flushPaint();
+  try {
+    buildOwner.buildScope(rootElement);
+    pipelineOwner.flushLayout();
+    pipelineOwner.flushCompositingBits();
+    pipelineOwner.flushPaint();
 
-  final image = await repaintBoundary.toImage(pixelRatio: devicePixelRatio);
-  final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-  image.dispose();
+    final image = await repaintBoundary.toImage(pixelRatio: devicePixelRatio);
+    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    image.dispose();
 
-  buildOwner.finalizeTree();
+    buildOwner.finalizeTree();
 
-  return byteData?.buffer.asUint8List();
+    return byteData?.buffer.asUint8List();
+  } finally {
+    focusManager.dispose();
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -284,9 +290,14 @@ class PlannerShareLayout extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          // Summary footer
+          // Summary footer — localized volunteer/dog count
           Text(
-            '${assignments.length} wolo  •  $dogCount/$totalDogs ${locale == 'pl' ? 'psów' : 'dogs'}',
+            AppLocalizations.of(context)?.nVolunteersNDogs(
+                  assignments.length,
+                  dogCount,
+                  totalDogs,
+                ) ??
+                '${assignments.length} wolo  •  $dogCount/$totalDogs psów',
             style: theme.textTheme.bodySmall?.copyWith(
               color: colorScheme.outline,
             ),
