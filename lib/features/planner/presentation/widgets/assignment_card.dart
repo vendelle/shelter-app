@@ -15,6 +15,7 @@ class VolunteerColumn extends StatelessWidget {
     required this.onTapDog,
     required this.onEditVolunteerNote,
     this.compact = true,
+    this.overview = false,
   });
 
   final VolunteerAssignment assignment;
@@ -24,6 +25,7 @@ class VolunteerColumn extends StatelessWidget {
   final ValueChanged<int> onTapDog;
   final VoidCallback onEditVolunteerNote;
   final bool compact;
+  final bool overview;
 
   @override
   Widget build(BuildContext context) {
@@ -41,11 +43,14 @@ class VolunteerColumn extends StatelessWidget {
         children: [
           // Header row — volunteer name
           GestureDetector(
-            onTap: onEditVolunteerNote,
-            onLongPress: onRemoveVolunteer,
+            onTap: overview ? null : onEditVolunteerNote,
+            onLongPress: overview ? null : onRemoveVolunteer,
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              padding: EdgeInsets.symmetric(
+                horizontal: overview ? 6 : 10,
+                vertical: overview ? 5 : 8,
+              ),
               decoration: BoxDecoration(
                 color: colorScheme.secondaryContainer,
                 borderRadius:
@@ -55,9 +60,10 @@ class VolunteerColumn extends StatelessWidget {
                 children: [
                   Text(
                     assignment.volunteerName,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: (overview
+                            ? theme.textTheme.labelMedium
+                            : theme.textTheme.titleSmall)
+                        ?.copyWith(fontWeight: FontWeight.bold),
                     textAlign: TextAlign.center,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -79,11 +85,13 @@ class VolunteerColumn extends StatelessWidget {
           ...assignment.dogs.map((entry) => _DogRow(
                 entry: entry,
                 compact: compact,
+                overview: overview,
                 onRemove: () => onRemoveDog(entry.dogId),
                 onTap: () => onTapDog(entry.dogId),
               )),
-          // Add dog button
-          InkWell(
+          // Add dog button — hidden in overview mode
+          if (!overview)
+            InkWell(
             onTap: onAddDog,
             child: Container(
               width: double.infinity,
@@ -113,12 +121,14 @@ class _DogRow extends StatelessWidget {
     required this.onRemove,
     required this.onTap,
     this.compact = true,
+    this.overview = false,
   });
 
   final DogEntry entry;
   final VoidCallback onRemove;
   final VoidCallback onTap;
   final bool compact;
+  final bool overview;
 
   @override
   Widget build(BuildContext context) {
@@ -130,36 +140,26 @@ class _DogRow extends StatelessWidget {
         ? groupTextColor(entry.groupIndex, Theme.of(context).brightness)
         : null;
 
-    return Dismissible(
-      key: ValueKey(entry.dogId),
-      direction: DismissDirection.endToStart,
-      onDismissed: (_) => onRemove(),
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 12),
-        color: colorScheme.errorContainer,
-        child: Icon(Icons.delete_outline_rounded,
-            size: 18, color: colorScheme.onErrorContainer),
+    final dogContent = Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(
+        horizontal: overview ? 6 : 10,
+        vertical: overview ? 3 : 7,
       ),
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-          decoration: BoxDecoration(
-            color: hasGroup ? bgColor : null,
-            border: Border(
-              top: BorderSide(
-                  color: colorScheme.outlineVariant, width: 0.5),
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              if (compact)
-                // Compact: single line — name + kennel
-                Text.rich(
-                  TextSpan(
+      decoration: BoxDecoration(
+        color: hasGroup ? bgColor : null,
+        border: Border(
+          top: BorderSide(
+              color: colorScheme.outlineVariant, width: 0.5),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          if (compact)
+            // Compact: single line — name + kennel
+            Text.rich(
+              TextSpan(
                     children: [
                       TextSpan(text: entry.dogName),
                       if (entry.kennel != null)
@@ -224,7 +224,25 @@ class _DogRow extends StatelessWidget {
                 ),
             ],
           ),
-        ),
+        );
+
+    // In overview mode, skip Dismissible and InkWell for non-interactive look
+    if (overview) return dogContent;
+
+    return Dismissible(
+      key: ValueKey(entry.dogId),
+      direction: DismissDirection.endToStart,
+      onDismissed: (_) => onRemove(),
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 12),
+        color: colorScheme.errorContainer,
+        child: Icon(Icons.delete_outline_rounded,
+            size: 18, color: colorScheme.onErrorContainer),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        child: dogContent,
       ),
     );
   }

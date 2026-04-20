@@ -132,6 +132,7 @@
   "resetRegion": "Reset to auto",
   "showMore": "Show details",
   "showLess": "Hide details",
+  "overviewMode": "Overview",
 
   "languageToggle": "Change language"
 }

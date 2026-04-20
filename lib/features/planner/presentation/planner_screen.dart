@@ -20,7 +20,9 @@ class PlannerScreen extends ConsumerWidget {
     final plannerState = ref.watch(plannerNotifierProvider);
     final notifier = ref.read(plannerNotifierProvider.notifier);
     final savedAsync = ref.watch(savedAssignmentsProvider);
-    final compact = ref.watch(plannerCompactProvider);
+    final detailLevel = ref.watch(plannerDetailLevelProvider);
+    final isOverview = detailLevel == PlannerDetailLevel.overview;
+    final isCompact = detailLevel != PlannerDetailLevel.detailed;
 
     final hasModifications = savedAsync.whenOrNull(
           data: (saved) => plannerState.isModified(saved),
@@ -44,12 +46,27 @@ class PlannerScreen extends ConsumerWidget {
               ),
             ),
           IconButton(
-            icon: Icon(compact ? Icons.unfold_more : Icons.unfold_less),
-            tooltip: compact
-                ? AppLocalizations.of(context)!.showMore
-                : AppLocalizations.of(context)!.showLess,
-            onPressed: () =>
-                ref.read(plannerCompactProvider.notifier).state = !compact,
+            icon: Icon(switch (detailLevel) {
+              PlannerDetailLevel.compact => Icons.unfold_more,
+              PlannerDetailLevel.detailed => Icons.visibility_outlined,
+              PlannerDetailLevel.overview => Icons.unfold_less,
+            }),
+            tooltip: switch (detailLevel) {
+              PlannerDetailLevel.compact =>
+                AppLocalizations.of(context)!.showMore,
+              PlannerDetailLevel.detailed =>
+                AppLocalizations.of(context)!.overviewMode,
+              PlannerDetailLevel.overview =>
+                AppLocalizations.of(context)!.showLess,
+            },
+            onPressed: () {
+              final next = switch (detailLevel) {
+                PlannerDetailLevel.compact => PlannerDetailLevel.detailed,
+                PlannerDetailLevel.detailed => PlannerDetailLevel.overview,
+                PlannerDetailLevel.overview => PlannerDetailLevel.compact,
+              };
+              ref.read(plannerDetailLevelProvider.notifier).state = next;
+            },
           ),
         ],
       ),
@@ -79,7 +96,8 @@ class PlannerScreen extends ConsumerWidget {
                         : _ColumnsGrid(
                             plannerState: plannerState,
                             ref: ref,
-                            compact: compact,
+                            compact: isCompact,
+                            overview: isOverview,
                             onAddVolunteer: () =>
                                 _addVolunteer(context, ref),
                           ),
@@ -117,12 +135,14 @@ class _ColumnsGrid extends StatelessWidget {
     required this.ref,
     required this.onAddVolunteer,
     this.compact = true,
+    this.overview = false,
   });
 
   final PlannerState plannerState;
   final WidgetRef ref;
   final VoidCallback onAddVolunteer;
   final bool compact;
+  final bool overview;
 
   @override
   Widget build(BuildContext context) {
@@ -132,19 +152,28 @@ class _ColumnsGrid extends StatelessWidget {
             ? constraints.maxWidth
             : MediaQuery.sizeOf(context).width;
         final usable = (maxWidth - 24).clamp(120.0, 1400.0); // 12px padding each side
-        const gap = 8.0;
+        final gap = overview ? 6.0 : 8.0;
         int cols;
-        if (usable < 360) {
-          cols = 1;
-        } else if (usable < 540) {
-          cols = 2;
+        if (overview) {
+          // Overview: force more columns — min 2 always, aim for tighter fit
+          if (usable < 300) {
+            cols = 2;
+          } else {
+            cols = (usable / 150).floor().clamp(2, 8);
+          }
         } else {
-          cols = (usable / 180).floor().clamp(3, 8);
+          if (usable < 360) {
+            cols = 1;
+          } else if (usable < 540) {
+            cols = 2;
+          } else {
+            cols = (usable / 180).floor().clamp(3, 8);
+          }
         }
         final colWidth = (usable - (cols - 1) * gap) / cols;
 
         return SingleChildScrollView(
-          padding: const EdgeInsets.all(12),
+          padding: EdgeInsets.all(overview ? 8 : 12),
           child: Wrap(
             spacing: gap,
             runSpacing: gap,
@@ -155,6 +184,7 @@ class _ColumnsGrid extends StatelessWidget {
                   child: VolunteerColumn(
                     assignment: assignment,
                     compact: compact,
+                    overview: overview,
                     onRemoveVolunteer: () =>
                         _confirmRemove(context, ref, assignment),
                     onRemoveDog: (dogId) => ref
@@ -169,10 +199,11 @@ class _ColumnsGrid extends StatelessWidget {
                         _editVolunteerNote(context, ref, assignment),
                   ),
                 ),
-              SizedBox(
-                width: colWidth,
-                child: _AddVolunteerButton(onTap: onAddVolunteer),
-              ),
+              if (!overview)
+                SizedBox(
+                  width: colWidth,
+                  child: _AddVolunteerButton(onTap: onAddVolunteer),
+                ),
             ],
           ),
         );

@@ -24,10 +24,22 @@ final selectedDateProvider = StateProvider<DateTime>((ref) {
 });
 
 // ---------------------------------------------------------------------------
-// Planner detail level toggle (compact by default)
+// Planner detail level toggle
 // ---------------------------------------------------------------------------
 
-final plannerCompactProvider = StateProvider<bool>((ref) => true);
+/// Detail level for the planner view.
+enum PlannerDetailLevel {
+  /// Single-line dog rows (name + kennel). Default.
+  compact,
+  /// Two-line dog rows (name, then shelterId · kennel · region).
+  detailed,
+  /// Ultra-compact read-only-looking overview: hides add buttons, tighter
+  /// spacing, and attempts more columns. Useful for screenshots.
+  overview,
+}
+
+final plannerDetailLevelProvider =
+    StateProvider<PlannerDetailLevel>((ref) => PlannerDetailLevel.compact);
 
 // ---------------------------------------------------------------------------
 // Saved assignments (from "server") for the selected date
