@@ -25,9 +25,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Format: "Tue, Mar 31" (or "Today, Mar 31" if today)
+      // Format is now full: "Tuesday, March 31, 2026"
       // March 31, 2026 is a Tuesday
-      expect(find.textContaining('Mar 31'), findsOneWidget);
+      expect(find.textContaining('March 31, 2026'), findsOneWidget);
     });
 
     testWidgets('left arrow goes to previous day', (tester) async {

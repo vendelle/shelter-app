@@ -101,16 +101,23 @@ class DateNavigator extends StatelessWidget {
 
   String _formatDate(BuildContext context, DateTime d, bool isToday) {
     final l10n = AppLocalizations.of(context)!;
-    final weekdays = [
-      l10n.weekdayMon, l10n.weekdayTue, l10n.weekdayWed, l10n.weekdayThu,
-      l10n.weekdayFri, l10n.weekdaySat, l10n.weekdaySun,
+    final fullWeekdays = [
+      l10n.weekdayFullMon, l10n.weekdayFullTue, l10n.weekdayFullWed,
+      l10n.weekdayFullThu, l10n.weekdayFullFri, l10n.weekdayFullSat,
+      l10n.weekdayFullSun,
     ];
-    final months = [
-      l10n.monthJan, l10n.monthFeb, l10n.monthMar, l10n.monthApr,
-      l10n.monthMay, l10n.monthJun, l10n.monthJul, l10n.monthAug,
-      l10n.monthSep, l10n.monthOct, l10n.monthNov, l10n.monthDec,
+    final fullMonths = [
+      l10n.monthFullJan, l10n.monthFullFeb, l10n.monthFullMar,
+      l10n.monthFullApr, l10n.monthFullMay, l10n.monthFullJun,
+      l10n.monthFullJul, l10n.monthFullAug, l10n.monthFullSep,
+      l10n.monthFullOct, l10n.monthFullNov, l10n.monthFullDec,
     ];
-    final prefix = isToday ? '${l10n.today}, ' : '${weekdays[d.weekday - 1]}, ';
-    return '$prefix${months[d.month - 1]} ${d.day}';
+    final weekday = isToday ? l10n.today : fullWeekdays[d.weekday - 1];
+    return l10n.fullDateFormat(
+      weekday,
+      d.day,
+      fullMonths[d.month - 1],
+      d.year,
+    );
   }
 }
