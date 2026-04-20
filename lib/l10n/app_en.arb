@@ -18,6 +18,7 @@
   "retry": "Retry",
 
   "walkPlanner": "Walk Planner",
+  "sharePlan": "Share plan",
   "walkGroup": "Walk group",
   "solo": "Solo",
   "groupN": "Group {n}",

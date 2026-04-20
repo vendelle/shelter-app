@@ -8,6 +8,7 @@ import 'widgets/assignment_card.dart';
 import 'widgets/date_navigator.dart';
 import 'widgets/dog_picker.dart';
 import 'widgets/group_colors.dart';
+import 'widgets/planner_share.dart';
 import 'widgets/volunteer_picker.dart';
 
 class PlannerScreen extends ConsumerWidget {
@@ -30,6 +31,18 @@ class PlannerScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(AppLocalizations.of(context)!.walkPlanner),
         actions: [
+          if (plannerState.assignments.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.share_rounded),
+              tooltip: AppLocalizations.of(context)!.sharePlan,
+              onPressed: () => sharePlannerImage(
+                context: context,
+                date: date,
+                assignments: plannerState.assignments,
+                totalDogs:
+                    ref.read(totalDogCountProvider).valueOrNull ?? 0,
+              ),
+            ),
           IconButton(
             icon: Icon(compact ? Icons.unfold_more : Icons.unfold_less),
             tooltip: compact
