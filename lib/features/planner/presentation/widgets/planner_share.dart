@@ -8,32 +8,113 @@ import 'package:share_plus/share_plus.dart';
 import '../../domain/volunteer_assignment.dart';
 import 'group_colors.dart';
 
-/// Renders the planner assignments to an image and opens the native share sheet.
-/// On mobile web: opens the Web Share API (share to WhatsApp, etc.).
-/// On desktop web / unsupported: falls back to downloading the PNG.
-Future<void> sharePlannerImage({
+/// Whether the shared image shows compact (name + kennel) or full details.
+enum ShareDetailLevel { compact, full }
+
+/// Shows a bottom sheet to pick compact or full, then renders and shares.
+Future<void> showSharePlanSheet({
   required BuildContext context,
   required DateTime date,
   required List<VolunteerAssignment> assignments,
   required int totalDogs,
 }) async {
+  final l10n = Localizations.localeOf(context).languageCode;
+  final choice = await showModalBottomSheet<ShareDetailLevel>(
+    context: context,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+    ),
+    builder: (ctx) {
+      final theme = Theme.of(ctx);
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                l10n == 'pl' ? 'Udostępnij plan' : 'Share plan',
+                style: theme.textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                leading: const Icon(Icons.short_text_rounded),
+                title: Text(l10n == 'pl' ? 'Kompaktowy' : 'Compact'),
+                subtitle: Text(l10n == 'pl'
+                    ? 'Imię psa + numer kojca'
+                    : 'Dog name + kennel number'),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                onTap: () =>
+                    Navigator.pop(ctx, ShareDetailLevel.compact),
+              ),
+              ListTile(
+                leading: const Icon(Icons.format_list_bulleted_rounded),
+                title: Text(l10n == 'pl'
+                    ? 'Pełne informacje'
+                    : 'Full details'),
+                subtitle: Text(l10n == 'pl'
+                    ? 'Imię, ID, kojec, region'
+                    : 'Name, ID, kennel, region'),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                onTap: () => Navigator.pop(ctx, ShareDetailLevel.full),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+
+  if (choice == null || !context.mounted) return;
+
+  await sharePlannerImage(
+    context: context,
+    date: date,
+    assignments: assignments,
+    totalDogs: totalDogs,
+    detailed: choice == ShareDetailLevel.full,
+  );
+}
+
+/// Renders the planner assignments to an image and opens the native share sheet.
+Future<void> sharePlannerImage({
+  required BuildContext context,
+  required DateTime date,
+  required List<VolunteerAssignment> assignments,
+  required int totalDogs,
+  bool detailed = false,
+}) async {
   final theme = Theme.of(context);
   final brightness = theme.brightness;
+  final locale = Localizations.localeOf(context).languageCode;
 
-  // Build the static widget to render
+  // Determine columns + image width
+  final n = assignments.length;
+  final cols = n <= 3 ? n.clamp(1, 3) : 3;
+  final logicalWidth = switch (cols) {
+    1 => 420.0,
+    2 => 700.0,
+    _ => 1000.0,
+  };
+
   final widget = PlannerShareLayout(
     date: date,
     assignments: assignments,
     totalDogs: totalDogs,
     brightness: brightness,
+    detailed: detailed,
+    cols: cols,
+    imageWidth: logicalWidth,
+    locale: locale,
   );
 
-  // Render off-screen to an image
   final imageBytes = await _renderWidgetToImage(
     widget: widget,
     context: context,
-    // Width of the rendered plan — 800 logical px looks good on most screens
-    logicalWidth: 800,
+    logicalWidth: logicalWidth,
   );
 
   if (imageBytes == null || !context.mounted) return;
@@ -41,32 +122,54 @@ Future<void> sharePlannerImage({
   final dateStr =
       '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 
-  // Create XFile from bytes — works on both web and native (no file system needed)
   final xFile = XFile.fromData(
     Uint8List.fromList(imageBytes),
     mimeType: 'image/png',
     name: 'plan-$dateStr.png',
   );
 
-  // Share via native share sheet (mobile) or download (desktop web fallback)
   await Share.shareXFiles([xFile]);
 }
 
 /// Renders a widget off-screen to a PNG byte buffer.
+/// Lays out with unconstrained height so the full content is captured.
 Future<List<int>?> _renderWidgetToImage({
   required Widget widget,
   required BuildContext context,
   required double logicalWidth,
 }) async {
-  final repaintBoundary = RenderRepaintBoundary();
   final view = View.of(context);
   final devicePixelRatio = view.devicePixelRatio;
-
-  // Wrap in the app's theme so colors match
   final theme = Theme.of(context);
+
+  // Create the pipeline
+  final repaintBoundary = RenderRepaintBoundary();
+  final renderPositioned = RenderPositionedBox(
+    alignment: Alignment.topLeft,
+    child: repaintBoundary,
+  );
+
+  final pipelineOwner = PipelineOwner();
+  final buildOwner = BuildOwner(focusManager: FocusManager());
+
+  final renderView = RenderView(
+    view: view,
+    child: renderPositioned,
+    configuration: ViewConfiguration(
+      logicalConstraints: BoxConstraints(
+        minWidth: logicalWidth,
+        maxWidth: logicalWidth,
+        maxHeight: 8000, // generous max
+      ),
+      devicePixelRatio: devicePixelRatio,
+    ),
+  );
+  pipelineOwner.rootNode = renderView;
+  renderView.prepareInitialFrame();
+
   final themedWidget = MediaQuery(
     data: MediaQueryData(
-      size: Size(logicalWidth, 4000), // tall enough for any plan
+      size: Size(logicalWidth, 8000),
       devicePixelRatio: devicePixelRatio,
     ),
     child: Theme(
@@ -77,20 +180,6 @@ Future<List<int>?> _renderWidgetToImage({
       ),
     ),
   );
-
-  final pipelineOwner = PipelineOwner();
-  final buildOwner = BuildOwner(focusManager: FocusManager());
-
-  final renderView = RenderView(
-    view: view,
-    child: RenderPositionedBox(
-      alignment: Alignment.topLeft,
-      child: repaintBoundary,
-    ),
-    configuration: ViewConfiguration.fromView(view),
-  );
-  pipelineOwner.rootNode = renderView;
-  renderView.prepareInitialFrame();
 
   final rootElement = RenderObjectToWidgetAdapter<RenderBox>(
     container: repaintBoundary,
@@ -121,7 +210,7 @@ Future<List<int>?> _renderWidgetToImage({
 // Static layout widget for the share image
 // ---------------------------------------------------------------------------
 
-/// Visible for testing. Builds the static plan layout used for sharing.
+/// Builds the static plan layout used for sharing. Public for testing.
 class PlannerShareLayout extends StatelessWidget {
   const PlannerShareLayout({
     super.key,
@@ -129,12 +218,20 @@ class PlannerShareLayout extends StatelessWidget {
     required this.assignments,
     required this.totalDogs,
     required this.brightness,
+    this.detailed = false,
+    this.cols = 2,
+    this.imageWidth = 800,
+    this.locale = 'pl',
   });
 
   final DateTime date;
   final List<VolunteerAssignment> assignments;
   final int totalDogs;
   final Brightness brightness;
+  final bool detailed;
+  final int cols;
+  final double imageWidth;
+  final String locale;
 
   @override
   Widget build(BuildContext context) {
@@ -144,10 +241,11 @@ class PlannerShareLayout extends StatelessWidget {
     final dogCount =
         assignments.fold<int>(0, (sum, a) => sum + a.dogs.length);
 
-    // Calculate columns: aim for 2 on narrow, up to 4
-    const cols = 2;
     const gap = 6.0;
-    const padding = 10.0;
+    const padding = 12.0;
+    final colWidth = cols > 0
+        ? (imageWidth - 2 * padding - (cols - 1) * gap) / cols
+        : imageWidth - 2 * padding;
 
     return Container(
       color: colorScheme.surface,
@@ -160,7 +258,7 @@ class PlannerShareLayout extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Text(
-              formatShareDate(date),
+              formatShareDate(date, locale),
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: colorScheme.onSurface,
@@ -169,53 +267,76 @@ class PlannerShareLayout extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          // Volunteer grid
+          // Volunteer grid — max 3 per row
           Wrap(
             spacing: gap,
             runSpacing: gap,
             children: [
               for (final assignment in assignments)
                 SizedBox(
-                  width: (800 - 2 * padding - (cols - 1) * gap) / cols,
+                  width: colWidth,
                   child: _ShareVolunteerCard(
                     assignment: assignment,
                     brightness: brightness,
+                    detailed: detailed,
                   ),
                 ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           // Summary footer
           Text(
-            '${assignments.length} wolo  •  $dogCount/$totalDogs psów',
+            '${assignments.length} wolo  •  $dogCount/$totalDogs ${locale == 'pl' ? 'psów' : 'dogs'}',
             style: theme.textTheme.bodySmall?.copyWith(
               color: colorScheme.outline,
             ),
           ),
+          const SizedBox(height: 4),
         ],
       ),
     );
   }
 }
 
-/// Formats a date for the share image header.
-String formatShareDate(DateTime d) {
-  const weekdays = ['Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob', 'Niedz'];
-  const months = [
-    'Sty', 'Lut', 'Mar', 'Kwi', 'Maj', 'Cze',
-    'Lip', 'Sie', 'Wrz', 'Paź', 'Lis', 'Gru',
-  ];
-  return '${weekdays[d.weekday - 1]}, ${months[d.month - 1]} ${d.day}';
+/// Formats a date for the share image header in full form.
+/// PL: "Niedziela, 19 kwietnia 2026"
+/// EN: "Sunday, April 19, 2026"
+String formatShareDate(DateTime d, [String locale = 'pl']) {
+  if (locale == 'pl') {
+    const weekdays = [
+      'Poniedziałek', 'Wtorek', 'Środa', 'Czwartek',
+      'Piątek', 'Sobota', 'Niedziela',
+    ];
+    const months = [
+      'stycznia', 'lutego', 'marca', 'kwietnia',
+      'maja', 'czerwca', 'lipca', 'sierpnia',
+      'września', 'października', 'listopada', 'grudnia',
+    ];
+    return '${weekdays[d.weekday - 1]}, ${d.day} ${months[d.month - 1]} ${d.year}';
+  } else {
+    const weekdays = [
+      'Monday', 'Tuesday', 'Wednesday', 'Thursday',
+      'Friday', 'Saturday', 'Sunday',
+    ];
+    const months = [
+      'January', 'February', 'March', 'April',
+      'May', 'June', 'July', 'August',
+      'September', 'October', 'November', 'December',
+    ];
+    return '${weekdays[d.weekday - 1]}, ${months[d.month - 1]} ${d.day}, ${d.year}';
+  }
 }
 
 class _ShareVolunteerCard extends StatelessWidget {
   const _ShareVolunteerCard({
     required this.assignment,
     required this.brightness,
+    this.detailed = false,
   });
 
   final VolunteerAssignment assignment;
   final Brightness brightness;
+  final bool detailed;
 
   @override
   Widget build(BuildContext context) {
@@ -263,9 +384,13 @@ class _ShareVolunteerCard extends StatelessWidget {
               ],
             ),
           ),
-          // Dog rows — compact, no interactive elements
+          // Dog rows
           for (final dog in assignment.dogs)
-            _ShareDogRow(entry: dog, brightness: brightness),
+            _ShareDogRow(
+              entry: dog,
+              brightness: brightness,
+              detailed: detailed,
+            ),
         ],
       ),
     );
@@ -276,10 +401,12 @@ class _ShareDogRow extends StatelessWidget {
   const _ShareDogRow({
     required this.entry,
     required this.brightness,
+    this.detailed = false,
   });
 
   final DogEntry entry;
   final Brightness brightness;
+  final bool detailed;
 
   @override
   Widget build(BuildContext context) {
@@ -302,28 +429,58 @@ class _ShareDogRow extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text.rich(
-            TextSpan(
-              children: [
-                TextSpan(text: entry.dogName),
-                if (entry.kennel != null)
-                  TextSpan(
-                    text: '  ${entry.kennel}',
-                    style: TextStyle(
-                      color: hasGroup
-                          ? textColor?.withValues(alpha: 0.7)
-                          : colorScheme.outline,
-                      fontSize: 11,
+          if (!detailed)
+            // Compact: single line — name + kennel
+            Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(text: entry.dogName),
+                  if (entry.kennel != null)
+                    TextSpan(
+                      text: '  ${entry.kennel}',
+                      style: TextStyle(
+                        color: hasGroup
+                            ? textColor?.withValues(alpha: 0.7)
+                            : colorScheme.outline,
+                        fontSize: 11,
+                      ),
                     ),
-                  ),
-              ],
+                ],
+              ),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: textColor,
+              ),
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+            )
+          else ...[
+            // Full details: name, then shelterId · kennel · region
+            Text(
+              entry.dogName,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: textColor,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
             ),
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: textColor,
+            Text(
+              [
+                if (entry.shelterId != null && entry.shelterId!.isNotEmpty)
+                  entry.shelterId!,
+                if (entry.kennel != null) entry.kennel!,
+                if (entry.region != null) entry.region!,
+              ].join(' · '),
+              style: TextStyle(
+                color: hasGroup
+                    ? textColor?.withValues(alpha: 0.7)
+                    : colorScheme.outline,
+                fontSize: 11,
+              ),
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
             ),
-            textAlign: TextAlign.center,
-            overflow: TextOverflow.ellipsis,
-          ),
+          ],
           if (entry.note != null && entry.note!.isNotEmpty)
             Text(
               entry.note!,

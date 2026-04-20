@@ -5,31 +5,44 @@ import 'package:shelter_app/features/planner/presentation/widgets/planner_share.
 
 void main() {
   group('formatShareDate', () {
-    test('formats Monday correctly', () {
-      // 2026-04-20 is a Monday
+    test('formats Monday in Polish', () {
       final date = DateTime(2026, 4, 20);
-      expect(formatShareDate(date), 'Pon, Kwi 20');
+      expect(formatShareDate(date, 'pl'), 'Poniedziałek, 20 kwietnia 2026');
     });
 
-    test('formats Sunday correctly', () {
-      // 2026-04-19 is a Sunday
+    test('formats Sunday in Polish', () {
       final date = DateTime(2026, 4, 19);
-      expect(formatShareDate(date), 'Niedz, Kwi 19');
+      expect(formatShareDate(date, 'pl'), 'Niedziela, 19 kwietnia 2026');
     });
 
-    test('formats Saturday correctly', () {
+    test('formats Saturday in Polish', () {
       final date = DateTime(2026, 4, 18);
-      expect(formatShareDate(date), 'Sob, Kwi 18');
+      expect(formatShareDate(date, 'pl'), 'Sobota, 18 kwietnia 2026');
     });
 
-    test('formats January correctly', () {
+    test('formats January in Polish', () {
       final date = DateTime(2026, 1, 5);
-      expect(formatShareDate(date), 'Pon, Sty 5');
+      expect(formatShareDate(date, 'pl'), 'Poniedziałek, 5 stycznia 2026');
     });
 
-    test('formats December correctly', () {
+    test('formats December in Polish', () {
       final date = DateTime(2025, 12, 31);
-      expect(formatShareDate(date), 'Śr, Gru 31');
+      expect(formatShareDate(date, 'pl'), 'Środa, 31 grudnia 2025');
+    });
+
+    test('formats Monday in English', () {
+      final date = DateTime(2026, 4, 20);
+      expect(formatShareDate(date, 'en'), 'Monday, April 20, 2026');
+    });
+
+    test('formats Sunday in English', () {
+      final date = DateTime(2026, 4, 19);
+      expect(formatShareDate(date, 'en'), 'Sunday, April 19, 2026');
+    });
+
+    test('defaults to Polish', () {
+      final date = DateTime(2026, 4, 19);
+      expect(formatShareDate(date), 'Niedziela, 19 kwietnia 2026');
     });
   });
 
@@ -44,6 +57,8 @@ void main() {
             dogId: 11,
             dogName: 'Luna',
             kennel: 'B3',
+            shelterId: '186',
+            region: 'D',
             groupIndex: 1,
             note: 'shy dog',
           ),
@@ -54,7 +69,13 @@ void main() {
         volunteerId: 2,
         volunteerName: 'Jan Nowak',
         dogs: [
-          const DogEntry(dogId: 12, dogName: 'Rex', kennel: 'C2'),
+          const DogEntry(
+            dogId: 12,
+            dogName: 'Rex',
+            kennel: 'C2',
+            shelterId: '524',
+            region: 'A',
+          ),
         ],
       ),
     ];
@@ -64,6 +85,9 @@ void main() {
       DateTime? date,
       int totalDogs = 20,
       Brightness brightness = Brightness.dark,
+      bool detailed = false,
+      int cols = 2,
+      double imageWidth = 700,
     }) {
       return MaterialApp(
         theme: brightness == Brightness.dark
@@ -76,16 +100,19 @@ void main() {
               assignments: assignments ?? testAssignments,
               totalDogs: totalDogs,
               brightness: brightness,
+              detailed: detailed,
+              cols: cols,
+              imageWidth: imageWidth,
             ),
           ),
         ),
       );
     }
 
-    testWidgets('displays date header', (tester) async {
+    testWidgets('displays full date header', (tester) async {
       await tester.pumpWidget(buildSubject());
 
-      expect(find.text('Pon, Kwi 20'), findsOneWidget);
+      expect(find.text('Poniedziałek, 20 kwietnia 2026'), findsOneWidget);
     });
 
     testWidgets('displays all volunteer names', (tester) async {
@@ -101,7 +128,7 @@ void main() {
       expect(find.text('10-13; 2 psy'), findsOneWidget);
     });
 
-    testWidgets('displays all dog names', (tester) async {
+    testWidgets('displays all dog names in compact mode', (tester) async {
       await tester.pumpWidget(buildSubject());
 
       expect(find.textContaining('Burek'), findsOneWidget);
@@ -115,26 +142,22 @@ void main() {
       expect(find.text('shy dog'), findsOneWidget);
     });
 
-    testWidgets('displays summary with volunteer and dog counts',
-        (tester) async {
+    testWidgets('displays summary with counts', (tester) async {
       await tester.pumpWidget(buildSubject());
 
-      // 2 volunteers, 3 dogs assigned, 20 total
       expect(find.text('2 wolo  •  3/20 psów'), findsOneWidget);
     });
 
     testWidgets('does not display add buttons', (tester) async {
       await tester.pumpWidget(buildSubject());
 
-      // No "+" icon for adding dogs/volunteers
       expect(find.byIcon(Icons.add_rounded), findsNothing);
       expect(find.byIcon(Icons.person_add_outlined), findsNothing);
     });
 
-    testWidgets('displays kennel numbers', (tester) async {
+    testWidgets('compact mode shows kennel inline', (tester) async {
       await tester.pumpWidget(buildSubject());
 
-      // Kennel shown as secondary text alongside dog name
       expect(find.textContaining('A1'), findsOneWidget);
       expect(find.textContaining('B3'), findsOneWidget);
       expect(find.textContaining('C2'), findsOneWidget);
@@ -152,6 +175,26 @@ void main() {
 
       expect(find.text('Anna Kowalska'), findsOneWidget);
       expect(find.textContaining('Burek'), findsOneWidget);
+    });
+
+    group('detailed mode', () {
+      testWidgets('shows full dog info on two lines', (tester) async {
+        await tester.pumpWidget(buildSubject(detailed: true));
+
+        // Dog names on their own line
+        expect(find.text('Luna'), findsOneWidget);
+        expect(find.text('Rex'), findsOneWidget);
+        // Detail line with shelterId · kennel · region
+        expect(find.text('186 · B3 · D'), findsOneWidget);
+        expect(find.text('524 · C2 · A'), findsOneWidget);
+      });
+
+      testWidgets('still shows notes', (tester) async {
+        await tester.pumpWidget(buildSubject(detailed: true));
+
+        expect(find.text('shy dog'), findsOneWidget);
+        expect(find.text('10-13; 2 psy'), findsOneWidget);
+      });
     });
   });
 }
