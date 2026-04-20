@@ -37,12 +37,13 @@ class PlannerScreen extends ConsumerWidget {
             IconButton(
               icon: const Icon(Icons.share_rounded),
               tooltip: AppLocalizations.of(context)!.sharePlan,
-              onPressed: () => showSharePlanSheet(
+              onPressed: () => sharePlannerImage(
                 context: context,
                 date: date,
                 assignments: plannerState.assignments,
                 totalDogs:
                     ref.read(totalDogCountProvider).valueOrNull ?? 0,
+                detailed: detailLevel == PlannerDetailLevel.detailed,
               ),
             ),
           IconButton(

@@ -9,78 +9,10 @@ import 'package:shelter_app/l10n/app_localizations.dart';
 import '../../domain/volunteer_assignment.dart';
 import 'group_colors.dart';
 
-/// Whether the shared image shows compact (name + kennel) or full details.
-enum ShareDetailLevel { compact, full }
-
-/// Shows a bottom sheet to pick compact or full, then renders and shares.
-Future<void> showSharePlanSheet({
-  required BuildContext context,
-  required DateTime date,
-  required List<VolunteerAssignment> assignments,
-  required int totalDogs,
-}) async {
-  final l10n = Localizations.localeOf(context).languageCode;
-  final choice = await showModalBottomSheet<ShareDetailLevel>(
-    context: context,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-    ),
-    builder: (ctx) {
-      final theme = Theme.of(ctx);
-      return SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                l10n == 'pl' ? 'Udostępnij plan' : 'Share plan',
-                style: theme.textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 12),
-              ListTile(
-                leading: const Icon(Icons.short_text_rounded),
-                title: Text(l10n == 'pl' ? 'Kompaktowy' : 'Compact'),
-                subtitle: Text(l10n == 'pl'
-                    ? 'Imię psa + numer boksu'
-                    : 'Dog name + kennel number'),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                onTap: () =>
-                    Navigator.pop(ctx, ShareDetailLevel.compact),
-              ),
-              ListTile(
-                leading: const Icon(Icons.format_list_bulleted_rounded),
-                title: Text(l10n == 'pl'
-                    ? 'Pełne informacje'
-                    : 'Full details'),
-                subtitle: Text(l10n == 'pl'
-                    ? 'Imię, ID, boks, region'
-                    : 'Name, ID, kennel, region'),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                onTap: () => Navigator.pop(ctx, ShareDetailLevel.full),
-              ),
-            ],
-          ),
-        ),
-      );
-    },
-  );
-
-  if (choice == null || !context.mounted) return;
-
-  await sharePlannerImage(
-    context: context,
-    date: date,
-    assignments: assignments,
-    totalDogs: totalDogs,
-    detailed: choice == ShareDetailLevel.full,
-  );
-}
+/// Renders the planner assignments to an image based on current detail level.
 
 /// Renders the planner assignments to an image and opens the native share sheet.
+/// If [detailed] is true, shares full dog info (name, ID, kennel, region).
 Future<void> sharePlannerImage({
   required BuildContext context,
   required DateTime date,
@@ -297,7 +229,12 @@ class PlannerShareLayout extends StatelessWidget {
                   dogCount,
                   totalDogs,
                 ) ??
-                '${assignments.length} wolo  •  $dogCount/$totalDogs psów',
+                _localizedSummaryFallback(
+                  assignments.length,
+                  dogCount,
+                  totalDogs,
+                  locale,
+                ),
             style: theme.textTheme.bodySmall?.copyWith(
               color: colorScheme.outline,
             ),
@@ -306,6 +243,20 @@ class PlannerShareLayout extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+/// Fallback summary text when AppLocalizations is unavailable.
+String _localizedSummaryFallback(
+  int volunteers,
+  int dogs,
+  int totalDogs,
+  String locale,
+) {
+  if (locale == 'pl') {
+    return '$volunteers wolo  •  $dogs/$totalDogs psów';
+  } else {
+    return '$volunteers volunteer${volunteers == 1 ? '' : 's'}  •  $dogs/$totalDogs dog${totalDogs == 1 ? '' : 's'}';
   }
 }
 
