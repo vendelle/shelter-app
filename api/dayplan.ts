@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { handleError, setCorsHeaders, hasColumn } from './util';
 import pool from './connection';
 import { getRegionForKennel } from './kennel-regions';
+import { requireAuth } from './auth-middleware';
 
 /**
  * GET  /api/dayplan?date=YYYY-MM-DD  → walks + volunteer notes for that date
@@ -71,6 +72,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 		}
 
 		if (req.method === 'POST') {
+			const user = await requireAuth(req, res);
+			if (!user) return;
+
 			const { walk_date, walks, volunteer_notes } = req.body;
 
 			if (!walk_date || !Array.isArray(walks)) {
