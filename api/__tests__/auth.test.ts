@@ -2,14 +2,14 @@ import { createMockPool, mockRequest, mockResponse, type MockPool, type MockResp
 
 let mockPool: MockPool;
 
-jest.mock('../connection', () => {
+jest.mock('../_lib/connection', () => {
 	mockPool = createMockPool();
 	return { __esModule: true, default: mockPool, getPool: () => mockPool };
 });
 
 // Mock firebase-token verification
 const mockVerifyFirebaseToken = jest.fn();
-jest.mock('../firebase-token', () => ({
+jest.mock('../_lib/firebase-token', () => ({
 	verifyFirebaseToken: (...args: unknown[]) => mockVerifyFirebaseToken(...args),
 }));
 

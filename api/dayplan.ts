@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { handleError, setCorsHeaders, hasColumn } from './util';
-import pool from './connection';
-import { getRegionForKennel } from './kennel-regions';
-import { requireAuth } from './auth-middleware';
+import { handleError, setCorsHeaders, hasColumn } from './_lib/util';
+import pool from './_lib/connection';
+import { getRegionForKennel } from './_lib/kennel-regions';
+import { requireAuth } from './_lib/auth-middleware';
 
 /**
  * GET  /api/dayplan?date=YYYY-MM-DD  → walks + volunteer notes for that date

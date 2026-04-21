@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { handleError, setCorsHeaders } from './util';
-import pool from './connection';
-import { requireAuth, type AuthUser } from './auth-middleware';
+import { handleError, setCorsHeaders } from './_lib/util';
+import pool from './_lib/connection';
+import { requireAuth, type AuthUser } from './_lib/auth-middleware';
 
 /** Check if the authenticated user is allowed to modify this volunteer's preferences. */
 function canEditFamiliarity(user: AuthUser, volunteerId: number): boolean {

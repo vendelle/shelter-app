@@ -74,8 +74,6 @@ lib/
         └── presentation/     # Shared providers (volunteer list)
 
 api/                          # Vercel serverless functions
-├── connection.ts             # Lazy PostgreSQL pool
-├── util.ts                   # CORS headers, error handling
 ├── dogs.ts                   # GET /api/dogs
 ├── volunteers.ts             # GET /api/volunteers
 ├── dogs-walks.ts             # GET /api/dogs-walks (with walk counts)
@@ -83,10 +81,16 @@ api/                          # Vercel serverless functions
 ├── health.ts                 # GET /api/health (diagnostics)
 ├── auth.ts                   # POST/GET /api/auth (login, registration)
 ├── users.ts                  # GET/PATCH /api/users (user management)
-├── firebase-token.ts         # Lightweight Firebase ID token verification
-├── auth-middleware.ts        # Auth guards (getAuthUser, requireAuth, requireRole)
+├── familiarity.ts            # GET/PUT/DELETE /api/familiarity (dog preferences)
+├── walks.ts                  # GET/POST/DELETE /api/walks
+├── _lib/                     # Shared utilities (excluded from Vercel deployment)
+│   ├── connection.ts         # Lazy PostgreSQL pool
+│   ├── util.ts               # CORS headers, error handling
+│   ├── auth-middleware.ts    # Auth guards (getAuthUser, requireAuth, requireRole)
+│   ├── firebase-token.ts    # Lightweight Firebase ID token verification
+│   └── kennel-regions.ts    # Kennel→region mapping
 ├── __tests__/                # Jest tests (172 tests, 94% statement coverage)
-└── migrations/               # SQL migration scripts
+└── _migrations/              # SQL migration scripts
 ```
 
 ## Getting Started

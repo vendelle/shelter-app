@@ -7,10 +7,10 @@
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { handleError, setCorsHeaders } from './util';
-import pool from './connection';
-import { verifyFirebaseToken } from './firebase-token';
-import { requireAuth, type AuthUser } from './auth-middleware';
+import { handleError, setCorsHeaders } from './_lib/util';
+import pool from './_lib/connection';
+import { verifyFirebaseToken } from './_lib/firebase-token';
+import { requireAuth, type AuthUser } from './_lib/auth-middleware';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
 	setCorsHeaders(res);

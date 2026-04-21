@@ -368,3 +368,57 @@ CREATE TABLE audit_log (
 - "Last edited by [Name]" labels in the UI
 - Change history per dog/volunteer/plan
 - Rollback capability (JSONB stores old values)
+
+---
+
+## API File Structure: `_lib/` Convention for Vercel Hobby Plan
+
+**Decision**: Move non-endpoint utility files from `api/` to `api/_lib/`. Move migration scripts to `api/_migrations/`.
+
+**Why?**
+- Vercel Hobby plan allows **max 12 serverless functions** per deployment.
+- Vercel treats every `.ts` file in `api/` as a serverless function — even utility modules that don't export a handler.
+- With 9 endpoints + 5 utility modules = 14 files, we exceeded the limit.
+- Vercel's own convention: directories prefixed with `_` inside `api/` are **excluded** from function deployment but remain importable.
+
+**What moved to `api/_lib/`:**
+- `connection.ts` — Database pool
+- `util.ts` — CORS headers, error handling
+- `auth-middleware.ts` — Auth guards
+- `firebase-token.ts` — Token verification
+- `kennel-regions.ts` — Kennel→region mapping
+
+**Result:** 9 deployed functions, 3 slots remaining for future endpoints.
+
+**Why not consolidate endpoints into fewer files?**
+- Each file is a clean REST resource boundary (dogs, walks, volunteers, etc.).
+- Vercel provides per-endpoint monitoring, logs, and cold-start isolation.
+- `_lib/` solves the problem without sacrificing code clarity.
+
+**Why not switch to Express/Fastify with a single function?**
+- Adds a framework dependency and loses Vercel's zero-config benefits.
+- Overkill for 9 endpoints.
+- Would need revisiting if we ever exceed 12 real endpoints.
+
+---
+
+## Demo Mode: Recruiter Showcase Environment
+
+**Decision**: Add a `FLUTTER_DEMO_MODE` compile-time flag that auto-logs in a demo user on a separate Vercel deployment.
+
+**Why?**
+- Recruiters should experience the full app without Google Sign-In friction.
+- The demo environment uses a separate database — edits are safe and disposable.
+- A compile-time flag means zero runtime cost in production (dead code elimination).
+
+**How it works:**
+1. Demo Vercel deployment has `FLUTTER_DEMO_MODE=true` as a build env var.
+2. Flutter app detects the flag at compile time (`String.fromEnvironment`).
+3. On load, calls `GET /api/auth/demo` instead of Firebase Sign-In.
+4. Backend returns the pre-created demo user from the demo database.
+5. App bar shows an orange "DEMO MODE" badge for clarity.
+
+**Why not use a test account with real Google Sign-In?**
+- Requires the recruiter to have a Google account and go through OAuth flow.
+- Adds friction that has nothing to do with evaluating the app.
+- Demo mode is one fewer step between "click link" and "see the app working".

@@ -1,4 +1,4 @@
-import { verifyFirebaseToken, _resetCertCache } from '../firebase-token';
+import { verifyFirebaseToken, _resetCertCache } from '../_lib/firebase-token';
 import { createPublicKey, generateKeyPairSync, sign as cryptoSign } from 'crypto';
 
 // ---------------------------------------------------------------------------

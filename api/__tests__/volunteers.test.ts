@@ -2,7 +2,7 @@ import { createMockPool, mockRequest, mockResponse, type MockPool, type MockResp
 
 let mockPool: MockPool;
 
-jest.mock('../connection', () => {
+jest.mock('../_lib/connection', () => {
 	mockPool = createMockPool();
 	return {
 		__esModule: true,
@@ -12,7 +12,7 @@ jest.mock('../connection', () => {
 });
 
 // Mock auth middleware to always allow (existing tests focus on business logic)
-jest.mock('../auth-middleware', () => ({
+jest.mock('../_lib/auth-middleware', () => ({
 	requireRole: jest.fn().mockResolvedValue({
 		id: 1, firebaseUid: 'test-uid', email: 'admin@test.com',
 		displayName: 'Admin', photoUrl: null, volunteerId: null, role: 'admin',
