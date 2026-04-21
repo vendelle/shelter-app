@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:shelter_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../auth/presentation/auth_providers.dart';
+import '../../auth/presentation/login_screen.dart';
 import '../domain/volunteer_assignment.dart';
 import 'providers/planner_providers.dart';
 import 'widgets/assignment_card.dart';
@@ -111,7 +113,16 @@ class PlannerScreen extends ConsumerWidget {
             assignmentCount: plannerState.assignments.length,
             dogCount: plannerState.assignedDogIds.length,
             totalDogs: ref.watch(totalDogCountProvider).valueOrNull ?? 0,
-            onSave: () => notifier.save(),
+            onSave: () {
+              final user = ref.read(appUserProvider).valueOrNull;
+              if (user == null) {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                );
+                return;
+              }
+              notifier.save();
+            },
           ),
         ],
       ),

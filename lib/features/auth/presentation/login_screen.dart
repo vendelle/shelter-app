@@ -4,7 +4,6 @@ import 'package:shelter_app/l10n/app_localizations.dart';
 
 import '../../shared/domain/volunteer.dart';
 import '../../shared/presentation/providers/volunteer_providers.dart';
-import '../domain/app_user.dart';
 import 'auth_providers.dart';
 
 /// Login screen with Google Sign-In and optional volunteer linking.
@@ -65,7 +64,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         setState(() => _selectedVolunteerId = id),
                   ),
                   loading: () => const CircularProgressIndicator(),
-                  error: (_, __) => Text(l10n.loginVolunteerLoadError),
+                  error: (_, _) => Text(l10n.loginVolunteerLoadError),
                 ),
 
                 const SizedBox(height: 24),
@@ -131,7 +130,7 @@ class _VolunteerPicker extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return DropdownButtonFormField<int?>(
-      value: selectedId,
+      initialValue: selectedId,
       decoration: InputDecoration(
         labelText: l10n.loginSelectVolunteer,
         helperText: l10n.loginVolunteerHelper,

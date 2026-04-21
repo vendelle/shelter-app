@@ -4,6 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/locale/locale_provider.dart';
 import '../../../core/theme/theme_providers.dart';
+import '../../auth/presentation/auth_providers.dart';
+import '../../auth/presentation/login_screen.dart';
+import 'user_management_screen.dart';
 import 'widgets/dogs_tab.dart';
 import 'widgets/volunteers_tab.dart';
 
@@ -18,13 +21,34 @@ class ManageScreen extends ConsumerWidget {
     final locale = ref.watch(localeProvider);
     final currentLang = locale?.languageCode ??
         Localizations.localeOf(context).languageCode;
+    final appUser = ref.watch(appUserProvider);
+    final user = appUser.valueOrNull;
+    final isSuperAdmin = user?.isSuperAdmin ?? false;
 
     return DefaultTabController(
-      length: 2,
+      length: isSuperAdmin ? 3 : 2,
       child: Scaffold(
         appBar: AppBar(
           title: Text(l10n.manage),
           actions: [
+            // Auth action
+            if (user != null)
+              IconButton(
+                icon: const Icon(Icons.logout),
+                tooltip: l10n.signOut,
+                onPressed: () =>
+                    ref.read(appUserProvider.notifier).signOut(),
+              )
+            else
+              IconButton(
+                icon: const Icon(Icons.login),
+                tooltip: l10n.signIn,
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const LoginScreen(),
+                  ),
+                ),
+              ),
             IconButton(
               icon: Text(
                 currentLang == 'pl' ? '🇵🇱' : '🇬🇧',
@@ -53,13 +77,16 @@ class ManageScreen extends ConsumerWidget {
             tabs: [
               Tab(icon: const Icon(Icons.pets), text: l10n.dogsTitleTab),
               Tab(icon: const Icon(Icons.people), text: l10n.volunteersTab),
+              if (isSuperAdmin)
+                Tab(icon: const Icon(Icons.admin_panel_settings), text: l10n.usersTab),
             ],
           ),
         ),
-        body: const TabBarView(
+        body: TabBarView(
           children: [
-            DogsTab(),
-            VolunteersTab(),
+            const DogsTab(),
+            const VolunteersTab(),
+            if (isSuperAdmin) const UserManagementScreen(),
           ],
         ),
       ),

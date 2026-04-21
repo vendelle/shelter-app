@@ -214,5 +214,31 @@
   "showLess": "Ukryj szczegóły",
   "overviewMode": "Podgląd",
 
-  "languageToggle": "Zmień język"
+  "languageToggle": "Zmień język",
+
+  "loginSubtitle": "Zaloguj się, aby zarządzać psami, wolontariuszami i swoimi preferencjami",
+  "loginWithGoogle": "Zaloguj się przez Google",
+  "loginContinueAsGuest": "Kontynuuj jako gość",
+  "loginSelectVolunteer": "Jestem wolontariuszem",
+  "loginVolunteerHelper": "Połącz swoje konto z profilem wolontariusza",
+  "loginNotAVolunteer": "Nie łącz z wolontariuszem",
+  "loginVolunteerLoadError": "Nie udało się załadować listy wolontariuszy",
+  "loginError": "Logowanie nie powiodło się. Spróbuj ponownie.",
+  "loginPendingTitle": "Konto oczekuje na zatwierdzenie",
+  "loginPendingMessage": "Twoje konto zostało utworzone. Administrator musi je zatwierdzić, zanim uzyskasz pełny dostęp.",
+
+  "signIn": "Zaloguj się",
+  "signOut": "Wyloguj się",
+  "signedInAs": "Zalogowany jako {name}",
+
+  "userManagement": "Zarządzanie użytkownikami",
+  "pendingApproval": "Oczekujące",
+  "approve": "Zatwierdź",
+  "userRolePending": "Oczekuje na zatwierdzenie",
+  "userRoleVolunteer": "Wolontariusz",
+  "userRoleAdmin": "Admin",
+  "userRoleSuperAdmin": "Super Admin",
+  "changeRole": "Zmień rolę",
+  "noUsersFound": "Brak użytkowników",
+  "usersTab": "Użytkownicy"
 }
