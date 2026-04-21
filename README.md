@@ -19,6 +19,9 @@ A full-stack web application for managing daily dog walk schedules at an animal 
 
 - **Walk Planner** — Assign dogs to volunteers for a specific date. Supports group walks (color-coded), per-dog notes, and per-volunteer notes.
 - **Walk Overview** — Dashboard showing all dogs with this-week and last-week walk counts, sorted by urgency.
+- **Authentication** — Google Sign-In via Firebase Auth. New users start as `pending` and must be approved by a super admin.
+- **Role-Based Access** — 4-tier permission system: `pending` → `volunteer` → `admin` → `super_admin`.
+- **User Management** — Super admins approve accounts, assign roles, and link users to volunteer profiles.
 - **Responsive Layout** — 1-column on mobile, 2+ columns on wider screens using `Wrap`.
 
 ## Localization (i18n)
@@ -46,9 +49,16 @@ lib/
 ├── app.dart                  # MaterialApp + theme + router
 ├── core/
 │   ├── api/                  # ApiClient, providers
+│   ├── firebase/             # Firebase config + initialization
 │   └── theme/                # App theme
 ├── routing/                  # go_router config (3 tabs)
 └── features/
+    ├── auth/                 # Authentication
+    │   ├── data/             # AuthRepository
+    │   ├── domain/           # AppUser model, UserRole enum
+    │   └── presentation/     # LoginScreen, auth providers
+    ├── manage/               # Dog/volunteer/user management
+    │   └── presentation/     # ManageScreen, UserManagementScreen
     ├── overview/             # Walk dashboard
     │   ├── data/             # ApiOverviewRepository
     │   ├── domain/           # DogWalkSummary model
@@ -61,6 +71,7 @@ lib/
     │       └── widgets/      # VolunteerColumn, DogPicker, DateNavigator
     └── shared/
         └── domain/           # Volunteer model
+        └── presentation/     # Shared providers (volunteer list)
 
 api/                          # Vercel serverless functions
 ├── connection.ts             # Lazy PostgreSQL pool
@@ -70,7 +81,11 @@ api/                          # Vercel serverless functions
 ├── dogs-walks.ts             # GET /api/dogs-walks (with walk counts)
 ├── dayplan.ts                # GET/POST /api/dayplan (full planner state)
 ├── health.ts                 # GET /api/health (diagnostics)
-├── __tests__/                # Jest tests (41 tests, 100% line coverage)
+├── auth.ts                   # POST/GET /api/auth (login, registration)
+├── users.ts                  # GET/PATCH /api/users (user management)
+├── firebase-token.ts         # Lightweight Firebase ID token verification
+├── auth-middleware.ts        # Auth guards (getAuthUser, requireAuth, requireRole)
+├── __tests__/                # Jest tests (172 tests, 94% statement coverage)
 └── migrations/               # SQL migration scripts
 ```
 
@@ -115,8 +130,23 @@ Set in Vercel dashboard (Settings → Environment Variables):
 | Variable | Description |
 |----------|-------------|
 | `DEV_DATABASE_URL` | Neon PostgreSQL connection string |
+| `FIREBASE_PROJECT_ID` | Firebase project ID (for backend token verification) |
 
 Fallback: `DATABASE_URL` (if `DEV_DATABASE_URL` is not set).
+
+#### Flutter (compile-time `--dart-define`)
+
+| Variable | Description |
+|----------|-------------|
+| `FIREBASE_API_KEY` | Firebase Web API key |
+| `FIREBASE_AUTH_DOMAIN` | Firebase auth domain |
+| `FIREBASE_PROJECT_ID` | Firebase project ID |
+| `FIREBASE_MESSAGING_SENDER_ID` | Firebase messaging sender ID |
+| `FIREBASE_APP_ID` | Firebase app ID |
+
+Passed via `flutter run --dart-define=FIREBASE_API_KEY=... --dart-define=...` or in Vercel build args.
+
+If Firebase env vars are not set, the app starts without authentication (graceful degradation).
 
 ### Deployment
 
@@ -130,8 +160,8 @@ Push to `main` → Vercel auto-deploys. The build:
 
 | Suite | Command | Tests | Coverage |
 |-------|---------|-------|----------|
-| Backend (Jest) | `npm test` | 41 | 100% statements/lines |
-| Frontend (Flutter) | `flutter test` | 72 | Models, state, widgets |
+| Backend (Jest) | `npm test` | 172 | 94% statements |
+| Frontend (Flutter) | `flutter test` | 153 | Models, state, widgets |
 
 CI runs automatically on push/PR to `main` via GitHub Actions. Coverage thresholds enforced: 90% statements, 80% branches.
 
@@ -145,3 +175,4 @@ PostgreSQL hosted on Neon. Migrations in `api/migrations/` are idempotent (`IF N
 - `volunteers` — Volunteer roster (first/last name)
 - `walks` — Walk assignments (dog, volunteer, date, notes, group_index, soft-delete via `deleted_at`)
 - `day_plan_volunteer_notes` — Per-volunteer notes for a specific date
+- `users` — User accounts (firebase_uid, email, role, volunteer_id link)
