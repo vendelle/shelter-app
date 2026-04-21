@@ -17,6 +17,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 	if (req.method === 'OPTIONS') return res.status(200).end();
 
 	try {
+		// GET /api/auth/demo — return demo user (for recruiter showcase environment)
+		if (req.method === 'GET' && req.url?.endsWith('/demo')) {
+			const demoUser = await pool.query(
+				'SELECT * FROM users WHERE firebase_uid = $1',
+				['demo-uid-recruiter'],
+			);
+
+			if (demoUser.rows.length === 0) {
+				return res.status(404).json({ error: 'Demo user not found — run setup SQL' });
+			}
+
+			return res.status(200).json(userToJson(rowToUser(demoUser.rows[0])));
+		}
+
 		// GET — return current user
 		if (req.method === 'GET') {
 			const user = await requireAuth(req, res);

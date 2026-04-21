@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shelter_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/demo_mode.dart';
 import '../../../core/locale/locale_provider.dart';
 import '../../../core/theme/theme_providers.dart';
 import '../../auth/presentation/auth_providers.dart';
@@ -29,7 +30,29 @@ class ManageScreen extends ConsumerWidget {
       length: isSuperAdmin ? 3 : 2,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(l10n.manage),
+          title: Row(
+            children: [
+              Text(l10n.manage),
+              if (isDemoMode) ...[
+                const SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.orange,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text(
+                    'DEMO MODE',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
           actions: [
             // Auth action
             if (user != null)

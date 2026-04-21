@@ -46,4 +46,10 @@ class AuthRepository {
     final json = await apiClient.patch('/api/users', body: body);
     return json as Map<String, dynamic>;
   }
+
+  /// Get the demo user (recruiter demo environment only).
+  Future<AppUser> getDemoUser() async {
+    final json = await apiClient.get('/api/auth/demo');
+    return AppUser.fromJson(json as Map<String, dynamic>);
+  }
 }

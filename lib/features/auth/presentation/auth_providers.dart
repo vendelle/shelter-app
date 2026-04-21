@@ -7,6 +7,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../../core/api/api_client.dart';
 import '../../../core/api/api_providers.dart';
+import '../../../core/demo_mode.dart';
 import '../data/auth_repository.dart';
 import '../domain/app_user.dart';
 
@@ -36,6 +37,17 @@ final appUserProvider =
 class AppUserNotifier extends AsyncNotifier<AppUser?> {
   @override
   Future<AppUser?> build() async {
+    // Demo mode: auto-login as demo user
+    if (isDemoMode) {
+      try {
+        final repo = ref.read(authRepositoryProvider);
+        return await repo.getDemoUser();
+      } catch (_) {
+        // If demo endpoint fails, continue as guest
+        return null;
+      }
+    }
+
     final firebaseUser = FirebaseAuth.instance.currentUser;
     if (firebaseUser == null) return null;
 
