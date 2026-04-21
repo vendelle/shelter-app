@@ -1,5 +1,5 @@
 {
-  "buildCommand": "if [ \"$FLUTTER_DEMO_MODE\" = \"true\" ]; then flutter/bin/flutter build web --release --dart-define=FLUTTER_DEMO_MODE=true --pwa-strategy=none; else flutter/bin/flutter build web --release --pwa-strategy=none; fi",
+  "buildCommand": "DART_DEFINES=''; if [ -n \"$FIREBASE_API_KEY\" ]; then DART_DEFINES=\"--dart-define=FIREBASE_API_KEY=$FIREBASE_API_KEY --dart-define=FIREBASE_AUTH_DOMAIN=$FIREBASE_AUTH_DOMAIN --dart-define=FIREBASE_PROJECT_ID=$FIREBASE_PROJECT_ID --dart-define=FIREBASE_MESSAGING_SENDER_ID=$FIREBASE_MESSAGING_SENDER_ID --dart-define=FIREBASE_APP_ID=$FIREBASE_APP_ID\"; fi; if [ \"$FLUTTER_DEMO_MODE\" = \"true\" ]; then DART_DEFINES=\"$DART_DEFINES --dart-define=FLUTTER_DEMO_MODE=true\"; fi; flutter/bin/flutter build web --release --pwa-strategy=none $DART_DEFINES",
   "outputDirectory": "build/web",
   "installCommand": "npm install && git clone https://github.com/flutter/flutter.git --depth 1 -b stable && flutter/bin/flutter doctor && flutter/bin/flutter pub get",
   "rewrites": [
