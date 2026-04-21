@@ -11,6 +11,19 @@ jest.mock('../connection', () => {
 	};
 });
 
+// Mock auth middleware — familiarity PUT/DELETE require auth
+jest.mock('../auth-middleware', () => ({
+	requireAuth: jest.fn().mockResolvedValue({
+		id: 1, firebaseUid: 'test-uid', email: 'admin@test.com',
+		displayName: 'Admin', photoUrl: null, volunteerId: 1, role: 'admin',
+	}),
+	requireRole: jest.fn().mockResolvedValue({
+		id: 1, firebaseUid: 'test-uid', email: 'admin@test.com',
+		displayName: 'Admin', photoUrl: null, volunteerId: 1, role: 'admin',
+	}),
+	getAuthUser: jest.fn().mockResolvedValue(null),
+}));
+
 import handler from '../familiarity';
 
 describe('/api/familiarity', () => {

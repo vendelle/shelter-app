@@ -21,6 +21,19 @@ jest.mock('../util', () => {
 	};
 });
 
+// Mock auth middleware to always allow (existing tests focus on business logic)
+jest.mock('../auth-middleware', () => ({
+	requireRole: jest.fn().mockResolvedValue({
+		id: 1, firebaseUid: 'test-uid', email: 'admin@test.com',
+		displayName: 'Admin', photoUrl: null, volunteerId: null, role: 'admin',
+	}),
+	requireAuth: jest.fn().mockResolvedValue({
+		id: 1, firebaseUid: 'test-uid', email: 'admin@test.com',
+		displayName: 'Admin', photoUrl: null, volunteerId: null, role: 'admin',
+	}),
+	getAuthUser: jest.fn().mockResolvedValue(null),
+}));
+
 import handler from '../dogs';
 
 describe('GET /api/dogs', () => {
