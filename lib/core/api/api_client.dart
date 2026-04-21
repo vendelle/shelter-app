@@ -7,12 +7,18 @@ import 'package:http/http.dart' as http;
 ///
 /// On web, requests go to the same origin (`/api/...`).
 /// On mobile local dev, point to your local machine or Vercel URL.
+///
+/// If [authTokenProvider] is set, the Authorization header is attached
+/// to every request automatically.
 class ApiClient {
-  ApiClient({String? baseUrl})
+  ApiClient({String? baseUrl, this.authTokenProvider})
       : _baseUrl = baseUrl ?? const String.fromEnvironment('API_BASE_URL');
 
   final String _baseUrl;
   final http.Client _client = http.Client();
+
+  /// Optional callback that returns a Firebase ID token (or null).
+  Future<String?> Function()? authTokenProvider;
 
   Uri _uri(String path, [Map<String, String>? queryParams]) {
     final url = '$_baseUrl$path';
@@ -23,11 +29,22 @@ class ApiClient {
     return uri;
   }
 
+  Future<Map<String, String>> _headers() async {
+    final headers = <String, String>{'Content-Type': 'application/json'};
+    if (authTokenProvider != null) {
+      final token = await authTokenProvider!();
+      if (token != null) {
+        headers['Authorization'] = 'Bearer $token';
+      }
+    }
+    return headers;
+  }
+
   Future<dynamic> get(String path,
       {Map<String, String>? queryParams}) async {
     final response = await _client.get(
       _uri(path, queryParams),
-      headers: {'Content-Type': 'application/json'},
+      headers: await _headers(),
     );
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return jsonDecode(response.body);
@@ -38,7 +55,7 @@ class ApiClient {
   Future<dynamic> post(String path, {Object? body}) async {
     final response = await _client.post(
       _uri(path),
-      headers: {'Content-Type': 'application/json'},
+      headers: await _headers(),
       body: body != null ? jsonEncode(body) : null,
     );
     if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -50,7 +67,7 @@ class ApiClient {
   Future<dynamic> patch(String path, {Object? body}) async {
     final response = await _client.patch(
       _uri(path),
-      headers: {'Content-Type': 'application/json'},
+      headers: await _headers(),
       body: body != null ? jsonEncode(body) : null,
     );
     if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -63,7 +80,7 @@ class ApiClient {
       {Map<String, String>? queryParams, Object? body}) async {
     final response = await _client.put(
       _uri(path, queryParams),
-      headers: {'Content-Type': 'application/json'},
+      headers: await _headers(),
       body: body != null ? jsonEncode(body) : null,
     );
     if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -77,7 +94,7 @@ class ApiClient {
       {Map<String, String>? queryParams}) async {
     final response = await _client.delete(
       _uri(path, queryParams),
-      headers: {'Content-Type': 'application/json'},
+      headers: await _headers(),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(response.statusCode, response.body);
