@@ -13,7 +13,7 @@ class AuthRepository {
   ///
   /// Creates the user on first login; returns existing user on subsequent logins.
   /// Optionally links to a [volunteerId].
-  Future<AppUser> loginWithToken(String idToken, {int? volunteerId}) async {
+  Future<AppUser?> loginWithToken(String idToken, {int? volunteerId}) async {
     final body = <String, dynamic>{'id_token': idToken};
     if (volunteerId != null) body['volunteer_id'] = volunteerId;
 
@@ -22,7 +22,7 @@ class AuthRepository {
   }
 
   /// Get the current authenticated user from the backend.
-  Future<AppUser> getCurrentUser() async {
+  Future<AppUser?> getCurrentUser() async {
     final json = await apiClient.get('/api/auth');
     return AppUser.fromJson(json as Map<String, dynamic>);
   }
@@ -48,7 +48,7 @@ class AuthRepository {
   }
 
   /// Get the demo user (recruiter demo environment only).
-  Future<AppUser> getDemoUser() async {
+  Future<AppUser?> getDemoUser() async {
     final json = await apiClient.get('/api/auth/demo');
     return AppUser.fromJson(json as Map<String, dynamic>);
   }
