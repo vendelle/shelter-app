@@ -121,10 +121,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _signIn() async {
-    await DebugLogger.log('Sign-in button clicked');
+    DebugLogger.log('Sign-in button clicked');
     setState(() => _isSigningIn = true);
     try {
-      await DebugLogger.log('Calling signInWithGoogle...');
+      DebugLogger.log('Calling signInWithGoogle...');
       await ref.read(appUserProvider.notifier).signInWithGoogle(
             volunteerId: _selectedVolunteerId,
           );
@@ -136,7 +136,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         Navigator.of(context).pop();
       }
     } catch (e) {
-      await DebugLogger.log('Error in _signIn: $e');
+      DebugLogger.log('Error in _signIn: $e');
       if (mounted) rethrow;
     } finally {
       if (mounted) setState(() => _isSigningIn = false);

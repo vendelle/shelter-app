@@ -39,7 +39,7 @@ class AppUserNotifier extends AsyncNotifier<AppUser?> {
   @override
   Future<AppUser?> build() async {
     try {
-      await DebugLogger.log('AppUserNotifier.build() called');
+      DebugLogger.log('AppUserNotifier.build() called');
       
       // Demo mode: auto-login as demo user
       if (isDemoMode) {
@@ -53,63 +53,63 @@ class AppUserNotifier extends AsyncNotifier<AppUser?> {
       }
 
       // Check for redirect result from Google Sign-In (web only)
-      await DebugLogger.log('Checking getRedirectResult()...');
+      DebugLogger.log('Checking getRedirectResult()...');
       try {
         final result = await FirebaseAuth.instance.getRedirectResult();
-        await DebugLogger.log('getRedirectResult() returned: user=${result.user?.email}, credential=${result.credential}');
+        DebugLogger.log('getRedirectResult() returned: user=${result.user?.email}, credential=${result.credential}');
         
         if (result.user != null) {
-          await DebugLogger.log('Got redirect result from Google Sign-In: ${result.user!.email}');
+          DebugLogger.log('Got redirect result from Google Sign-In: ${result.user!.email}');
           final idToken = await result.user!.getIdToken();
-          await DebugLogger.log('Got ID token: ${idToken?.substring(0, 20)}...');
+          DebugLogger.log('Got ID token: ${idToken?.substring(0, 20)}...');
           
           if (idToken != null) {
             final repo = ref.read(authRepositoryProvider);
             try {
-              await DebugLogger.log('Calling loginWithToken() with backend...');
+              DebugLogger.log('Calling loginWithToken() with backend...');
               final user = await repo.loginWithToken(idToken);
-              await DebugLogger.log('loginWithToken() succeeded: ${user?.email}');
+              DebugLogger.log('loginWithToken() succeeded: ${user?.email}');
               return user;
             } on ApiException catch (e) {
-              await DebugLogger.log('loginWithToken() failed: ${e.statusCode} - ${e.toString()}');
+              DebugLogger.log('loginWithToken() failed: ${e.statusCode} - ${e.toString()}');
               if (e.statusCode == 401) {
                 await FirebaseAuth.instance.signOut();
                 return null;
               }
               rethrow;
             } catch (e) {
-              await DebugLogger.log('loginWithToken() error: $e');
+              DebugLogger.log('loginWithToken() error: $e');
               rethrow;
             }
           }
         }
       } catch (e) {
-        await DebugLogger.log('Error checking redirect result: $e');
+        DebugLogger.log('Error checking redirect result: $e');
       }
 
-      await DebugLogger.log('Checking FirebaseAuth.instance.currentUser...');
+      DebugLogger.log('Checking FirebaseAuth.instance.currentUser...');
       final firebaseUser = FirebaseAuth.instance.currentUser;
-      await DebugLogger.log('currentUser: ${firebaseUser?.email}');
+      DebugLogger.log('currentUser: ${firebaseUser?.email}');
       
       if (firebaseUser == null) {
-        await DebugLogger.log('No current user, returning null');
+        DebugLogger.log('No current user, returning null');
         return null;
       }
 
       final idToken = await firebaseUser.getIdToken();
       if (idToken == null) {
-        await DebugLogger.log('No ID token, returning null');
+        DebugLogger.log('No ID token, returning null');
         return null;
       }
 
       final repo = ref.read(authRepositoryProvider);
       try {
-        await DebugLogger.log('Calling loginWithToken() from currentUser...');
+        DebugLogger.log('Calling loginWithToken() from currentUser...');
         final user = await repo.loginWithToken(idToken);
-        await DebugLogger.log('loginWithToken() succeeded: ${user?.email}');
+        DebugLogger.log('loginWithToken() succeeded: ${user?.email}');
         return user;
       } on ApiException catch (e) {
-        await DebugLogger.log('loginWithToken() failed: ${e.statusCode} - ${e.toString()}');
+        DebugLogger.log('loginWithToken() failed: ${e.statusCode} - ${e.toString()}');
         if (e.statusCode == 401) {
           // Token invalid on backend — sign out
           await FirebaseAuth.instance.signOut();
@@ -118,8 +118,8 @@ class AppUserNotifier extends AsyncNotifier<AppUser?> {
         rethrow;
       }
     } catch (e, st) {
-      await DebugLogger.log('FATAL ERROR in build(): $e\n$st');
-      if (kDebugMode) print('FATAL ERROR: $e\n$st');
+      DebugLogger.log('FATAL ERROR in build(): $e\n$st');
+      print('FATAL ERROR: $e\n$st');
       rethrow;
     }
   }
@@ -129,25 +129,25 @@ class AppUserNotifier extends AsyncNotifier<AppUser?> {
     state = const AsyncLoading();
 
     try {
-      await DebugLogger.log('Starting Google Sign-In...');
+      DebugLogger.log('Starting Google Sign-In...');
       
       UserCredential credential;
 
       if (kIsWeb) {
-        await DebugLogger.log('Web platform: using signInWithRedirect');
+        DebugLogger.log('Web platform: using signInWithRedirect');
         final provider = GoogleAuthProvider();
         try {
           // Use redirect instead of popup to avoid browser blocking
           await FirebaseAuth.instance.signInWithRedirect(provider);
-          await DebugLogger.log('signInWithRedirect initiated');
+          DebugLogger.log('signInWithRedirect initiated');
           // Redirect happens, so this return won't execute
           return null;
         } catch (e) {
-          await DebugLogger.log('signInWithRedirect failed: $e');
+          DebugLogger.log('signInWithRedirect failed: $e');
           rethrow;
         }
       } else {
-        await DebugLogger.log('Mobile platform: using GoogleSignIn');
+        DebugLogger.log('Mobile platform: using GoogleSignIn');
         final googleUser = await GoogleSignIn().signIn();
         if (googleUser == null) {
           state = const AsyncData(null);
@@ -164,20 +164,20 @@ class AppUserNotifier extends AsyncNotifier<AppUser?> {
 
       final idToken = await credential.user?.getIdToken();
       if (idToken == null) {
-        await DebugLogger.log('Failed to get ID token');
+        DebugLogger.log('Failed to get ID token');
         state = const AsyncData(null);
         return null;
       }
 
-      await DebugLogger.log('Got ID token, logging in with backend...');
+      DebugLogger.log('Got ID token, logging in with backend...');
       final repo = ref.read(authRepositoryProvider);
       final user =
           await repo.loginWithToken(idToken, volunteerId: volunteerId);
-      await DebugLogger.log('Backend login succeeded: ${user?.email}');
+      DebugLogger.log('Backend login succeeded: ${user?.email}');
       state = AsyncData(user);
       return user;
     } catch (e, st) {
-      await DebugLogger.log('Sign-in error: $e\n$st');
+      DebugLogger.log('Sign-in error: $e\n$st');
       state = AsyncError(e, st);
       return null;
     }

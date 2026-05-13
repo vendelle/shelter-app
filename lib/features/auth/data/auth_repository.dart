@@ -18,18 +18,18 @@ class AuthRepository {
     final body = <String, dynamic>{'id_token': idToken};
     if (volunteerId != null) body['volunteer_id'] = volunteerId;
 
-    await DebugLogger.log('AuthRepository.loginWithToken() calling POST /api/auth');
+    DebugLogger.log('AuthRepository.loginWithToken() calling POST /api/auth');
     
     try {
       final json = await apiClient.post('/api/auth', body: body);
-      await DebugLogger.log('POST /api/auth response: $json');
+      DebugLogger.log('POST /api/auth response: $json');
       
       final user = AppUser.fromJson(json as Map<String, dynamic>);
-      await DebugLogger.log('Parsed user: ${user.email} with role ${user.role}');
+      DebugLogger.log('Parsed user: ${user.email} with role ${user.role}');
       
       return user;
     } catch (e) {
-      await DebugLogger.log('loginWithToken() error: $e');
+      DebugLogger.log('loginWithToken() error: $e');
       rethrow;
     }
   }
