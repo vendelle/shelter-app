@@ -81,9 +81,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                 if (appUser.hasError) ...[
                   const SizedBox(height: 16),
-                  Text(
-                    l10n.loginError,
-                    style: TextStyle(color: theme.colorScheme.error),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.errorContainer,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '${l10n.loginError}\n${appUser.error}',
+                      style: TextStyle(
+                        color: theme.colorScheme.onErrorContainer,
+                        fontSize: 12,
+                      ),
+                    ),
                   ),
                 ],
 

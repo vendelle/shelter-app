@@ -72,13 +72,23 @@ class AppUserNotifier extends AsyncNotifier<AppUser?> {
     state = const AsyncLoading();
 
     try {
+      if (kDebugMode) print('Starting Google Sign-In...');
+      
       UserCredential credential;
 
       if (kIsWeb) {
+        if (kDebugMode) print('Web platform: using signInWithPopup');
         final provider = GoogleAuthProvider();
-        credential =
-            await FirebaseAuth.instance.signInWithPopup(provider);
+        try {
+          credential =
+              await FirebaseAuth.instance.signInWithPopup(provider);
+          if (kDebugMode) print('signInWithPopup succeeded');
+        } catch (e) {
+          if (kDebugMode) print('signInWithPopup failed: $e');
+          rethrow;
+        }
       } else {
+        if (kDebugMode) print('Mobile platform: using GoogleSignIn');
         final googleUser = await GoogleSignIn().signIn();
         if (googleUser == null) {
           state = const AsyncData(null);
@@ -95,16 +105,20 @@ class AppUserNotifier extends AsyncNotifier<AppUser?> {
 
       final idToken = await credential.user?.getIdToken();
       if (idToken == null) {
+        if (kDebugMode) print('Failed to get ID token');
         state = const AsyncData(null);
         return null;
       }
 
+      if (kDebugMode) print('Got ID token, logging in with backend...');
       final repo = ref.read(authRepositoryProvider);
       final user =
           await repo.loginWithToken(idToken, volunteerId: volunteerId);
+      if (kDebugMode) print('Backend login succeeded: ${user?.email}');
       state = AsyncData(user);
       return user;
     } catch (e, st) {
+      if (kDebugMode) print('Sign-in error: $e\n$st');
       state = AsyncError(e, st);
       return null;
     }
