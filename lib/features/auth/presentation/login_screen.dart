@@ -116,6 +116,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       await ref.read(appUserProvider.notifier).signInWithGoogle(
             volunteerId: _selectedVolunteerId,
           );
+      // Note: On redirect-based flows, the page may redirect to Google.
+      // When the user returns, appUserProvider will automatically update
+      // and the router will navigate away from login screen.
+      // The following pop is only reached on mobile where it returns synchronously.
       if (mounted) {
         Navigator.of(context).pop();
       }

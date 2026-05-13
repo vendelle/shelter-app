@@ -48,6 +48,29 @@ class AppUserNotifier extends AsyncNotifier<AppUser?> {
       }
     }
 
+    // Check for redirect result from Google Sign-In (web only)
+    try {
+      final result = await FirebaseAuth.instance.getRedirectResult();
+      if (result.user != null) {
+        if (kDebugMode) print('Got redirect result from Google Sign-In');
+        final idToken = await result.user!.getIdToken();
+        if (idToken != null) {
+          final repo = ref.read(authRepositoryProvider);
+          try {
+            return await repo.loginWithToken(idToken);
+          } on ApiException catch (e) {
+            if (e.statusCode == 401) {
+              await FirebaseAuth.instance.signOut();
+              return null;
+            }
+            rethrow;
+          }
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) print('Error checking redirect result: $e');
+    }
+
     final firebaseUser = FirebaseAuth.instance.currentUser;
     if (firebaseUser == null) return null;
 
@@ -77,14 +100,16 @@ class AppUserNotifier extends AsyncNotifier<AppUser?> {
       UserCredential credential;
 
       if (kIsWeb) {
-        if (kDebugMode) print('Web platform: using signInWithPopup');
+        if (kDebugMode) print('Web platform: using signInWithRedirect');
         final provider = GoogleAuthProvider();
         try {
-          credential =
-              await FirebaseAuth.instance.signInWithPopup(provider);
-          if (kDebugMode) print('signInWithPopup succeeded');
+          // Use redirect instead of popup to avoid browser blocking
+          await FirebaseAuth.instance.signInWithRedirect(provider);
+          if (kDebugMode) print('signInWithRedirect initiated');
+          // Redirect happens, so this return won't execute
+          return null;
         } catch (e) {
-          if (kDebugMode) print('signInWithPopup failed: $e');
+          if (kDebugMode) print('signInWithRedirect failed: $e');
           rethrow;
         }
       } else {
