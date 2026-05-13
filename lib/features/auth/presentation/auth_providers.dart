@@ -38,82 +38,88 @@ final appUserProvider =
 class AppUserNotifier extends AsyncNotifier<AppUser?> {
   @override
   Future<AppUser?> build() async {
-    await DebugLogger.log('AppUserNotifier.build() called');
-    
-    // Demo mode: auto-login as demo user
-    if (isDemoMode) {
-      try {
-        final repo = ref.read(authRepositoryProvider);
-        return await repo.getDemoUser();
-      } catch (_) {
-        // If demo endpoint fails, continue as guest
-        return null;
-      }
-    }
-
-    // Check for redirect result from Google Sign-In (web only)
-    await DebugLogger.log('Checking getRedirectResult()...');
     try {
-      final result = await FirebaseAuth.instance.getRedirectResult();
-      await DebugLogger.log('getRedirectResult() returned: user=${result.user?.email}, credential=${result.credential}');
+      await DebugLogger.log('AppUserNotifier.build() called');
       
-      if (result.user != null) {
-        await DebugLogger.log('Got redirect result from Google Sign-In: ${result.user!.email}');
-        final idToken = await result.user!.getIdToken();
-        await DebugLogger.log('Got ID token: ${idToken?.substring(0, 20)}...');
-        
-        if (idToken != null) {
+      // Demo mode: auto-login as demo user
+      if (isDemoMode) {
+        try {
           final repo = ref.read(authRepositoryProvider);
-          try {
-            await DebugLogger.log('Calling loginWithToken() with backend...');
-            final user = await repo.loginWithToken(idToken);
-            await DebugLogger.log('loginWithToken() succeeded: ${user?.email}');
-            return user;
-          } on ApiException catch (e) {
-            await DebugLogger.log('loginWithToken() failed: ${e.statusCode} - ${e.toString()}');
-            if (e.statusCode == 401) {
-              await FirebaseAuth.instance.signOut();
-              return null;
-            }
-            rethrow;
-          } catch (e) {
-            await DebugLogger.log('loginWithToken() error: $e');
-            rethrow;
-          }
+          return await repo.getDemoUser();
+        } catch (_) {
+          // If demo endpoint fails, continue as guest
+          return null;
         }
       }
-    } catch (e) {
-      await DebugLogger.log('Error checking redirect result: $e');
-    }
 
-    await DebugLogger.log('Checking FirebaseAuth.instance.currentUser...');
-    final firebaseUser = FirebaseAuth.instance.currentUser;
-    await DebugLogger.log('currentUser: ${firebaseUser?.email}');
-    
-    if (firebaseUser == null) {
-      await DebugLogger.log('No current user, returning null');
-      return null;
-    }
+      // Check for redirect result from Google Sign-In (web only)
+      await DebugLogger.log('Checking getRedirectResult()...');
+      try {
+        final result = await FirebaseAuth.instance.getRedirectResult();
+        await DebugLogger.log('getRedirectResult() returned: user=${result.user?.email}, credential=${result.credential}');
+        
+        if (result.user != null) {
+          await DebugLogger.log('Got redirect result from Google Sign-In: ${result.user!.email}');
+          final idToken = await result.user!.getIdToken();
+          await DebugLogger.log('Got ID token: ${idToken?.substring(0, 20)}...');
+          
+          if (idToken != null) {
+            final repo = ref.read(authRepositoryProvider);
+            try {
+              await DebugLogger.log('Calling loginWithToken() with backend...');
+              final user = await repo.loginWithToken(idToken);
+              await DebugLogger.log('loginWithToken() succeeded: ${user?.email}');
+              return user;
+            } on ApiException catch (e) {
+              await DebugLogger.log('loginWithToken() failed: ${e.statusCode} - ${e.toString()}');
+              if (e.statusCode == 401) {
+                await FirebaseAuth.instance.signOut();
+                return null;
+              }
+              rethrow;
+            } catch (e) {
+              await DebugLogger.log('loginWithToken() error: $e');
+              rethrow;
+            }
+          }
+        }
+      } catch (e) {
+        await DebugLogger.log('Error checking redirect result: $e');
+      }
 
-    final idToken = await firebaseUser.getIdToken();
-    if (idToken == null) {
-      await DebugLogger.log('No ID token, returning null');
-      return null;
-    }
-
-    final repo = ref.read(authRepositoryProvider);
-    try {
-      await DebugLogger.log('Calling loginWithToken() from currentUser...');
-      final user = await repo.loginWithToken(idToken);
-      await DebugLogger.log('loginWithToken() succeeded: ${user?.email}');
-      return user;
-    } on ApiException catch (e) {
-      await DebugLogger.log('loginWithToken() failed: ${e.statusCode} - ${e.toString()}');
-      if (e.statusCode == 401) {
-        // Token invalid on backend — sign out
-        await FirebaseAuth.instance.signOut();
+      await DebugLogger.log('Checking FirebaseAuth.instance.currentUser...');
+      final firebaseUser = FirebaseAuth.instance.currentUser;
+      await DebugLogger.log('currentUser: ${firebaseUser?.email}');
+      
+      if (firebaseUser == null) {
+        await DebugLogger.log('No current user, returning null');
         return null;
       }
+
+      final idToken = await firebaseUser.getIdToken();
+      if (idToken == null) {
+        await DebugLogger.log('No ID token, returning null');
+        return null;
+      }
+
+      final repo = ref.read(authRepositoryProvider);
+      try {
+        await DebugLogger.log('Calling loginWithToken() from currentUser...');
+        final user = await repo.loginWithToken(idToken);
+        await DebugLogger.log('loginWithToken() succeeded: ${user?.email}');
+        return user;
+      } on ApiException catch (e) {
+        await DebugLogger.log('loginWithToken() failed: ${e.statusCode} - ${e.toString()}');
+        if (e.statusCode == 401) {
+          // Token invalid on backend — sign out
+          await FirebaseAuth.instance.signOut();
+          return null;
+        }
+        rethrow;
+      }
+    } catch (e, st) {
+      await DebugLogger.log('FATAL ERROR in build(): $e\n$st');
+      if (kDebugMode) print('FATAL ERROR: $e\n$st');
       rethrow;
     }
   }
