@@ -213,6 +213,19 @@ class _DebugLogsWidgetState extends ConsumerState<_DebugLogsWidget> {
     }
   }
 
+  Future<void> _clearLogs() async {
+    await DebugLogger.clearLogs();
+    if (mounted) {
+      setState(() {});
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Logs cleared'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -244,13 +257,20 @@ class _DebugLogsWidgetState extends ConsumerState<_DebugLogsWidget> {
                 ],
               ),
             ),
-            if (widget.showLogs)
+            if (widget.showLogs) ...[
               IconButton(
                 onPressed: _copyLogsToClipboard,
                 icon: const Icon(Icons.copy),
                 iconSize: 16,
                 tooltip: 'Copy logs',
               ),
+              IconButton(
+                onPressed: _clearLogs,
+                icon: const Icon(Icons.delete_outline),
+                iconSize: 16,
+                tooltip: 'Clear logs',
+              ),
+            ],
           ],
         ),
         if (widget.showLogs)
