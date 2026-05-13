@@ -1,6 +1,6 @@
 import '../../../core/api/api_client.dart';
+import '../../../core/debug_logger.dart';
 import '../domain/app_user.dart';
-import 'package:flutter/foundation.dart';
 
 /// Repository for authentication operations.
 ///
@@ -18,18 +18,18 @@ class AuthRepository {
     final body = <String, dynamic>{'id_token': idToken};
     if (volunteerId != null) body['volunteer_id'] = volunteerId;
 
-    if (kDebugMode) print('AuthRepository.loginWithToken() calling POST /api/auth with body: $body');
+    await DebugLogger.log('AuthRepository.loginWithToken() calling POST /api/auth');
     
     try {
       final json = await apiClient.post('/api/auth', body: body);
-      if (kDebugMode) print('POST /api/auth response: $json');
+      await DebugLogger.log('POST /api/auth response: $json');
       
       final user = AppUser.fromJson(json as Map<String, dynamic>);
-      if (kDebugMode) print('Parsed user: ${user.email} with role ${user.role}');
+      await DebugLogger.log('Parsed user: ${user.email} with role ${user.role}');
       
       return user;
     } catch (e) {
-      if (kDebugMode) print('loginWithToken() error: $e');
+      await DebugLogger.log('loginWithToken() error: $e');
       rethrow;
     }
   }

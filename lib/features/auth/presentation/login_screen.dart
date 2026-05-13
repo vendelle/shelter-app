@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shelter_app/l10n/app_localizations.dart';
 
+import '../../../core/debug_logger.dart';
 import '../../shared/domain/volunteer.dart';
 import '../../shared/presentation/providers/volunteer_providers.dart';
 import 'auth_providers.dart';
@@ -17,6 +18,7 @@ class LoginScreen extends ConsumerStatefulWidget {
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   int? _selectedVolunteerId;
   bool _isSigningIn = false;
+  bool _showDebugLogs = false;
 
   @override
   Widget build(BuildContext context) {
@@ -102,6 +104,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   onPressed: () => Navigator.of(context).pop(),
                   child: Text(l10n.loginContinueAsGuest),
                 ),
+
+                const SizedBox(height: 16),
+                
+                // Debug logs (expandable)
+                _DebugLogsWidget(
+                  showLogs: _showDebugLogs,
+                  onToggle: () => setState(() => _showDebugLogs = !_showDebugLogs),
+                ),
               ],
             ),
           ),
@@ -161,6 +171,107 @@ class _VolunteerPicker extends StatelessWidget {
             )),
       ],
       onChanged: onChanged,
+    );
+  }
+}
+
+/// Debug logs widget that displays persisted logs from SharedPreferences.
+class _DebugLogsWidget extends ConsumerStatefulWidget {
+  const _DebugLogsWidget({
+    required this.showLogs,
+    required this.onToggle,
+  });
+
+  final bool showLogs;
+  final VoidCallback onToggle;
+
+  @override
+  ConsumerState<_DebugLogsWidget> createState() => _DebugLogsWidgetState();
+}
+
+class _DebugLogsWidgetState extends ConsumerState<_DebugLogsWidget> {
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      children: [
+        TextButton(
+          onPressed: widget.onToggle,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                widget.showLogs
+                    ? Icons.expand_less
+                    : Icons.expand_more,
+                size: 20,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                widget.showLogs ? 'Hide Debug Logs' : 'Show Debug Logs',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: theme.colorScheme.secondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (widget.showLogs)
+          FutureBuilder<List<String>>(
+            future: DebugLogger.getLogs(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Padding(
+                  padding: EdgeInsets.all(8),
+                  child: SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                );
+              }
+
+              if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Text(
+                    'No logs yet',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                );
+              }
+
+              final logs = snapshot.data!;
+              return Container(
+                margin: const EdgeInsets.only(top: 8),
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainer,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: theme.colorScheme.outline,
+                    width: 0.5,
+                  ),
+                ),
+                constraints: const BoxConstraints(maxHeight: 200),
+                child: SingleChildScrollView(
+                  child: Text(
+                    logs.join('\n'),
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+      ],
     );
   }
 }
