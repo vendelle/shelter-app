@@ -52,6 +52,17 @@ class AppUserNotifier extends AsyncNotifier<AppUser?> {
         }
       }
 
+      // Log current URL to understand if we're coming back from redirect
+      try {
+        if (kIsWeb) {
+          final currentUrl = Uri.base.toString();
+          DebugLogger.log('Current URL: $currentUrl');
+          DebugLogger.log('URL query params: ${Uri.base.queryParameters}');
+        }
+      } catch (e) {
+        DebugLogger.log('Error reading URL: $e');
+      }
+
       // Check for redirect result from Google Sign-In (web only)
       DebugLogger.log('Checking getRedirectResult()...');
       try {
