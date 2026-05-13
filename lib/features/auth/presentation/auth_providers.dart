@@ -141,14 +141,16 @@ class AppUserNotifier extends AsyncNotifier<AppUser?> {
       if (kIsWeb) {
         DebugLogger.log('Web platform: using signInWithRedirect');
         final provider = GoogleAuthProvider();
+        DebugLogger.log('GoogleAuthProvider created');
         try {
+          DebugLogger.log('About to call signInWithRedirect()...');
           // Use redirect instead of popup to avoid browser blocking
           await FirebaseAuth.instance.signInWithRedirect(provider);
-          DebugLogger.log('signInWithRedirect initiated');
+          DebugLogger.log('signInWithRedirect() completed - should have redirected to Google');
           // Redirect happens, so this return won't execute
           return null;
-        } catch (e) {
-          DebugLogger.log('signInWithRedirect failed: $e');
+        } catch (e, st) {
+          DebugLogger.log('ERROR in signInWithRedirect: $e\nStacktrace: $st');
           rethrow;
         }
       } else {
