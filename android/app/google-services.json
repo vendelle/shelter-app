@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "824361733311",
+    "project_id": "shelter-app-cf77a",
+    "storage_bucket": "shelter-app-cf77a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:824361733311:android:554056a70fb33a43a08a0a",
+        "android_client_info": {
+          "package_name": "com.example.shelter_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "824361733311-6sp06nf0a94i8jbla77svhe9rfo82lgc.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD56l8kAuT9wC92r0PrrQfhL7dI-lDcwcI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "824361733311-6sp06nf0a94i8jbla77svhe9rfo82lgc.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "824361733311-ic7hb3lth1jdv9cmvoj1of3acigs1lkm.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.shelterApp"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
