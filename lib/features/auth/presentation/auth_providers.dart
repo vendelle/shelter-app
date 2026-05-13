@@ -37,6 +37,8 @@ final appUserProvider =
 class AppUserNotifier extends AsyncNotifier<AppUser?> {
   @override
   Future<AppUser?> build() async {
+    if (kDebugMode) print('AppUserNotifier.build() called');
+    
     // Demo mode: auto-login as demo user
     if (isDemoMode) {
       try {
@@ -49,20 +51,32 @@ class AppUserNotifier extends AsyncNotifier<AppUser?> {
     }
 
     // Check for redirect result from Google Sign-In (web only)
+    if (kDebugMode) print('Checking getRedirectResult()...');
     try {
       final result = await FirebaseAuth.instance.getRedirectResult();
+      if (kDebugMode) print('getRedirectResult() returned: user=${result.user?.email}, credential=${result.credential}');
+      
       if (result.user != null) {
-        if (kDebugMode) print('Got redirect result from Google Sign-In');
+        if (kDebugMode) print('Got redirect result from Google Sign-In: ${result.user!.email}');
         final idToken = await result.user!.getIdToken();
+        if (kDebugMode) print('Got ID token: ${idToken?.substring(0, 20)}...');
+        
         if (idToken != null) {
           final repo = ref.read(authRepositoryProvider);
           try {
-            return await repo.loginWithToken(idToken);
+            if (kDebugMode) print('Calling loginWithToken() with backend...');
+            final user = await repo.loginWithToken(idToken);
+            if (kDebugMode) print('loginWithToken() succeeded: ${user?.email}');
+            return user;
           } on ApiException catch (e) {
+            if (kDebugMode) print('loginWithToken() failed: ${e.statusCode} - ${e.toString()}');
             if (e.statusCode == 401) {
               await FirebaseAuth.instance.signOut();
               return null;
             }
+            rethrow;
+          } catch (e) {
+            if (kDebugMode) print('loginWithToken() error: $e');
             rethrow;
           }
         }
@@ -71,16 +85,29 @@ class AppUserNotifier extends AsyncNotifier<AppUser?> {
       if (kDebugMode) print('Error checking redirect result: $e');
     }
 
+    if (kDebugMode) print('Checking FirebaseAuth.instance.currentUser...');
     final firebaseUser = FirebaseAuth.instance.currentUser;
-    if (firebaseUser == null) return null;
+    if (kDebugMode) print('currentUser: ${firebaseUser?.email}');
+    
+    if (firebaseUser == null) {
+      if (kDebugMode) print('No current user, returning null');
+      return null;
+    }
 
     final idToken = await firebaseUser.getIdToken();
-    if (idToken == null) return null;
+    if (idToken == null) {
+      if (kDebugMode) print('No ID token, returning null');
+      return null;
+    }
 
     final repo = ref.read(authRepositoryProvider);
     try {
-      return await repo.loginWithToken(idToken);
+      if (kDebugMode) print('Calling loginWithToken() from currentUser...');
+      final user = await repo.loginWithToken(idToken);
+      if (kDebugMode) print('loginWithToken() succeeded: ${user?.email}');
+      return user;
     } on ApiException catch (e) {
+      if (kDebugMode) print('loginWithToken() failed: ${e.statusCode} - ${e.toString()}');
       if (e.statusCode == 401) {
         // Token invalid on backend — sign out
         await FirebaseAuth.instance.signOut();
