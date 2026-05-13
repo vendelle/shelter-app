@@ -52,66 +52,17 @@ class AppUserNotifier extends AsyncNotifier<AppUser?> {
         }
       }
 
-      // Log current URL to understand if we're coming back from redirect
-      try {
-        if (kIsWeb) {
-          final currentUrl = Uri.base.toString();
-          DebugLogger.log('Current URL: $currentUrl');
-          DebugLogger.log('URL query params: ${Uri.base.queryParameters}');
-        }
-      } catch (e) {
-        DebugLogger.log('Error reading URL: $e');
-      }
-
-      // Check for redirect result from Google Sign-In (web only)
-      DebugLogger.log('Checking getRedirectResult()...');
-      try {
-        final result = await FirebaseAuth.instance.getRedirectResult();
-        DebugLogger.log('getRedirectResult() returned: user=${result.user?.email}, credential=${result.credential}');
-        
-        if (result.user != null) {
-          DebugLogger.log('Got redirect result from Google Sign-In: ${result.user!.email}');
-          final idToken = await result.user!.getIdToken();
-          DebugLogger.log('Got ID token: ${idToken?.substring(0, 20)}...');
-          
-          if (idToken != null) {
-            final repo = ref.read(authRepositoryProvider);
-            try {
-              DebugLogger.log('Calling loginWithToken() with backend...');
-              final user = await repo.loginWithToken(idToken);
-              DebugLogger.log('loginWithToken() succeeded: ${user?.email}');
-              return user;
-            } on ApiException catch (e) {
-              DebugLogger.log('loginWithToken() failed: ${e.statusCode} - ${e.toString()}');
-              if (e.statusCode == 401) {
-                await FirebaseAuth.instance.signOut();
-                return null;
-              }
-              rethrow;
-            } catch (e) {
-              DebugLogger.log('loginWithToken() error: $e');
-              rethrow;
-            }
-          }
-        } else {
-          DebugLogger.log('getRedirectResult() returned no user - checking if this is initial load or actual redirect');
-        }
-      } catch (e, st) {
-        DebugLogger.log('ERROR checking redirect result: $e\n$st');
-      }
-
-      DebugLogger.log('After redirect check, examining auth state...');
+      // Check current user - popups return immediately, so no redirect handling needed
       DebugLogger.log('Checking FirebaseAuth.instance.currentUser...');
       final firebaseUser = FirebaseAuth.instance.currentUser;
       DebugLogger.log('currentUser: ${firebaseUser?.email}');
-      DebugLogger.log('currentUser?.uid: ${firebaseUser?.uid}');
-      DebugLogger.log('currentUser?.isAnonymous: ${firebaseUser?.isAnonymous}');
       
       if (firebaseUser == null) {
-        DebugLogger.log('No current user, will return null - auth state is empty');
+        DebugLogger.log('No current user, returning null');
         return null;
       }
 
+      DebugLogger.log('Found authenticated user: ${firebaseUser.email}');
       final idToken = await firebaseUser.getIdToken();
       if (idToken == null) {
         DebugLogger.log('No ID token, returning null');
@@ -120,7 +71,7 @@ class AppUserNotifier extends AsyncNotifier<AppUser?> {
 
       final repo = ref.read(authRepositoryProvider);
       try {
-        DebugLogger.log('Calling loginWithToken() from currentUser...');
+        DebugLogger.log('Calling loginWithToken() with backend...');
         final user = await repo.loginWithToken(idToken);
         DebugLogger.log('loginWithToken() succeeded: ${user?.email}');
         return user;
@@ -150,18 +101,14 @@ class AppUserNotifier extends AsyncNotifier<AppUser?> {
       UserCredential credential;
 
       if (kIsWeb) {
-        DebugLogger.log('Web platform: using signInWithRedirect');
+        DebugLogger.log('Web platform: using signInWithPopup');
         final provider = GoogleAuthProvider();
-        DebugLogger.log('GoogleAuthProvider created');
         try {
-          DebugLogger.log('About to call signInWithRedirect()...');
-          // Use redirect instead of popup to avoid browser blocking
-          await FirebaseAuth.instance.signInWithRedirect(provider);
-          DebugLogger.log('signInWithRedirect() completed - should have redirected to Google');
-          // Redirect happens, so this return won't execute
-          return null;
+          DebugLogger.log('Showing Google Sign-In popup...');
+          credential = await FirebaseAuth.instance.signInWithPopup(provider);
+          DebugLogger.log('Popup sign-in succeeded: ${credential.user?.email}');
         } catch (e, st) {
-          DebugLogger.log('ERROR in signInWithRedirect: $e\nStacktrace: $st');
+          DebugLogger.log('ERROR in signInWithPopup: $e\nStacktrace: $st');
           rethrow;
         }
       } else {
