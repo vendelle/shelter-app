@@ -82,17 +82,22 @@ class AppUserNotifier extends AsyncNotifier<AppUser?> {
               rethrow;
             }
           }
+        } else {
+          DebugLogger.log('getRedirectResult() returned no user - checking if this is initial load or actual redirect');
         }
-      } catch (e) {
-        DebugLogger.log('Error checking redirect result: $e');
+      } catch (e, st) {
+        DebugLogger.log('ERROR checking redirect result: $e\n$st');
       }
 
+      DebugLogger.log('After redirect check, examining auth state...');
       DebugLogger.log('Checking FirebaseAuth.instance.currentUser...');
       final firebaseUser = FirebaseAuth.instance.currentUser;
       DebugLogger.log('currentUser: ${firebaseUser?.email}');
+      DebugLogger.log('currentUser?.uid: ${firebaseUser?.uid}');
+      DebugLogger.log('currentUser?.isAnonymous: ${firebaseUser?.isAnonymous}');
       
       if (firebaseUser == null) {
-        DebugLogger.log('No current user, returning null');
+        DebugLogger.log('No current user, will return null - auth state is empty');
         return null;
       }
 
