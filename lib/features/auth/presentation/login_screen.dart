@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shelter_app/l10n/app_localizations.dart';
 
@@ -195,33 +196,62 @@ class _DebugLogsWidget extends ConsumerStatefulWidget {
 }
 
 class _DebugLogsWidgetState extends ConsumerState<_DebugLogsWidget> {
+  Future<void> _copyLogsToClipboard() async {
+    final logs = await DebugLogger.getLogs();
+    if (logs.isEmpty) return;
+    
+    final logText = logs.join('\n');
+    await Clipboard.setData(ClipboardData(text: logText));
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Logs copied to clipboard'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return Column(
       children: [
-        TextButton(
-          onPressed: widget.onToggle,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                widget.showLogs
-                    ? Icons.expand_less
-                    : Icons.expand_more,
-                size: 20,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            TextButton(
+              onPressed: widget.onToggle,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    widget.showLogs
+                        ? Icons.expand_less
+                        : Icons.expand_more,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    widget.showLogs ? 'Hide Debug Logs' : 'Show Debug Logs',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: theme.colorScheme.secondary,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 4),
-              Text(
-                widget.showLogs ? 'Hide Debug Logs' : 'Show Debug Logs',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: theme.colorScheme.secondary,
-                ),
+            ),
+            if (widget.showLogs)
+              IconButton(
+                onPressed: _copyLogsToClipboard,
+                icon: const Icon(Icons.copy),
+                iconSize: 16,
+                tooltip: 'Copy logs',
               ),
-            ],
-          ),
+          ],
         ),
         if (widget.showLogs)
           FutureBuilder<List<String>>(
