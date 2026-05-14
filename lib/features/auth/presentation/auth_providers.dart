@@ -162,11 +162,11 @@ class AppUserNotifier extends AsyncNotifier<AppUser?> {
 
       DebugLogger.log('Got ID token, logging in with backend...');
       final repo = ref.read(authRepositoryProvider);
-      final user =
+      final appUser =
           await repo.loginWithToken(idToken, volunteerId: volunteerId);
-      DebugLogger.log('Backend login succeeded: ${user?.email}');
-      state = AsyncData(user);
-      return user;
+      DebugLogger.log('Backend login succeeded: ${appUser?.email}');
+      state = AsyncData(appUser);
+      return appUser;
     } catch (e, st) {
       DebugLogger.log('Sign-in error: $e\n$st');
       state = AsyncError(e, st);
