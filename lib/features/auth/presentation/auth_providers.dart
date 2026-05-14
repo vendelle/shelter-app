@@ -114,9 +114,26 @@ class AppUserNotifier extends AsyncNotifier<AppUser?> {
 
           DebugLogger.log('Google Sign-In successful: ${googleUser.email}');
           final googleAuth = await googleUser.authentication;
+          
+          if (googleAuth == null) {
+            DebugLogger.log('ERROR: googleAuth is null');
+            state = const AsyncData(null);
+            return null;
+          }
+
+          final accessToken = googleAuth.accessToken;
+          final idToken = googleAuth.idToken;
+          
+          if (accessToken == null || idToken == null) {
+            DebugLogger.log('ERROR: accessToken=$accessToken, idToken=$idToken');
+            state = const AsyncData(null);
+            return null;
+          }
+
+          DebugLogger.log('Got tokens from Google Sign-In');
           final oauthCredential = GoogleAuthProvider.credential(
-            accessToken: googleAuth.accessToken,
-            idToken: googleAuth.idToken,
+            accessToken: accessToken,
+            idToken: idToken,
           );
           
           DebugLogger.log('Signing in with Firebase using Google credentials...');
@@ -131,10 +148,16 @@ class AppUserNotifier extends AsyncNotifier<AppUser?> {
         DebugLogger.log('Mobile platform: using Google Sign-In SDK');
         final googleUser = await GoogleSignIn().signIn();
         if (googleUser == null) {
+          DebugLogger.log('Google Sign-In cancelled by user');
           state = const AsyncData(null);
-          return null; // User cancelled
+          return null;
         }
         final googleAuth = await googleUser.authentication;
+        if (googleAuth == null) {
+          DebugLogger.log('ERROR: googleAuth is null on mobile');
+          state = const AsyncData(null);
+          return null;
+        }
         final oauthCredential = GoogleAuthProvider.credential(
           accessToken: googleAuth.accessToken,
           idToken: googleAuth.idToken,
@@ -143,9 +166,16 @@ class AppUserNotifier extends AsyncNotifier<AppUser?> {
             .signInWithCredential(oauthCredential);
       }
 
-      final idToken = await credential.user?.getIdToken();
+      final user = credential.user;
+      if (user == null) {
+        DebugLogger.log('ERROR: credential.user is null after sign-in');
+        state = const AsyncData(null);
+        return null;
+      }
+
+      final idToken = await user.getIdToken();
       if (idToken == null) {
-        DebugLogger.log('Failed to get ID token');
+        DebugLogger.log('Failed to get ID token from Firebase user');
         state = const AsyncData(null);
         return null;
       }
