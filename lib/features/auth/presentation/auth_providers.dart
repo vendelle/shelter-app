@@ -101,48 +101,28 @@ class AppUserNotifier extends AsyncNotifier<AppUser?> {
       UserCredential credential;
 
       if (kIsWeb) {
-        DebugLogger.log('Web platform: using Google Sign-In SDK directly');
+        DebugLogger.log('Web platform: using Firebase signInWithPopup');
+        final provider = GoogleAuthProvider();
         try {
-          DebugLogger.log('Initiating Google Sign-In...');
-          final googleUser = await GoogleSignIn().signIn();
-          
-          if (googleUser == null) {
-            DebugLogger.log('Google Sign-In cancelled by user');
-            state = const AsyncData(null);
-            return null;
+          DebugLogger.log('Attempting to show sign-in popup...');
+          credential = await FirebaseAuth.instance.signInWithPopup(provider);
+          DebugLogger.log('Popup sign-in succeeded: ${credential.user?.email}');
+        } on FirebaseAuthException catch (e) {
+          if (e.code == 'popup-blocked') {
+            DebugLogger.log('Popup was blocked by browser - disabling popup blocker or try again');
+            state = AsyncError(
+              Exception('Sign-in popup was blocked. Please disable your popup blocker and try again.'),
+              StackTrace.current,
+            );
+          } else {
+            DebugLogger.log('Firebase auth error: ${e.code} - ${e.message}');
+            state = AsyncError(e, StackTrace.current);
           }
-
-          DebugLogger.log('Google Sign-In successful: ${googleUser.email}');
-          final googleAuth = await googleUser.authentication;
-          
-          if (googleAuth == null) {
-            DebugLogger.log('ERROR: googleAuth is null');
-            state = const AsyncData(null);
-            return null;
-          }
-
-          final accessToken = googleAuth.accessToken;
-          final idToken = googleAuth.idToken;
-          
-          if (accessToken == null || idToken == null) {
-            DebugLogger.log('ERROR: accessToken=$accessToken, idToken=$idToken');
-            state = const AsyncData(null);
-            return null;
-          }
-
-          DebugLogger.log('Got tokens from Google Sign-In');
-          final oauthCredential = GoogleAuthProvider.credential(
-            accessToken: accessToken,
-            idToken: idToken,
-          );
-          
-          DebugLogger.log('Signing in with Firebase using Google credentials...');
-          credential = await FirebaseAuth.instance
-              .signInWithCredential(oauthCredential);
-          DebugLogger.log('Firebase sign-in succeeded: ${credential.user?.email}');
+          return null;
         } catch (e, st) {
-          DebugLogger.log('ERROR in Google Sign-In: $e\nStacktrace: $st');
-          rethrow;
+          DebugLogger.log('ERROR in sign-in popup: $e\nStacktrace: $st');
+          state = AsyncError(e, st);
+          return null;
         }
       } else {
         DebugLogger.log('Mobile platform: using Google Sign-In SDK');
