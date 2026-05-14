@@ -101,18 +101,34 @@ class AppUserNotifier extends AsyncNotifier<AppUser?> {
       UserCredential credential;
 
       if (kIsWeb) {
-        DebugLogger.log('Web platform: using signInWithPopup');
-        final provider = GoogleAuthProvider();
+        DebugLogger.log('Web platform: using Google Sign-In SDK directly');
         try {
-          DebugLogger.log('Showing Google Sign-In popup...');
-          credential = await FirebaseAuth.instance.signInWithPopup(provider);
-          DebugLogger.log('Popup sign-in succeeded: ${credential.user?.email}');
+          DebugLogger.log('Initiating Google Sign-In...');
+          final googleUser = await GoogleSignIn().signIn();
+          
+          if (googleUser == null) {
+            DebugLogger.log('Google Sign-In cancelled by user');
+            state = const AsyncData(null);
+            return null;
+          }
+
+          DebugLogger.log('Google Sign-In successful: ${googleUser.email}');
+          final googleAuth = await googleUser.authentication;
+          final oauthCredential = GoogleAuthProvider.credential(
+            accessToken: googleAuth.accessToken,
+            idToken: googleAuth.idToken,
+          );
+          
+          DebugLogger.log('Signing in with Firebase using Google credentials...');
+          credential = await FirebaseAuth.instance
+              .signInWithCredential(oauthCredential);
+          DebugLogger.log('Firebase sign-in succeeded: ${credential.user?.email}');
         } catch (e, st) {
-          DebugLogger.log('ERROR in signInWithPopup: $e\nStacktrace: $st');
+          DebugLogger.log('ERROR in Google Sign-In: $e\nStacktrace: $st');
           rethrow;
         }
       } else {
-        DebugLogger.log('Mobile platform: using GoogleSignIn');
+        DebugLogger.log('Mobile platform: using Google Sign-In SDK');
         final googleUser = await GoogleSignIn().signIn();
         if (googleUser == null) {
           state = const AsyncData(null);
