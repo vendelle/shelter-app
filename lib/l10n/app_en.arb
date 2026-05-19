@@ -30,6 +30,8 @@
   "cancel": "Cancel",
   "save": "Save",
   "saved": "Saved",
+  "saving": "Saving…",
+  "saveError": "Save failed",
   "noWalksPlannedYet": "No walks planned yet",
   "addFirstVolunteer": "Add first volunteer",
   "addVolunteer": "Add Volunteer",

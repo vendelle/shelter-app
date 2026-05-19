@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/api/api_providers.dart';
@@ -61,17 +63,22 @@ final plannerNotifierProvider =
   return PlannerNotifier(ref);
 });
 
+/// Status of the auto-save mechanism.
+enum SaveStatus { idle, saving, saved, error }
+
 class PlannerState {
   final List<VolunteerAssignment> assignments;
   final bool isSaving;
   final bool isLoading;
   final String? error;
+  final SaveStatus saveStatus;
 
   const PlannerState({
     this.assignments = const [],
     this.isSaving = false,
     this.isLoading = true,
     this.error,
+    this.saveStatus = SaveStatus.idle,
   });
 
   PlannerState copyWith({
@@ -79,12 +86,14 @@ class PlannerState {
     bool? isSaving,
     bool? isLoading,
     String? error,
+    SaveStatus? saveStatus,
   }) {
     return PlannerState(
       assignments: assignments ?? this.assignments,
       isSaving: isSaving ?? this.isSaving,
       isLoading: isLoading ?? this.isLoading,
       error: error,
+      saveStatus: saveStatus ?? this.saveStatus,
     );
   }
 
@@ -138,9 +147,43 @@ class PlannerNotifier extends StateNotifier<PlannerState> {
   }
 
   final Ref _ref;
+  Timer? _autoSaveTimer;
+
+  /// Schedule an auto-save after 2 seconds of inactivity.
+  void _scheduleAutoSave() {
+    _autoSaveTimer?.cancel();
+    _autoSaveTimer = Timer(const Duration(seconds: 2), () {
+      _autoSave();
+    });
+  }
+
+  Future<void> _autoSave() async {
+    if (state.isLoading) return;
+    state = state.copyWith(saveStatus: SaveStatus.saving);
+    try {
+      final repo = _ref.read(plannerRepositoryProvider);
+      final date = _ref.read(selectedDateProvider);
+      await repo.saveAssignments(date, state.assignments);
+      _ref.invalidate(savedAssignmentsProvider);
+      if (mounted) {
+        state = state.copyWith(saveStatus: SaveStatus.saved);
+      }
+    } catch (e) {
+      if (mounted) {
+        state = state.copyWith(saveStatus: SaveStatus.error, error: e.toString());
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _autoSaveTimer?.cancel();
+    super.dispose();
+  }
 
   Future<void> _loadForDate(DateTime date) async {
-    state = state.copyWith(isLoading: true, error: null);
+    _autoSaveTimer?.cancel();
+    state = state.copyWith(isLoading: true, error: null, saveStatus: SaveStatus.idle);
     try {
       final repo = _ref.read(plannerRepositoryProvider);
       final assignments = await repo.getAssignments(date);
@@ -164,6 +207,7 @@ class PlannerNotifier extends StateNotifier<PlannerState> {
         ),
       ],
     );
+    _scheduleAutoSave();
   }
 
   void removeVolunteer(int volunteerId) {
@@ -171,6 +215,7 @@ class PlannerNotifier extends StateNotifier<PlannerState> {
       assignments:
           state.assignments.where((a) => a.volunteerId != volunteerId).toList(),
     );
+    _scheduleAutoSave();
   }
 
   void addDogEntry(int volunteerId, DogEntry entry) {
@@ -181,6 +226,7 @@ class PlannerNotifier extends StateNotifier<PlannerState> {
         return a.copyWith(dogs: [...a.dogs, entry]);
       }).toList(),
     );
+    _scheduleAutoSave();
   }
 
   void addDogEntries(int volunteerId, List<DogEntry> entries) {
@@ -193,6 +239,7 @@ class PlannerNotifier extends StateNotifier<PlannerState> {
         return a.copyWith(dogs: [...a.dogs, ...newEntries]);
       }).toList(),
     );
+    _scheduleAutoSave();
   }
 
   void removeDogFromVolunteer(int volunteerId, int dogId) {
@@ -203,6 +250,7 @@ class PlannerNotifier extends StateNotifier<PlannerState> {
             dogs: a.dogs.where((d) => d.dogId != dogId).toList());
       }).toList(),
     );
+    _scheduleAutoSave();
   }
 
   void updateDogGroup(int volunteerId, int dogId, int? groupIndex) {
@@ -217,6 +265,7 @@ class PlannerNotifier extends StateNotifier<PlannerState> {
         );
       }).toList(),
     );
+    _scheduleAutoSave();
   }
 
   void updateDogNote(int volunteerId, int dogId, String? note) {
@@ -231,6 +280,7 @@ class PlannerNotifier extends StateNotifier<PlannerState> {
         );
       }).toList(),
     );
+    _scheduleAutoSave();
   }
 
   void updateVolunteerNote(int volunteerId, String? note) {
@@ -240,19 +290,35 @@ class PlannerNotifier extends StateNotifier<PlannerState> {
         return a.copyWith(note: () => note);
       }).toList(),
     );
+    _scheduleAutoSave();
+  }
+
+  /// Reorder dogs within a volunteer's list.
+  void reorderDogs(int volunteerId, int oldIndex, int newIndex) {
+    if (oldIndex == newIndex) return;
+    state = state.copyWith(
+      assignments: state.assignments.map((a) {
+        if (a.volunteerId != volunteerId) return a;
+        final dogs = List<DogEntry>.from(a.dogs);
+        final item = dogs.removeAt(oldIndex);
+        dogs.insert(newIndex, item);
+        return a.copyWith(dogs: dogs);
+      }).toList(),
+    );
+    _scheduleAutoSave();
   }
 
   Future<void> save() async {
-    state = state.copyWith(isSaving: true);
+    _autoSaveTimer?.cancel();
+    state = state.copyWith(saveStatus: SaveStatus.saving);
     try {
       final repo = _ref.read(plannerRepositoryProvider);
       final date = _ref.read(selectedDateProvider);
       await repo.saveAssignments(date, state.assignments);
-      // Refresh the "saved" baseline
       _ref.invalidate(savedAssignmentsProvider);
-      state = state.copyWith(isSaving: false);
+      state = state.copyWith(saveStatus: SaveStatus.saved);
     } catch (e) {
-      state = state.copyWith(isSaving: false, error: e.toString());
+      state = state.copyWith(saveStatus: SaveStatus.error, error: e.toString());
     }
   }
 

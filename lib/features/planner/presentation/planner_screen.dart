@@ -19,15 +19,9 @@ class PlannerScreen extends ConsumerWidget {
     final date = ref.watch(selectedDateProvider);
     final plannerState = ref.watch(plannerNotifierProvider);
     final notifier = ref.read(plannerNotifierProvider.notifier);
-    final savedAsync = ref.watch(savedAssignmentsProvider);
     final detailLevel = ref.watch(plannerDetailLevelProvider);
     final isOverview = detailLevel == PlannerDetailLevel.overview;
     final isCompact = detailLevel != PlannerDetailLevel.detailed;
-
-    final hasModifications = savedAsync.whenOrNull(
-          data: (saved) => plannerState.isModified(saved),
-        ) ??
-        false;
 
     return Scaffold(
       appBar: AppBar(
@@ -104,14 +98,12 @@ class PlannerScreen extends ConsumerWidget {
                           ),
           ),
 
-          // Save bar
-          _SaveBar(
-            isModified: hasModifications,
-            isSaving: plannerState.isSaving,
+          // Status bar
+          _StatusBar(
+            saveStatus: plannerState.saveStatus,
             assignmentCount: plannerState.assignments.length,
             dogCount: plannerState.assignedDogIds.length,
             totalDogs: ref.watch(totalDogCountProvider).valueOrNull ?? 0,
-            onSave: () => notifier.save(),
           ),
         ],
       ),
@@ -198,6 +190,10 @@ class _ColumnsGrid extends StatelessWidget {
                         context, ref, assignment, dogId),
                     onEditVolunteerNote: () =>
                         _editVolunteerNote(context, ref, assignment),
+                    onReorderDogs: (oldIndex, newIndex) => ref
+                        .read(plannerNotifierProvider.notifier)
+                        .reorderDogs(
+                            assignment.volunteerId, oldIndex, newIndex),
                   ),
                 ),
               if (!overview)
@@ -593,25 +589,21 @@ class _ErrorBody extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Save bar
+// Status bar (replaces save bar — auto-save indicator)
 // ---------------------------------------------------------------------------
 
-class _SaveBar extends StatelessWidget {
-  const _SaveBar({
-    required this.isModified,
-    required this.isSaving,
+class _StatusBar extends StatelessWidget {
+  const _StatusBar({
+    required this.saveStatus,
     required this.assignmentCount,
     required this.dogCount,
     required this.totalDogs,
-    required this.onSave,
   });
 
-  final bool isModified;
-  final bool isSaving;
+  final SaveStatus saveStatus;
   final int assignmentCount;
   final int dogCount;
   final int totalDogs;
-  final VoidCallback onSave;
 
   @override
   Widget build(BuildContext context) {
@@ -637,20 +629,72 @@ class _SaveBar extends StatelessWidget {
                     ?.copyWith(color: theme.colorScheme.outline),
               ),
             ),
-            FilledButton(
-              onPressed: isModified && !isSaving ? onSave : null,
-              child: isSaving
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
-                    )
-                  : Text(isModified ? AppLocalizations.of(context)!.save : AppLocalizations.of(context)!.saved),
-            ),
+            _SaveStatusIndicator(status: saveStatus),
           ],
         ),
       ),
     );
+  }
+}
+
+class _SaveStatusIndicator extends StatelessWidget {
+  const _SaveStatusIndicator({required this.status});
+  final SaveStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    switch (status) {
+      case SaveStatus.idle:
+        return const SizedBox.shrink();
+      case SaveStatus.saving:
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: theme.colorScheme.outline,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              AppLocalizations.of(context)!.saving,
+              style: theme.textTheme.bodySmall
+                  ?.copyWith(color: theme.colorScheme.outline),
+            ),
+          ],
+        );
+      case SaveStatus.saved:
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.check_circle_outline,
+                size: 16, color: theme.colorScheme.primary),
+            const SizedBox(width: 4),
+            Text(
+              AppLocalizations.of(context)!.saved,
+              style: theme.textTheme.bodySmall
+                  ?.copyWith(color: theme.colorScheme.primary),
+            ),
+          ],
+        );
+      case SaveStatus.error:
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.error_outline,
+                size: 16, color: theme.colorScheme.error),
+            const SizedBox(width: 4),
+            Text(
+              AppLocalizations.of(context)!.saveError,
+              style: theme.textTheme.bodySmall
+                  ?.copyWith(color: theme.colorScheme.error),
+            ),
+          ],
+        );
+    }
   }
 }

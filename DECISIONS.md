@@ -236,3 +236,55 @@ Within each feature, we use a lightweight `data/domain/presentation` split:
 - No cookie-based auth — the API is stateless, so `*` is safe.
 
 **When to revisit:** If authentication with cookies/sessions is added (restrict to specific origins).
+
+---
+
+## Day Plan Ordering: Single `sort_order` Column on `walks`
+
+**Decision**: Add a single `sort_order INTEGER` column to the `walks` table to preserve the order of both volunteers and dogs in the day plan.
+
+**How it works:**
+- On save, each walk row gets its array index as `sort_order` (0, 1, 2, …).
+- Since walks are sent in order (all dogs for volunteer A first, then volunteer B), the global sort_order implicitly preserves both volunteer order and dog order within each volunteer.
+- On GET, results are `ORDER BY sort_order NULLS LAST, id` — old data without sort_order falls back to insertion order.
+
+**Why not separate `volunteer_order` + `dog_order`?**
+- Adds complexity with no real benefit. A single column solves both ordering needs because the client always sends walks grouped by volunteer in the desired order.
+- Avoids the awkward question of where to store `volunteer_order` for note-only volunteers (separate table? duplicate across walk rows?).
+
+**Why not put order in `day_plan_volunteer_notes`?**
+- That table only has rows for volunteers with non-empty notes. Would require always creating rows for every volunteer (changing semantics) or a new table.
+
+**Backward compatibility:**
+- Old walks have `sort_order = NULL` → fall back to `id` order (insertion order).
+- Puszek (legacy Vue app) continues to work without changes — its POST sends walks in display order, which gets sort_order assigned automatically.
+
+---
+
+## Day Plan Auto-Save
+
+**Decision**: Auto-save the day plan 2 seconds after the last change. Remove the manual save button.
+
+**Why?**
+- Users repeatedly forgot to click "Save" and lost their plan changes.
+- 2-second debounce balances responsiveness (changes persist quickly) vs. efficiency (not saving on every keystroke).
+- Status indicator ("Saving…" / "Saved ✓" / error) replaces the save button to keep users informed.
+
+**Tradeoffs:**
+- More frequent API calls than explicit save — acceptable for a plan that changes ~10-20 times per session.
+- No "undo" for accidental changes — mitigated by the fact that only the latest save persists (user can reload to revert within the debounce window).
+
+---
+
+## Day Plan Dog Reordering: Drag & Drop Within Volunteer
+
+**Decision**: Allow drag-to-reorder for dogs within a volunteer's column using `ReorderableListView` with drag handles. No cross-volunteer drag.
+
+**Why within-volunteer only?**
+- Cross-volunteer drag in Flutter's horizontal wrap layout is significantly more complex (requires custom multi-directional drag targets).
+- Moving dogs between volunteers is already handled by the "add dog" picker.
+- Dog order within a volunteer matters most (which dog walks first).
+
+**Why drag handles (not long-press)?**
+- More discoverable — users see the handle immediately.
+- Avoids conflict with existing long-press to remove and tap to show dog actions.

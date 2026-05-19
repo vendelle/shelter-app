@@ -14,6 +14,7 @@ class VolunteerColumn extends StatelessWidget {
     required this.onRemoveVolunteer,
     required this.onTapDog,
     required this.onEditVolunteerNote,
+    required this.onReorderDogs,
     this.compact = true,
     this.overview = false,
   });
@@ -24,6 +25,7 @@ class VolunteerColumn extends StatelessWidget {
   final VoidCallback onRemoveVolunteer;
   final ValueChanged<int> onTapDog;
   final VoidCallback onEditVolunteerNote;
+  final void Function(int oldIndex, int newIndex) onReorderDogs;
   final bool compact;
   final bool overview;
 
@@ -81,14 +83,38 @@ class VolunteerColumn extends StatelessWidget {
               ),
             ),
           ),
-          // Dog rows
-          ...assignment.dogs.map((entry) => _DogRow(
-                entry: entry,
-                compact: compact,
-                overview: overview,
-                onRemove: () => onRemoveDog(entry.dogId),
-                onTap: () => onTapDog(entry.dogId),
-              )),
+          // Dog rows (reorderable)
+          if (assignment.dogs.isNotEmpty && !overview)
+            ReorderableListView(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              buildDefaultDragHandles: false,
+              onReorder: (oldIndex, newIndex) {
+                if (newIndex > oldIndex) newIndex--;
+                onReorderDogs(oldIndex, newIndex);
+              },
+              children: [
+                for (var i = 0; i < assignment.dogs.length; i++)
+                  _DogRow(
+                    key: ValueKey(assignment.dogs[i].dogId),
+                    entry: assignment.dogs[i],
+                    index: i,
+                    compact: compact,
+                    overview: overview,
+                    onRemove: () => onRemoveDog(assignment.dogs[i].dogId),
+                    onTap: () => onTapDog(assignment.dogs[i].dogId),
+                  ),
+              ],
+            )
+          else
+            ...assignment.dogs.map((entry) => _DogRow(
+                  key: ValueKey(entry.dogId),
+                  entry: entry,
+                  compact: compact,
+                  overview: overview,
+                  onRemove: () => onRemoveDog(entry.dogId),
+                  onTap: () => onTapDog(entry.dogId),
+                )),
           // Add dog button — hidden in overview mode
           if (!overview)
             InkWell(
@@ -117,9 +143,11 @@ class VolunteerColumn extends StatelessWidget {
 
 class _DogRow extends StatelessWidget {
   const _DogRow({
+    super.key,
     required this.entry,
     required this.onRemove,
     required this.onTap,
+    this.index,
     this.compact = true,
     this.overview = false,
   });
@@ -127,6 +155,7 @@ class _DogRow extends StatelessWidget {
   final DogEntry entry;
   final VoidCallback onRemove;
   final VoidCallback onTap;
+  final int? index;
   final bool compact;
   final bool overview;
 
@@ -229,7 +258,7 @@ class _DogRow extends StatelessWidget {
     // In overview mode, skip Dismissible and InkWell for non-interactive look
     if (overview) return dogContent;
 
-    return Dismissible(
+    final row = Dismissible(
       key: ValueKey(entry.dogId),
       direction: DismissDirection.endToStart,
       onDismissed: (_) => onRemove(),
@@ -242,8 +271,28 @@ class _DogRow extends StatelessWidget {
       ),
       child: InkWell(
         onTap: onTap,
-        child: dogContent,
+        child: index != null
+            ? Row(
+                children: [
+                  ReorderableDragStartListener(
+                    index: index!,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 4, vertical: 4),
+                      child: Icon(
+                        Icons.drag_indicator,
+                        size: 16,
+                        color: colorScheme.outline.withValues(alpha: 0.5),
+                      ),
+                    ),
+                  ),
+                  Expanded(child: dogContent),
+                ],
+              )
+            : dogContent,
       ),
     );
+
+    return row;
   }
 }

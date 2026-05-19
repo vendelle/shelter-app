@@ -92,8 +92,8 @@ describe('/api/dayplan', () => {
 
 		it('returns empty array for date with no walks', async () => {
 			mockPool.query
-				.mockResolvedValueOnce({ rows: [] })
-				.mockResolvedValueOnce({ rows: [] });
+				.mockResolvedValueOnce({ rows: [] })  // walks query
+				.mockResolvedValueOnce({ rows: [] }); // volunteer notes query
 
 			await handler(
 				mockRequest({ method: 'GET', query: { date: '2026-01-01' } }),
@@ -190,6 +190,13 @@ describe('/api/dayplan', () => {
 			const calls = mockPool.query.mock.calls.map((c: unknown[]) => c[0]);
 			expect(calls[0]).toBe('BEGIN');
 			expect(calls[calls.length - 1]).toBe('COMMIT');
+
+			// Verify INSERT includes sort_order
+			const insertCall = mockPool.query.mock.calls.find(
+				(c: unknown[]) => typeof c[0] === 'string' && (c[0] as string).includes('INSERT INTO walks'),
+			);
+			expect(insertCall).toBeDefined();
+			expect(insertCall![1]).toEqual([10, 100, '2026-03-31', 'shy', 1, 0]);
 		});
 
 		it('saves volunteer notes', async () => {
@@ -315,15 +322,15 @@ describe('/api/dayplan', () => {
 
 			expect(res._status).toBe(200);
 
-			// Verify UPDATE query was issued with new values
+			// Verify UPDATE query was issued with new values + sort_order
 			const updateCall = mockPool.query.mock.calls.find(
 				(c: unknown[]) => typeof c[0] === 'string' && (c[0] as string).includes('UPDATE walks SET'),
 			);
 			expect(updateCall).toBeDefined();
-			expect(updateCall![1]).toEqual([200, 'shy', 2, 99]);
+			expect(updateCall![1]).toEqual([200, 'shy', 2, 0, 99]);
 		});
 
-		it('skips update when data is unchanged', async () => {
+		it('always updates sort_order even when data is unchanged', async () => {
 			const existingWalks = [
 				{ id: 99, dog_id: 10, volunteer_id: 100, notes: null, group_index: 1 },
 			];
@@ -331,6 +338,7 @@ describe('/api/dayplan', () => {
 			mockPool.query
 				.mockResolvedValueOnce({ rows: [] }) // BEGIN
 				.mockResolvedValueOnce({ rows: existingWalks }) // SELECT existing
+				.mockResolvedValueOnce({ rows: [] }) // UPDATE (sort_order)
 				.mockResolvedValueOnce({ rows: [] }); // COMMIT
 
 			await handler(
@@ -346,11 +354,12 @@ describe('/api/dayplan', () => {
 
 			expect(res._status).toBe(200);
 
-			// No UPDATE should have been called
+			// UPDATE should always be called to persist sort_order
 			const updateCalls = mockPool.query.mock.calls.filter(
 				(c: unknown[]) => typeof c[0] === 'string' && (c[0] as string).includes('UPDATE walks SET'),
 			);
-			expect(updateCalls).toHaveLength(0);
+			expect(updateCalls).toHaveLength(1);
+			expect(updateCalls[0][1]).toEqual([100, null, 1, 0, 99]);
 		});
 
 		it('soft-deletes walks removed from plan', async () => {
@@ -362,6 +371,7 @@ describe('/api/dayplan', () => {
 			mockPool.query
 				.mockResolvedValueOnce({ rows: [] }) // BEGIN
 				.mockResolvedValueOnce({ rows: existingWalks }) // SELECT existing
+				.mockResolvedValueOnce({ rows: [] }) // UPDATE walk (dog 10, sort_order)
 				.mockResolvedValueOnce({ rows: [] }) // DELETE (soft) dog 11
 				.mockResolvedValueOnce({ rows: [] }); // COMMIT
 

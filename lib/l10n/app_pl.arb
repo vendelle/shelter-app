@@ -40,6 +40,8 @@
   "cancel": "Anuluj",
   "save": "Zapisz",
   "saved": "Zapisano",
+  "saving": "Zapisuję…",
+  "saveError": "Błąd zapisu",
   "noWalksPlannedYet": "Brak zaplanowanych spacerów",
   "addFirstVolunteer": "Dodaj pierwszego wolo",
   "addVolunteer": "Dodaj wolo",
