@@ -223,6 +223,23 @@ class PlannerShareLayout extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           // Summary footer — localized volunteer/dog count
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'Po spacerze sprawdź, czy pies nie ma kleszczy ',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.outline,
+                ),
+              ),
+              Icon(
+                Icons.pest_control,
+                size: 16,
+                color: colorScheme.outline,
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
           Text(
             AppLocalizations.of(context)?.nVolunteersNDogs(
                   assignments.length,
