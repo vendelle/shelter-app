@@ -46,12 +46,14 @@ export function mockRequest(
 		method: string;
 		query: Record<string, string | string[]>;
 		body: unknown;
+		headers: Record<string, string>;
 	}> = {},
 ): VercelRequest {
 	return {
 		method: overrides.method ?? 'GET',
 		query: overrides.query ?? {},
 		body: overrides.body ?? {},
+		headers: overrides.headers ?? {},
 	} as unknown as VercelRequest;
 }
 

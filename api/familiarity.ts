@@ -1,6 +1,15 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { handleError, setCorsHeaders } from './util';
-import pool from './connection';
+import { handleError, setCorsHeaders } from './_lib/util';
+import pool from './_lib/connection';
+import { requireAuth, type AuthUser } from './_lib/auth-middleware';
+
+/** Check if the authenticated user is allowed to modify this volunteer's preferences. */
+function canEditFamiliarity(user: AuthUser, volunteerId: number): boolean {
+	// Admins and super_admins can edit anyone's
+	if (user.role === 'admin' || user.role === 'super_admin') return true;
+	// Volunteers can only edit their own (must be linked)
+	return user.volunteerId === volunteerId;
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
 	setCorsHeaders(res);
@@ -20,12 +29,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 		}
 
 		if (req.method === 'PUT') {
+			const user = await requireAuth(req, res);
+			if (!user) return;
+
 			const { volunteer_id, dog_id, level } = req.body;
 			if (!volunteer_id || !dog_id || !level) {
 				return res.status(400).json({ error: 'volunteer_id, dog_id, and level are required' });
 			}
 			if (!['good', 'difficult', 'never'].includes(level)) {
 				return res.status(400).json({ error: 'level must be one of: good, difficult, never' });
+			}
+			if (!canEditFamiliarity(user, Number(volunteer_id))) {
+				return res.status(403).json({ error: 'You can only edit your own preferences' });
 			}
 			const result = await pool.query(
 				`INSERT INTO volunteer_dog_familiarity (volunteer_id, dog_id, level)
@@ -38,10 +53,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 		}
 
 		if (req.method === 'DELETE') {
+			const user = await requireAuth(req, res);
+			if (!user) return;
+
 			const volunteerId = req.query.volunteer_id;
 			const dogId = req.query.dog_id;
 			if (!volunteerId || !dogId) {
 				return res.status(400).json({ error: 'volunteer_id and dog_id query params are required' });
+			}
+			if (!canEditFamiliarity(user, Number(volunteerId))) {
+				return res.status(403).json({ error: 'You can only edit your own preferences' });
 			}
 			await pool.query(
 				'DELETE FROM volunteer_dog_familiarity WHERE volunteer_id = $1 AND dog_id = $2',

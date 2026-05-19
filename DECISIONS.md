@@ -236,3 +236,189 @@ Within each feature, we use a lightweight `data/domain/presentation` split:
 - No cookie-based auth — the API is stateless, so `*` is safe.
 
 **When to revisit:** If authentication with cookies/sessions is added (restrict to specific origins).
+
+---
+
+## Authentication: Firebase Auth with Google Sign-In
+
+**Decision**: Use Firebase Authentication with Google Sign-In as the identity provider, combined with a custom backend user table for role-based authorization.
+
+**Why Firebase Auth (not custom email/password)?**
+- All shelter volunteers already have Google accounts (shared Google Drive).
+- Google Sign-In is one-tap on mobile, popup on web — minimal friction.
+- Firebase Auth is free (unlimited email/social sign-ins on the Spark plan).
+- No password management, reset flows, or email verification to build.
+- Plays well with future mobile apps (same Firebase project).
+
+**Why not the `firebase-admin` SDK on the backend?**
+- `firebase-admin` is ~50MB and causes slow cold starts on Vercel serverless functions.
+- Instead, we verify Firebase ID tokens using Google's public key certificates directly — lightweight, zero-dependency, same security guarantees.
+- Token verification uses `crypto.verify()` (Node.js built-in) with cached Google certs.
+
+**Why not Facebook Login?**
+- Meta Developer review process (days/weeks), requires published privacy policy.
+- Higher maintenance: Meta SDK changes frequently.
+- Firebase Auth supports adding Facebook later with account linking — no code architecture changes needed.
+
+**Why a backend `users` table (not just Firebase)?**
+- Firebase doesn't know about shelter-specific concepts (volunteer links, roles, approval flow).
+- Our backend stores: `role` (pending → volunteer → admin → super_admin), `volunteer_id` link, approval status.
+- The API verifies the Firebase token, then checks the backend user for authorization decisions.
+
+---
+
+## Authorization: 4-Tier Role System
+
+**Decision**: Four roles with increasing permissions: `pending`, `volunteer`, `admin`, `super_admin`.
+
+| Role | Who | Permissions |
+|------|-----|-------------|
+| **Anonymous** | Anyone with the URL | View all plans (any date), view dog overview |
+| **Pending** | Signed in, not yet approved | Same as anonymous |
+| **Volunteer** | Approved by super_admin | Edit day plans, edit own familiarity preferences |
+| **Admin** | Trusted managers | Add/edit/archive dogs and volunteers |
+| **Super Admin** | App owner + designated person | All admin powers + user approval + role management |
+
+**Why not link permissions to volunteer seniority?**
+- Shelter seniority reflects experience with dogs, not technical trust or app needs.
+- A "senior" volunteer might only check plans on their phone; a "new" volunteer who's a developer might manage the dog list.
+- Roles reflect the person's needs in the app, not their shelter status.
+
+**Why separate `admin` from `super_admin`?**
+- Admins manage shelter data (dogs, volunteers).
+- Super admins manage access control (approvals, role changes).
+- This separation prevents accidental permission escalation — an admin can't grant themselves super_admin.
+- With <10 people needing admin access, this is practical without being overcomplicated.
+
+**Why keep day plans open for anonymous viewing?**
+- The app's core value is letting anyone check the plan — older volunteers, quick phone access.
+- Editing requires login because the backend must attribute changes to a user.
+
+---
+
+## Approval Flow
+
+**Decision**: New accounts start as `pending` and must be approved by a `super_admin`.
+
+**Why?**
+- The app URL is known within the shelter community; anyone could sign up.
+- Approval prevents unauthorized access to admin features.
+- Pending users still have anonymous-level access — no incentive to avoid signing up.
+
+**How volunteer linking works:**
+1. During sign-up, the user picks "I am [Volunteer Name]" from a dropdown (self-service).
+2. Super admin sees the claimed link during approval and confirms it.
+3. The volunteer link is unique — one user per volunteer profile (prevents duplicates).
+
+---
+
+## Familiarity Preferences: Login Required
+
+**Decision**: Editing volunteer-dog familiarity preferences requires authentication.
+
+**Why?**
+- Preferences are personal ("I don't want to walk dog X") — ownership matters.
+- Google Sign-In is one tap — minimal friction for the volunteer.
+- Logged-in preferences enable future features: auto-fill from walk history, personal notifications.
+- Volunteers can only edit their own preferences; admins can edit anyone's.
+- Viewing familiarity data stays open (planners need it during planning).
+
+---
+
+## Auth Token Handling
+
+**Decision**: Firebase ID token is attached to every API request as `Authorization: Bearer <token>`.
+
+**Why?**
+- Stateless — no sessions, no cookies, works across platforms.
+- CORS-safe with `Access-Control-Allow-Headers: Authorization`.
+- Token expires after 1 hour; Firebase SDK handles refresh automatically.
+- Backend endpoints decide individually whether auth is required or optional.
+
+**Graceful degradation:**
+- If no token is present, the user is treated as anonymous.
+- If the token is invalid/expired, endpoints that require auth return 401.
+- The Flutter app catches 401 and prompts login.
+
+---
+
+## Audit Trail (Future-Ready Design)
+
+**Decision**: Design for audit logging but don't implement it yet.
+
+**Why defer?**
+- The current volunteer group uses a Google Sheet where "who changed what" is visible.
+- The `users` table with `last_login_at` provides basic activity tracking.
+- A full audit log (who, what, when, old/new values) is planned for a future iteration.
+
+**Planned schema (not yet created):**
+```sql
+CREATE TABLE audit_log (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id),
+    action TEXT NOT NULL,
+    entity_type TEXT NOT NULL,
+    entity_id INTEGER,
+    changes JSONB,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+**What this enables later:**
+- "Last edited by [Name]" labels in the UI
+- Change history per dog/volunteer/plan
+- Rollback capability (JSONB stores old values)
+
+---
+
+## API File Structure: `_lib/` Convention for Vercel Hobby Plan
+
+**Decision**: Move non-endpoint utility files from `api/` to `api/_lib/`. Move migration scripts to `api/_migrations/`.
+
+**Why?**
+- Vercel Hobby plan allows **max 12 serverless functions** per deployment.
+- Vercel treats every `.ts` file in `api/` as a serverless function — even utility modules that don't export a handler.
+- With 9 endpoints + 5 utility modules = 14 files, we exceeded the limit.
+- Vercel's own convention: directories prefixed with `_` inside `api/` are **excluded** from function deployment but remain importable.
+
+**What moved to `api/_lib/`:**
+- `connection.ts` — Database pool
+- `util.ts` — CORS headers, error handling
+- `auth-middleware.ts` — Auth guards
+- `firebase-token.ts` — Token verification
+- `kennel-regions.ts` — Kennel→region mapping
+
+**Result:** 9 deployed functions, 3 slots remaining for future endpoints.
+
+**Why not consolidate endpoints into fewer files?**
+- Each file is a clean REST resource boundary (dogs, walks, volunteers, etc.).
+- Vercel provides per-endpoint monitoring, logs, and cold-start isolation.
+- `_lib/` solves the problem without sacrificing code clarity.
+
+**Why not switch to Express/Fastify with a single function?**
+- Adds a framework dependency and loses Vercel's zero-config benefits.
+- Overkill for 9 endpoints.
+- Would need revisiting if we ever exceed 12 real endpoints.
+
+---
+
+## Demo Mode: Recruiter Showcase Environment
+
+**Decision**: Add a `FLUTTER_DEMO_MODE` compile-time flag that auto-logs in a demo user on a separate Vercel deployment.
+
+**Why?**
+- Recruiters should experience the full app without Google Sign-In friction.
+- The demo environment uses a separate database — edits are safe and disposable.
+- A compile-time flag means zero runtime cost in production (dead code elimination).
+
+**How it works:**
+1. Demo Vercel deployment has `FLUTTER_DEMO_MODE=true` as a build env var.
+2. Flutter app detects the flag at compile time (`String.fromEnvironment`).
+3. On load, calls `GET /api/auth/demo` instead of Firebase Sign-In.
+4. Backend returns the pre-created demo user from the demo database.
+5. App bar shows an orange "DEMO MODE" badge for clarity.
+
+**Why not use a test account with real Google Sign-In?**
+- Requires the recruiter to have a Google account and go through OAuth flow.
+- Adds friction that has nothing to do with evaluating the app.
+- Demo mode is one fewer step between "click link" and "see the app working".

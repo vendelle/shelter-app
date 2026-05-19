@@ -1,4 +1,4 @@
-import { handleError, setCorsHeaders } from '../util';
+import { handleError, setCorsHeaders } from '../_lib/util';
 import { mockResponse, type MockResponse } from './helpers';
 
 describe('util', () => {
@@ -10,11 +10,11 @@ describe('util', () => {
 			expect(res.setHeader).toHaveBeenCalledWith('Access-Control-Allow-Origin', '*');
 			expect(res.setHeader).toHaveBeenCalledWith(
 				'Access-Control-Allow-Methods',
-				'GET,POST,PUT,DELETE,OPTIONS',
+				'GET,POST,PUT,PATCH,DELETE,OPTIONS',
 			);
 			expect(res.setHeader).toHaveBeenCalledWith(
 				'Access-Control-Allow-Headers',
-				'Content-Type',
+				'Content-Type, Authorization',
 			);
 		});
 	});
@@ -61,7 +61,7 @@ describe('util', () => {
 		beforeEach(() => {
 			jest.resetModules();
 			// Mock the pool module before importing util
-			jest.doMock('../connection', () => ({
+			jest.doMock('../_lib/connection', () => ({
 				__esModule: true,
 				default: {
 					query: jest.fn(),
@@ -70,14 +70,14 @@ describe('util', () => {
 		});
 
 		afterEach(() => {
-			jest.unmock('../connection');
+			jest.unmock('../_lib/connection');
 		});
 
 		it('returns true when column exists', async () => {
-			pool = require('../connection').default;
+			pool = require('../_lib/connection').default;
 			pool.query.mockResolvedValueOnce({ rows: [{ '1': 1 }] });
 
-			const util = await import('../util');
+			const util = await import('../_lib/util');
 			const result = await util.hasColumn('dogs', 'region');
 
 			expect(result).toBe(true);
@@ -88,10 +88,10 @@ describe('util', () => {
 		});
 
 		it('returns false when column does not exist', async () => {
-			pool = require('../connection').default;
+			pool = require('../_lib/connection').default;
 			pool.query.mockResolvedValueOnce({ rows: [] });
 
-			const util = await import('../util');
+			const util = await import('../_lib/util');
 			const result = await util.hasColumn('dogs', 'nonexistent');
 
 			expect(result).toBe(false);
@@ -102,10 +102,10 @@ describe('util', () => {
 		});
 
 		it('caches column existence check', async () => {
-			pool = require('../connection').default;
+			pool = require('../_lib/connection').default;
 			pool.query.mockResolvedValueOnce({ rows: [{ '1': 1 }] });
 
-			const util = await import('../util');
+			const util = await import('../_lib/util');
 
 			// First call should query the database
 			const result1 = await util.hasColumn('dogs', 'region');
@@ -119,11 +119,11 @@ describe('util', () => {
 		});
 
 		it('differentiates cache by table.column', async () => {
-			pool = require('../connection').default;
+			pool = require('../_lib/connection').default;
 			pool.query.mockResolvedValueOnce({ rows: [{ '1': 1 }] });
 			pool.query.mockResolvedValueOnce({ rows: [] });
 
-			const util = await import('../util');
+			const util = await import('../_lib/util');
 
 			const result1 = await util.hasColumn('dogs', 'region');
 			expect(result1).toBe(true);
@@ -135,11 +135,11 @@ describe('util', () => {
 		});
 
 		it('cache can be cleared', async () => {
-			pool = require('../connection').default;
+			pool = require('../_lib/connection').default;
 			pool.query.mockResolvedValueOnce({ rows: [{ '1': 1 }] });
 			pool.query.mockResolvedValueOnce({ rows: [{ '1': 1 }] });
 
-			const util = await import('../util');
+			const util = await import('../_lib/util');
 
 			// First call
 			let result = await util.hasColumn('dogs', 'region');
@@ -159,17 +159,17 @@ describe('util', () => {
 	describe('clearColumnCache', () => {
 		it('clears all cached column checks', async () => {
 			jest.resetModules();
-			jest.doMock('../connection', () => ({
+			jest.doMock('../_lib/connection', () => ({
 				__esModule: true,
 				default: {
 					query: jest.fn(),
 				},
 			}));
 
-			const pool = require('../connection').default;
+			const pool = require('../_lib/connection').default;
 			pool.query.mockResolvedValue({ rows: [{ '1': 1 }] });
 
-			const util = await import('../util');
+			const util = await import('../_lib/util');
 
 			// Cache a result
 			await util.hasColumn('dogs', 'region');
@@ -182,7 +182,7 @@ describe('util', () => {
 			await util.hasColumn('dogs', 'region');
 			expect(pool.query).toHaveBeenCalledTimes(2);
 
-			jest.unmock('../connection');
+			jest.unmock('../_lib/connection');
 		});
 	});
 });

@@ -2,7 +2,7 @@ import { createMockPool, mockRequest, mockResponse, type MockPool, type MockResp
 
 let mockPool: MockPool;
 
-jest.mock('../connection', () => {
+jest.mock('../_lib/connection', () => {
 	mockPool = createMockPool();
 	return {
 		__esModule: true,
@@ -11,13 +11,26 @@ jest.mock('../connection', () => {
 	};
 });
 
-jest.mock('../util', () => {
-	const actual = jest.requireActual('../util');
+jest.mock('../_lib/util', () => {
+	const actual = jest.requireActual('../_lib/util');
 	return {
 		...actual,
 		hasColumn: jest.fn().mockResolvedValue(true),
 	};
 });
+
+// Mock auth middleware to always allow (existing tests focus on business logic)
+jest.mock('../_lib/auth-middleware', () => ({
+	requireAuth: jest.fn().mockResolvedValue({
+		id: 1, firebaseUid: 'test-uid', email: 'vol@test.com',
+		displayName: 'Volunteer', photoUrl: null, volunteerId: null, role: 'volunteer',
+	}),
+	requireRole: jest.fn().mockResolvedValue({
+		id: 1, firebaseUid: 'test-uid', email: 'vol@test.com',
+		displayName: 'Volunteer', photoUrl: null, volunteerId: null, role: 'volunteer',
+	}),
+	getAuthUser: jest.fn().mockResolvedValue(null),
+}));
 
 import handler from '../dayplan';
 

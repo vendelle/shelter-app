@@ -1,7 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { handleError, setCorsHeaders, hasColumn } from './util';
-import pool from './connection';
-import { getRegionForKennel } from './kennel-regions';
+import { handleError, setCorsHeaders, hasColumn } from './_lib/util';
+import pool from './_lib/connection';
+import { getRegionForKennel } from './_lib/kennel-regions';
+import { requireRole } from './_lib/auth-middleware';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
 	setCorsHeaders(res);
@@ -30,6 +31,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 		}
 
 		if (req.method === 'POST') {
+			const user = await requireRole(req, res, 'admin');
+			if (!user) return;
+
 			const { name, shelterid, kennel, region } = req.body;
 			if (!name || !shelterid || !kennel) {
 				return res.status(400).json({ error: 'name, shelterid, and kennel are required' });
@@ -51,6 +55,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 		}
 
 		if (req.method === 'PATCH') {
+			const user = await requireRole(req, res, 'admin');
+			if (!user) return;
+
 			const { id, name, shelterid, kennel, region } = req.body;
 			if (!id) return res.status(400).json({ error: 'id is required' });
 
@@ -75,6 +82,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 		}
 
 		if (req.method === 'PUT') {
+			const user = await requireRole(req, res, 'admin');
+			if (!user) return;
+
 			const id = req.query.id;
 			const archive = req.query.archive === 'true';
 			if (!id) return res.status(400).json({ error: 'id query param is required' });

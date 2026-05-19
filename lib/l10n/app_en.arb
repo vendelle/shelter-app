@@ -162,5 +162,31 @@
   "showLess": "Hide details",
   "overviewMode": "Overview",
 
-  "languageToggle": "Change language"
+  "languageToggle": "Change language",
+
+  "loginSubtitle": "Sign in to manage dogs, volunteers, and your preferences",
+  "loginWithGoogle": "Sign in with Google",
+  "loginContinueAsGuest": "Continue as guest",
+  "loginSelectVolunteer": "I am a volunteer",
+  "loginVolunteerHelper": "Link your account to your volunteer profile",
+  "loginNotAVolunteer": "Don't link to a volunteer",
+  "loginVolunteerLoadError": "Could not load volunteer list",
+  "loginError": "Sign-in failed. Please try again.",
+  "loginPendingTitle": "Account pending approval",
+  "loginPendingMessage": "Your account has been created. An admin needs to approve it before you get full access.",
+
+  "signIn": "Sign in",
+  "signOut": "Sign out",
+  "signedInAs": "Signed in as {name}",
+
+  "userManagement": "User Management",
+  "pendingApproval": "Pending",
+  "approve": "Approve",
+  "userRolePending": "Pending approval",
+  "userRoleVolunteer": "Volunteer",
+  "userRoleAdmin": "Admin",
+  "userRoleSuperAdmin": "Super Admin",
+  "changeRole": "Change role",
+  "noUsersFound": "No users found",
+  "usersTab": "Users"
 }

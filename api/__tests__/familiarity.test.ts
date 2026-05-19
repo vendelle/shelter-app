@@ -2,7 +2,7 @@ import { createMockPool, mockRequest, mockResponse, type MockPool, type MockResp
 
 let mockPool: MockPool;
 
-jest.mock('../connection', () => {
+jest.mock('../_lib/connection', () => {
 	mockPool = createMockPool();
 	return {
 		__esModule: true,
@@ -10,6 +10,19 @@ jest.mock('../connection', () => {
 		getPool: () => mockPool,
 	};
 });
+
+// Mock auth middleware — familiarity PUT/DELETE require auth
+jest.mock('../_lib/auth-middleware', () => ({
+	requireAuth: jest.fn().mockResolvedValue({
+		id: 1, firebaseUid: 'test-uid', email: 'admin@test.com',
+		displayName: 'Admin', photoUrl: null, volunteerId: 1, role: 'admin',
+	}),
+	requireRole: jest.fn().mockResolvedValue({
+		id: 1, firebaseUid: 'test-uid', email: 'admin@test.com',
+		displayName: 'Admin', photoUrl: null, volunteerId: 1, role: 'admin',
+	}),
+	getAuthUser: jest.fn().mockResolvedValue(null),
+}));
 
 import handler from '../familiarity';
 

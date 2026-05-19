@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { handleError, setCorsHeaders } from './util';
-import pool from './connection';
+import { handleError, setCorsHeaders } from './_lib/util';
+import pool from './_lib/connection';
+import { requireRole } from './_lib/auth-middleware';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
 	setCorsHeaders(res);
@@ -20,6 +21,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 		}
 
 		if (req.method === 'POST') {
+			const user = await requireRole(req, res, 'admin');
+			if (!user) return;
+
 			const { first_name, last_name, role } = req.body;
 			if (!first_name || !last_name) {
 				return res.status(400).json({ error: 'first_name and last_name are required' });
@@ -33,6 +37,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 		}
 
 		if (req.method === 'PATCH') {
+			const user = await requireRole(req, res, 'admin');
+			if (!user) return;
+
 			const { id, first_name, last_name, role } = req.body;
 			if (!id) return res.status(400).json({ error: 'id is required' });
 
@@ -54,6 +61,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 		}
 
 		if (req.method === 'PUT') {
+			const user = await requireRole(req, res, 'admin');
+			if (!user) return;
+
 			const id = req.query.id;
 			const archive = req.query.archive === 'true';
 			if (!id) return res.status(400).json({ error: 'id query param is required' });
