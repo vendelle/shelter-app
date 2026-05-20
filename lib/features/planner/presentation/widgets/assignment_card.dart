@@ -87,6 +87,7 @@ class VolunteerColumn extends StatelessWidget {
           if (assignment.dogs.isNotEmpty && !overview)
             ReorderableListView(
               shrinkWrap: true,
+              buildDefaultDragHandles: false,
               physics: const NeverScrollableScrollPhysics(),
               onReorder: (oldIndex, newIndex) {
                 if (newIndex > oldIndex) newIndex--;
@@ -94,13 +95,16 @@ class VolunteerColumn extends StatelessWidget {
               },
               children: [
                 for (var i = 0; i < assignment.dogs.length; i++)
-                  _DogRow(
+                  ReorderableDelayedDragStartListener(
                     key: ValueKey(assignment.dogs[i].dogId),
-                    entry: assignment.dogs[i],
-                    compact: compact,
-                    overview: overview,
-                    onRemove: () => onRemoveDog(assignment.dogs[i].dogId),
-                    onTap: () => onTapDog(assignment.dogs[i].dogId),
+                    index: i,
+                    child: _DogRow(
+                      entry: assignment.dogs[i],
+                      compact: compact,
+                      overview: overview,
+                      onRemove: () => onRemoveDog(assignment.dogs[i].dogId),
+                      onTap: () => onTapDog(assignment.dogs[i].dogId),
+                    ),
                   ),
               ],
             )
