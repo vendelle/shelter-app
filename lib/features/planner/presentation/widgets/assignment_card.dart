@@ -14,6 +14,7 @@ class VolunteerColumn extends StatelessWidget {
     required this.onRemoveVolunteer,
     required this.onTapDog,
     required this.onEditVolunteerNote,
+    required this.onReorderDogs,
     this.compact = true,
     this.overview = false,
   });
@@ -24,6 +25,7 @@ class VolunteerColumn extends StatelessWidget {
   final VoidCallback onRemoveVolunteer;
   final ValueChanged<int> onTapDog;
   final VoidCallback onEditVolunteerNote;
+  final void Function(int oldIndex, int newIndex) onReorderDogs;
   final bool compact;
   final bool overview;
 
@@ -81,14 +83,42 @@ class VolunteerColumn extends StatelessWidget {
               ),
             ),
           ),
-          // Dog rows
-          ...assignment.dogs.map((entry) => _DogRow(
-                entry: entry,
-                compact: compact,
-                overview: overview,
-                onRemove: () => onRemoveDog(entry.dogId),
-                onTap: () => onTapDog(entry.dogId),
-              )),
+          // Dog rows (reorderable via long-press)
+          if (assignment.dogs.isNotEmpty && !overview)
+            ReorderableListView(
+              shrinkWrap: true,
+              buildDefaultDragHandles: false,
+              physics: const NeverScrollableScrollPhysics(),
+              // ignore: deprecated_member_use
+              onReorder: (oldIndex, newIndex) {
+                // TODO: Replace with onReorderItem once Flutter 3.42+ is stable
+                if (newIndex > oldIndex) newIndex--;
+                onReorderDogs(oldIndex, newIndex);
+              },
+              children: [
+                for (var i = 0; i < assignment.dogs.length; i++)
+                  ReorderableDelayedDragStartListener(
+                    key: ValueKey(assignment.dogs[i].dogId),
+                    index: i,
+                    child: _DogRow(
+                      entry: assignment.dogs[i],
+                      compact: compact,
+                      overview: overview,
+                      onRemove: () => onRemoveDog(assignment.dogs[i].dogId),
+                      onTap: () => onTapDog(assignment.dogs[i].dogId),
+                    ),
+                  ),
+              ],
+            )
+          else
+            ...assignment.dogs.map((entry) => _DogRow(
+                  key: ValueKey(entry.dogId),
+                  entry: entry,
+                  compact: compact,
+                  overview: overview,
+                  onRemove: () => onRemoveDog(entry.dogId),
+                  onTap: () => onTapDog(entry.dogId),
+                )),
           // Add dog button — hidden in overview mode
           if (!overview)
             InkWell(
@@ -117,6 +147,7 @@ class VolunteerColumn extends StatelessWidget {
 
 class _DogRow extends StatelessWidget {
   const _DogRow({
+    super.key,
     required this.entry,
     required this.onRemove,
     required this.onTap,
@@ -229,7 +260,7 @@ class _DogRow extends StatelessWidget {
     // In overview mode, skip Dismissible and InkWell for non-interactive look
     if (overview) return dogContent;
 
-    return Dismissible(
+    final row = Dismissible(
       key: ValueKey(entry.dogId),
       direction: DismissDirection.endToStart,
       onDismissed: (_) => onRemove(),
@@ -245,5 +276,7 @@ class _DogRow extends StatelessWidget {
         child: dogContent,
       ),
     );
+
+    return row;
   }
 }
