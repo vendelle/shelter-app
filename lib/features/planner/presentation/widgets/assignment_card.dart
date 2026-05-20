@@ -90,8 +90,8 @@ class VolunteerColumn extends StatelessWidget {
               buildDefaultDragHandles: false,
               physics: const NeverScrollableScrollPhysics(),
               // ignore: deprecated_member_use
-              // TODO: Replace with onReorderItem once Flutter 3.42+ is stable
               onReorder: (oldIndex, newIndex) {
+                // TODO: Replace with onReorderItem once Flutter 3.42+ is stable
                 if (newIndex > oldIndex) newIndex--;
                 onReorderDogs(oldIndex, newIndex);
               },
