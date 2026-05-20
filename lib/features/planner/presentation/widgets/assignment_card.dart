@@ -85,6 +85,8 @@ class VolunteerColumn extends StatelessWidget {
           ),
           // Dog rows (reorderable via long-press)
           if (assignment.dogs.isNotEmpty && !overview)
+            // ignore: deprecated_member_use
+            // TODO: Replace with onReorderItem once Flutter 3.42+ is stable
             ReorderableListView(
               shrinkWrap: true,
               buildDefaultDragHandles: false,

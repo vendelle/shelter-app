@@ -13,11 +13,14 @@ Flutter mobile/web + Vercel serverless API (TypeScript) + PostgreSQL.
 
 ## Code Quality
 
-- Run `flutter analyze` before committing — zero errors/warnings required
+- **Run `flutter analyze` before committing** — must report **zero issues** (errors and warnings). Info-level hints are acceptable unless they're actionable deprecations.
 - Run `npx jest` for API changes — all tests must pass
 - Run `flutter test` for Flutter changes — all tests must pass
 - Write tests for every new feature (Flutter widget/unit tests + API unit tests)
-- No `// ignore` comments unless explicitly discussed and justified
+- Use `// ignore: <rule>` comments only when:
+  - A Flutter API is deprecated but the replacement isn't available in the current SDK version (add TODO with migration path)
+  - External package has unavoidable warnings
+  - Always document the reason inline with the ignore comment
 
 ## Commit & Branch Conventions
 
