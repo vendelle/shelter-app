@@ -83,12 +83,11 @@ class VolunteerColumn extends StatelessWidget {
               ),
             ),
           ),
-          // Dog rows (reorderable)
+          // Dog rows (reorderable via long-press)
           if (assignment.dogs.isNotEmpty && !overview)
             ReorderableListView(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              buildDefaultDragHandles: false,
               onReorder: (oldIndex, newIndex) {
                 if (newIndex > oldIndex) newIndex--;
                 onReorderDogs(oldIndex, newIndex);
@@ -98,7 +97,6 @@ class VolunteerColumn extends StatelessWidget {
                   _DogRow(
                     key: ValueKey(assignment.dogs[i].dogId),
                     entry: assignment.dogs[i],
-                    index: i,
                     compact: compact,
                     overview: overview,
                     onRemove: () => onRemoveDog(assignment.dogs[i].dogId),
@@ -147,7 +145,6 @@ class _DogRow extends StatelessWidget {
     required this.entry,
     required this.onRemove,
     required this.onTap,
-    this.index,
     this.compact = true,
     this.overview = false,
   });
@@ -155,7 +152,6 @@ class _DogRow extends StatelessWidget {
   final DogEntry entry;
   final VoidCallback onRemove;
   final VoidCallback onTap;
-  final int? index;
   final bool compact;
   final bool overview;
 
@@ -271,25 +267,7 @@ class _DogRow extends StatelessWidget {
       ),
       child: InkWell(
         onTap: onTap,
-        child: index != null
-            ? Row(
-                children: [
-                  ReorderableDragStartListener(
-                    index: index!,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 4, vertical: 4),
-                      child: Icon(
-                        Icons.drag_indicator,
-                        size: 16,
-                        color: colorScheme.outline.withValues(alpha: 0.5),
-                      ),
-                    ),
-                  ),
-                  Expanded(child: dogContent),
-                ],
-              )
-            : dogContent,
+        child: dogContent,
       ),
     );
 
