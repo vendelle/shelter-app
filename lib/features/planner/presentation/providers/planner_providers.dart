@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/api/api_providers.dart';
+import '../../../../core/locale/locale_provider.dart';
 import '../../../shared/domain/volunteer.dart';
 import '../../data/planner_repository.dart';
 import '../../domain/planner_dog.dart';
@@ -64,7 +65,7 @@ final plannerNotifierProvider =
 });
 
 /// Status of the auto-save mechanism.
-enum SaveStatus { idle, saving, saved, error }
+enum SaveStatus { idle, unsaved, saving, saved, error }
 
 class PlannerState {
   final List<VolunteerAssignment> assignments;
@@ -72,6 +73,7 @@ class PlannerState {
   final bool isLoading;
   final String? error;
   final SaveStatus saveStatus;
+  final bool autoSaveEnabled;
 
   const PlannerState({
     this.assignments = const [],
@@ -79,6 +81,7 @@ class PlannerState {
     this.isLoading = true,
     this.error,
     this.saveStatus = SaveStatus.idle,
+    this.autoSaveEnabled = true,
   });
 
   PlannerState copyWith({
@@ -87,6 +90,7 @@ class PlannerState {
     bool? isLoading,
     String? error,
     SaveStatus? saveStatus,
+    bool? autoSaveEnabled,
   }) {
     return PlannerState(
       assignments: assignments ?? this.assignments,
@@ -94,6 +98,7 @@ class PlannerState {
       isLoading: isLoading ?? this.isLoading,
       error: error,
       saveStatus: saveStatus ?? this.saveStatus,
+      autoSaveEnabled: autoSaveEnabled ?? this.autoSaveEnabled,
     );
   }
 
@@ -139,6 +144,7 @@ class PlannerState {
 
 class PlannerNotifier extends StateNotifier<PlannerState> {
   PlannerNotifier(this._ref) : super(const PlannerState()) {
+    _initAutoSave();
     _loadForDate(_ref.read(selectedDateProvider));
 
     _ref.listen(selectedDateProvider, (_, date) {
@@ -149,9 +155,30 @@ class PlannerNotifier extends StateNotifier<PlannerState> {
   final Ref _ref;
   Timer? _autoSaveTimer;
 
+  static const _prefsKey = 'planner_autosave';
+
+  void _initAutoSave() {
+    final prefs = _ref.read(sharedPreferencesProvider);
+    final enabled = prefs.getBool(_prefsKey) ?? true;
+    state = state.copyWith(autoSaveEnabled: enabled);
+  }
+
+  void toggleAutoSave() {
+    final newValue = !state.autoSaveEnabled;
+    state = state.copyWith(autoSaveEnabled: newValue);
+    _ref.read(sharedPreferencesProvider).setBool(_prefsKey, newValue);
+    if (newValue && state.saveStatus == SaveStatus.unsaved) {
+      _scheduleAutoSave();
+    } else if (!newValue) {
+      _autoSaveTimer?.cancel();
+    }
+  }
+
   /// Schedule an auto-save after 2 seconds of inactivity.
   void _scheduleAutoSave() {
     _autoSaveTimer?.cancel();
+    state = state.copyWith(saveStatus: SaveStatus.unsaved);
+    if (!state.autoSaveEnabled) return;
     _autoSaveTimer = Timer(const Duration(seconds: 2), () {
       _autoSave();
     });

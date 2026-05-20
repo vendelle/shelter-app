@@ -101,9 +101,12 @@ class PlannerScreen extends ConsumerWidget {
           // Status bar
           _StatusBar(
             saveStatus: plannerState.saveStatus,
+            autoSaveEnabled: plannerState.autoSaveEnabled,
             assignmentCount: plannerState.assignments.length,
             dogCount: plannerState.assignedDogIds.length,
             totalDogs: ref.watch(totalDogCountProvider).valueOrNull ?? 0,
+            onToggleAutoSave: notifier.toggleAutoSave,
+            onSave: notifier.save,
           ),
         ],
       ),
@@ -595,15 +598,21 @@ class _ErrorBody extends StatelessWidget {
 class _StatusBar extends StatelessWidget {
   const _StatusBar({
     required this.saveStatus,
+    required this.autoSaveEnabled,
     required this.assignmentCount,
     required this.dogCount,
     required this.totalDogs,
+    required this.onToggleAutoSave,
+    required this.onSave,
   });
 
   final SaveStatus saveStatus;
+  final bool autoSaveEnabled;
   final int assignmentCount;
   final int dogCount;
   final int totalDogs;
+  final VoidCallback onToggleAutoSave;
+  final VoidCallback onSave;
 
   @override
   Widget build(BuildContext context) {
@@ -629,9 +638,118 @@ class _StatusBar extends StatelessWidget {
                     ?.copyWith(color: theme.colorScheme.outline),
               ),
             ),
-            _SaveStatusIndicator(status: saveStatus),
+            if (autoSaveEnabled)
+              _SaveStatusIndicator(status: saveStatus)
+            else
+              _ManualSaveButton(
+                status: saveStatus,
+                onSave: onSave,
+              ),
+            const SizedBox(width: 8),
+            _AutoSaveToggle(
+              enabled: autoSaveEnabled,
+              onToggle: onToggleAutoSave,
+            ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _AutoSaveToggle extends StatelessWidget {
+  const _AutoSaveToggle({
+    required this.enabled,
+    required this.onToggle,
+  });
+
+  final bool enabled;
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return GestureDetector(
+      onTap: onToggle,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            AppLocalizations.of(context)!.autoSave,
+            style: theme.textTheme.bodySmall
+                ?.copyWith(color: theme.colorScheme.outline),
+          ),
+          const SizedBox(width: 4),
+          SizedBox(
+            height: 20,
+            width: 34,
+            child: Switch.adaptive(
+              value: enabled,
+              onChanged: (_) => onToggle(),
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ManualSaveButton extends StatelessWidget {
+  const _ManualSaveButton({
+    required this.status,
+    required this.onSave,
+  });
+
+  final SaveStatus status;
+  final VoidCallback onSave;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isSaving = status == SaveStatus.saving;
+    final hasChanges = status == SaveStatus.unsaved || status == SaveStatus.error;
+
+    if (isSaving) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 14,
+            height: 14,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: theme.colorScheme.outline,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            AppLocalizations.of(context)!.saving,
+            style: theme.textTheme.bodySmall
+                ?.copyWith(color: theme.colorScheme.outline),
+          ),
+        ],
+      );
+    }
+
+    return TextButton.icon(
+      onPressed: hasChanges ? onSave : null,
+      icon: Icon(
+        status == SaveStatus.error ? Icons.error_outline : Icons.save_outlined,
+        size: 16,
+      ),
+      label: Text(
+        status == SaveStatus.error
+            ? AppLocalizations.of(context)!.saveError
+            : hasChanges
+                ? AppLocalizations.of(context)!.save
+                : AppLocalizations.of(context)!.saved,
+      ),
+      style: TextButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        textStyle: theme.textTheme.bodySmall,
       ),
     );
   }
@@ -647,6 +765,12 @@ class _SaveStatusIndicator extends StatelessWidget {
     switch (status) {
       case SaveStatus.idle:
         return const SizedBox.shrink();
+      case SaveStatus.unsaved:
+        return Text(
+          AppLocalizations.of(context)!.unsaved,
+          style: theme.textTheme.bodySmall
+              ?.copyWith(color: theme.colorScheme.outline),
+        );
       case SaveStatus.saving:
         return Row(
           mainAxisSize: MainAxisSize.min,

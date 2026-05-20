@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shelter_app/core/locale/locale_provider.dart';
 import 'package:shelter_app/features/planner/data/planner_repository.dart';
 import 'package:shelter_app/features/planner/domain/planner_dog.dart';
 import 'package:shelter_app/features/planner/domain/volunteer_assignment.dart';
@@ -45,7 +47,10 @@ void main() {
     late ProviderContainer container;
     late FakePlannerRepository fakeRepo;
 
-    setUp(() {
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+
       fakeRepo = FakePlannerRepository();
       fakeRepo.assignments = [
         VolunteerAssignment(
@@ -69,6 +74,7 @@ void main() {
       container = ProviderContainer(
         overrides: [
           plannerRepositoryProvider.overrideWithValue(fakeRepo),
+          sharedPreferencesProvider.overrideWithValue(prefs),
         ],
       );
     });
@@ -190,9 +196,13 @@ void main() {
         final failingRepo = FakePlannerRepository();
         failingRepo.assignments = fakeRepo.assignments;
 
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+
         final failContainer = ProviderContainer(
           overrides: [
             plannerRepositoryProvider.overrideWithValue(failingRepo),
+            sharedPreferencesProvider.overrideWithValue(prefs),
           ],
         );
         addTearDown(failContainer.dispose);
@@ -224,6 +234,71 @@ void main() {
         await waitForLoad();
         final state = container.read(plannerNotifierProvider);
         expect(state.saveStatus, SaveStatus.idle);
+      });
+
+      test('saveStatus becomes unsaved immediately after mutation', () async {
+        await waitForLoad();
+        final notifier = container.read(plannerNotifierProvider.notifier);
+
+        notifier.reorderDogs(1, 0, 1);
+
+        final state = container.read(plannerNotifierProvider);
+        expect(state.saveStatus, SaveStatus.unsaved);
+      });
+    });
+
+    group('toggleAutoSave', () {
+      test('defaults to autoSaveEnabled = true', () async {
+        await waitForLoad();
+        final state = container.read(plannerNotifierProvider);
+        expect(state.autoSaveEnabled, isTrue);
+      });
+
+      test('toggleAutoSave disables auto-save and cancels pending timer',
+          () async {
+        await waitForLoad();
+        final notifier = container.read(plannerNotifierProvider.notifier);
+
+        notifier.reorderDogs(1, 0, 1);
+        notifier.toggleAutoSave();
+
+        // Wait past debounce — should NOT save
+        await Future<void>.delayed(const Duration(milliseconds: 2500));
+        expect(fakeRepo.saveCallCount, 0);
+
+        final state = container.read(plannerNotifierProvider);
+        expect(state.autoSaveEnabled, isFalse);
+        expect(state.saveStatus, SaveStatus.unsaved);
+      });
+
+      test('toggleAutoSave re-enables and triggers save if unsaved', () async {
+        await waitForLoad();
+        final notifier = container.read(plannerNotifierProvider.notifier);
+
+        // Disable auto-save, make a change
+        notifier.toggleAutoSave();
+        notifier.reorderDogs(1, 0, 1);
+
+        // Re-enable — should schedule save
+        notifier.toggleAutoSave();
+
+        await Future<void>.delayed(const Duration(milliseconds: 2200));
+        expect(fakeRepo.saveCallCount, 1);
+      });
+
+      test('manual save() works when auto-save is off', () async {
+        await waitForLoad();
+        final notifier = container.read(plannerNotifierProvider.notifier);
+
+        notifier.toggleAutoSave(); // disable
+        notifier.reorderDogs(1, 0, 1);
+
+        expect(fakeRepo.saveCallCount, 0);
+        await notifier.save();
+        expect(fakeRepo.saveCallCount, 1);
+
+        final state = container.read(plannerNotifierProvider);
+        expect(state.saveStatus, SaveStatus.saved);
       });
     });
   });
