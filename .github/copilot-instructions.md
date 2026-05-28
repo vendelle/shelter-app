@@ -14,6 +14,11 @@ Flutter mobile/web + Vercel serverless API (TypeScript) + PostgreSQL.
 ## Code Quality
 
 - **Run `flutter analyze` before committing** — must report **zero issues** (errors and warnings). Info-level hints are acceptable unless they're actionable deprecations.
+- **Run coverage check for API changes:**
+  ```bash
+  npm test -- --ci --coverage --coverageThreshold='{"global":{"statements":90,"branches":80,"functions":90,"lines":90}}'
+  ```
+  Must meet all thresholds: **statements ≥90%**, **branches ≥80%**, **functions ≥90%**, **lines ≥90%**
 - Run `npx jest` for API changes — all tests must pass
 - Run `flutter test` for Flutter changes — all tests must pass
 - Write tests for every new feature (Flutter widget/unit tests + API unit tests)
