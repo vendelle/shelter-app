@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shelter_app/l10n/app_localizations.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/api/api_client.dart';
+import 'download_helper.dart' as download;
 
 /// Bottom sheet for exporting walks as CSV with date range filters.
 class ExportWalksSheet extends StatefulWidget {
@@ -57,10 +57,9 @@ class _ExportWalksSheetState extends State<ExportWalksSheet> {
       final baseUrl = ApiClient.defaultBaseUrl;
       final from = _formatDate(_fromDate);
       final to = _formatDate(_toDate);
-      final url = Uri.parse('$baseUrl/api/walks?format=csv&from=$from&to=$to');
+      final url = '$baseUrl/api/walks?format=csv&from=$from&to=$to';
 
-      // Launch URL - browser handles download based on Content-Disposition header
-      await launchUrl(url);
+      await download.downloadCsv(url);
 
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
