@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shelter_app/l10n/app_localizations.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -60,13 +59,8 @@ class _ExportWalksSheetState extends State<ExportWalksSheet> {
       final to = _formatDate(_toDate);
       final url = Uri.parse('$baseUrl/api/walks?format=csv&from=$from&to=$to');
 
-      if (kIsWeb) {
-        // On web: open in new tab which triggers download via Content-Disposition
-        await launchUrl(url, mode: LaunchMode.platformDefault);
-      } else {
-        // On mobile: open in external browser
-        await launchUrl(url, mode: LaunchMode.externalApplication);
-      }
+      // Launch URL - browser handles download based on Content-Disposition header
+      await launchUrl(url);
 
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
