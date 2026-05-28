@@ -5,8 +5,15 @@ import '../../../../core/api/api_client.dart';
 import 'download_helper.dart' as download;
 
 /// Bottom sheet for exporting walks as CSV with date range filters.
+typedef CsvDownloader = Future<void> Function(String url);
+
 class ExportWalksSheet extends StatefulWidget {
-  const ExportWalksSheet({super.key});
+  const ExportWalksSheet({
+    super.key,
+    this.downloadCsv = download.downloadCsv,
+  });
+
+  final CsvDownloader downloadCsv;
 
   @override
   State<ExportWalksSheet> createState() => _ExportWalksSheetState();
@@ -59,7 +66,7 @@ class _ExportWalksSheetState extends State<ExportWalksSheet> {
       final to = _formatDate(_toDate);
       final url = '$baseUrl/api/walks?format=csv&from=$from&to=$to';
 
-      await download.downloadCsv(url);
+      await widget.downloadCsv(url);
 
       if (mounted) Navigator.of(context).pop();
     } catch (e) {

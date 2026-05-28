@@ -4,7 +4,7 @@ import 'package:shelter_app/features/overview/presentation/widgets/export_walks_
 import 'package:shelter_app/l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
-Widget buildTestWidget() {
+Widget buildTestWidget({ExportWalksSheet sheet = const ExportWalksSheet()}) {
   return MaterialApp(
     localizationsDelegates: const [
       AppLocalizations.delegate,
@@ -21,7 +21,7 @@ Widget buildTestWidget() {
             showModalBottomSheet(
               context: context,
               isScrollControlled: true,
-              builder: (_) => const ExportWalksSheet(),
+              builder: (_) => sheet,
             );
           },
           child: const Text('Open Export'),
@@ -106,6 +106,59 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(DatePickerDialog), findsOneWidget);
+    });
+
+    testWidgets('tapping CSV button builds expected URL and closes on success', (
+      tester,
+    ) async {
+      String? capturedUrl;
+      await tester.pumpWidget(
+        buildTestWidget(
+          sheet: ExportWalksSheet(
+            downloadCsv: (url) async {
+              capturedUrl = url;
+            },
+          ),
+        ),
+      );
+      await tester.tap(find.text('Open Export'));
+      await tester.pumpAndSettle();
+
+      final now = DateTime.now();
+      final from = DateTime(now.year, now.month - 3, now.day);
+      final expectedFrom =
+          '${from.year}-${from.month.toString().padLeft(2, '0')}-${from.day.toString().padLeft(2, '0')}';
+      final expectedTo =
+          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+
+      await tester.tap(find.text('Download CSV'));
+      await tester.pumpAndSettle();
+
+      expect(
+        capturedUrl,
+        'https://shelter-app-plum.vercel.app/api/walks?format=csv&from=$expectedFrom&to=$expectedTo',
+      );
+      expect(find.text('Export walks'), findsNothing);
+    });
+
+    testWidgets('shows snackbar when CSV download fails', (tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          sheet: ExportWalksSheet(
+            downloadCsv: (_) async {
+              throw Exception('download failed');
+            },
+          ),
+        ),
+      );
+      await tester.tap(find.text('Open Export'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Download CSV'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Export failed'), findsOneWidget);
+      expect(find.text('Export walks'), findsOneWidget);
     });
   });
 }
