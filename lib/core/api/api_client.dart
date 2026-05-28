@@ -94,9 +94,9 @@ class ApiClient {
     const env = String.fromEnvironment('API_BASE_URL');
     if (env.isNotEmpty) return env;
 
-    // In debug mode, Flutter's dev server doesn't serve /api/ routes,
-    // so we proxy to the deployed Vercel instance.
-    if (kDebugMode) return 'https://shelter-app-plum.vercel.app';
+    // On non-web platforms, use an absolute backend URL because there is no
+    // same-origin host and API/download links must be fully qualified.
+    if (!kIsWeb) return 'https://shelter-app-plum.vercel.app';
 
     // In release (deployed on Vercel), use same-origin.
     return '';
