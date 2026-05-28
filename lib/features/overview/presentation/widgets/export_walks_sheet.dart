@@ -65,6 +65,11 @@ class _ExportWalksSheetState extends State<ExportWalksSheet> {
       final from = _formatDate(_fromDate);
       final to = _formatDate(_toDate);
       final url = '$baseUrl/api/walks?format=csv&from=$from&to=$to';
+      final uri = Uri.parse(url);
+
+      if (!uri.hasScheme) {
+        throw Exception('CSV export URL must be absolute: $url');
+      }
 
       await widget.downloadCsv(url);
 
