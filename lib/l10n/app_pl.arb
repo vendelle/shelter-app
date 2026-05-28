@@ -218,5 +218,11 @@
   "showLess": "Ukryj szczegóły",
   "overviewMode": "Podgląd",
 
-  "languageToggle": "Zmień język"
+  "languageToggle": "Zmień język",
+
+  "exportWalks": "Eksportuj spacery",
+  "exportFrom": "Od",
+  "exportTo": "Do",
+  "exportButton": "Pobierz CSV",
+  "exportFailed": "Eksport nie powiódł się"
 }

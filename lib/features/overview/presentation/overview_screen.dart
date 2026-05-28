@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'providers/overview_providers.dart';
 import 'widgets/dog_walk_tile.dart';
+import 'widgets/export_walks_sheet.dart';
 import 'widgets/stat_card.dart';
 
 class OverviewScreen extends ConsumerWidget {
@@ -19,6 +20,17 @@ class OverviewScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(l10n.walkOverview),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.download_rounded),
+            tooltip: l10n.exportWalks,
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                builder: (_) => const ExportWalksSheet(),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
             tooltip: l10n.refresh,
