@@ -2,13 +2,64 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { handleError, setCorsHeaders } from './util';
 import pool from './connection';
 
+/** Escape a value for CSV — wraps in quotes if it contains comma, quote, or newline. */
+function csvEscape(value: string): string {
+	if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+		return `"${value.replace(/"/g, '""')}"`;
+	}
+	return value;
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
 	setCorsHeaders(res);
 	if (req.method === 'OPTIONS') return res.status(200).end();
 
 	try {
 		if (req.method === 'GET') {
-			const { date, volunteer, dog } = req.query;
+			const { date, volunteer, dog, format, from, to } = req.query;
+
+			// CSV export mode
+			if (format === 'csv') {
+				if (!from || !to) {
+					return res.status(400).json({ error: 'from and to query params are required for CSV export' });
+				}
+
+				const csvResult = await pool.query(
+					`SELECT
+						d.name AS dog_name,
+						d.shelterid,
+						w.walk_date,
+						v.first_name || ' ' || v.last_name AS volunteer_name
+					FROM walks w
+					LEFT JOIN dogs d ON w.dog_id = d.id
+					LEFT JOIN volunteers v ON w.volunteer_id = v.id
+					WHERE w.deleted_at IS NULL
+						AND w.walk_date >= $1
+						AND w.walk_date <= $2
+					ORDER BY w.walk_date DESC, d.name ASC`,
+					[from as string, to as string],
+				);
+
+				const header = 'dog_name,shelterid,walk_date,volunteer_name';
+				const rows = csvResult.rows.map((row) => {
+					const walkDate = row.walk_date instanceof Date
+						? row.walk_date.toISOString().split('T')[0]
+						: String(row.walk_date);
+					return [
+						csvEscape(row.dog_name ?? ''),
+						csvEscape(row.shelterid ?? ''),
+						walkDate,
+						csvEscape(row.volunteer_name ?? ''),
+					].join(',');
+				});
+				const csv = [header, ...rows].join('\n');
+
+				res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+				res.setHeader('Content-Disposition', 'attachment; filename=walks_export.csv');
+				return res.status(200).send(csv);
+			}
+
+			// Standard JSON response
 			let query = `
 				SELECT
 					w.id,

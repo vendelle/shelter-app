@@ -166,5 +166,11 @@
   "showLess": "Hide details",
   "overviewMode": "Overview",
 
-  "languageToggle": "Change language"
+  "languageToggle": "Change language",
+
+  "exportWalks": "Export walks",
+  "exportFrom": "From",
+  "exportTo": "To",
+  "exportButton": "Download CSV",
+  "exportFailed": "Export failed"
 }
