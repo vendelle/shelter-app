@@ -5,12 +5,12 @@ import '../domain/dog_relationship.dart';
 /// Each relationship level has a distinct color.
 Color relationshipColor(DogRelationshipLevel level) {
   return switch (level) {
-    DogRelationshipLevel.yard => const Color(0xFF4CAF50),            // green
-    DogRelationshipLevel.contactGood => const Color(0xFFC6A700),     // yellow-green/olive
-    DogRelationshipLevel.contactCaution => const Color(0xFFFFB300),  // amber
-    DogRelationshipLevel.parallelGood => const Color(0xFF90CAF9),    // light blue
-    DogRelationshipLevel.parallelCaution => const Color(0xFF5C6BC0), // indigo/blue
-    DogRelationshipLevel.incompatible => const Color(0xFFE53935),    // red
+    DogRelationshipLevel.yard => const Color(0xFF388E3C),              // green
+    DogRelationshipLevel.contactGood => const Color(0xFF7CB342),       // light green
+    DogRelationshipLevel.contactCaution => const Color(0xFFFBC02D),    // yellow
+    DogRelationshipLevel.parallelGood => const Color(0xFF42A5F5),      // light blue
+    DogRelationshipLevel.parallelCaution => const Color(0xFF1565C0),   // blue
+    DogRelationshipLevel.incompatible => const Color(0xFFD32F2F),      // red
   };
 }
 

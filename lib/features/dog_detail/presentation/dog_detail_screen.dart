@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../manage/presentation/providers/manage_providers.dart';
 import '../domain/dog_relationship.dart';
 import '../domain/dog_walk_history.dart';
+import '../domain/walk_partner.dart';
 import 'providers/dog_detail_providers.dart';
 import 'relationship_colors.dart';
 
@@ -32,7 +32,7 @@ class DogDetailScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
             onPressed: () {
-              ref.invalidate(dogRelationshipsProvider(dogId));
+              ref.invalidate(walkPartnersProvider(dogId));
               ref.invalidate(dogWalkHistoryProvider(dogId));
             },
           ),
@@ -40,10 +40,10 @@ class DogDetailScreen extends ConsumerWidget {
       ),
       body: RefreshIndicator(
         onRefresh: () async {
-          ref.invalidate(dogRelationshipsProvider(dogId));
+          ref.invalidate(walkPartnersProvider(dogId));
           ref.invalidate(dogWalkHistoryProvider(dogId));
           await Future.wait([
-            ref.read(dogRelationshipsProvider(dogId).future),
+            ref.read(walkPartnersProvider(dogId).future),
             ref.read(dogWalkHistoryProvider(dogId).future),
           ]);
         },
@@ -123,19 +123,31 @@ class _DogInfoHeader extends StatelessWidget {
 // Relationships Section
 // ---------------------------------------------------------------------------
 
-class _RelationshipsSection extends ConsumerWidget {
+enum _PartnerSort { level, date }
+
+class _RelationshipsSection extends ConsumerStatefulWidget {
   const _RelationshipsSection({required this.dogId});
 
   final int dogId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_RelationshipsSection> createState() =>
+      _RelationshipsSectionState();
+}
+
+class _RelationshipsSectionState extends ConsumerState<_RelationshipsSection> {
+  _PartnerSort _sort = _PartnerSort.level;
+  bool _collapsed = false;
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final relAsync = ref.watch(dogRelationshipsProvider(dogId));
+    final partnersAsync = ref.watch(walkPartnersProvider(widget.dogId));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Header row: title + sort toggle + collapse toggle
         Row(
           children: [
             Text(
@@ -145,467 +157,267 @@ class _RelationshipsSection extends ConsumerWidget {
               ),
             ),
             const Spacer(),
+            // Sort toggle
+            SegmentedButton<_PartnerSort>(
+              segments: const [
+                ButtonSegment(
+                  value: _PartnerSort.level,
+                  icon: Icon(Icons.sort_rounded, size: 16),
+                  label: Text('Level'),
+                ),
+                ButtonSegment(
+                  value: _PartnerSort.date,
+                  icon: Icon(Icons.calendar_today_rounded, size: 16),
+                  label: Text('Date'),
+                ),
+              ],
+              selected: {_sort},
+              onSelectionChanged: (s) => setState(() => _sort = s.first),
+              style: ButtonStyle(
+                visualDensity: VisualDensity.compact,
+                textStyle: WidgetStatePropertyAll(
+                  theme.textTheme.labelSmall,
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
             IconButton(
-              icon: const Icon(Icons.add_rounded, size: 20),
-              tooltip: 'Add relationship',
-              onPressed: () => _showAddRelationship(context, ref),
+              icon: Icon(
+                _collapsed
+                    ? Icons.expand_more_rounded
+                    : Icons.expand_less_rounded,
+                size: 20,
+              ),
+              tooltip: _collapsed ? 'Show' : 'Hide',
+              onPressed: () => setState(() => _collapsed = !_collapsed),
             ),
           ],
         ),
-        const SizedBox(height: 8),
-        relAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Text('Error: $e'),
-          data: (relationships) {
-            if (relationships.isEmpty) {
-              return Text(
-                'No relationships recorded',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.outline,
-                ),
-              );
-            }
-            return Column(
-              children: relationships.map((r) {
-                return _RelationshipTile(
-                  relationship: r,
-                  myDogId: dogId,
+        if (!_collapsed) ...[
+          const SizedBox(height: 8),
+          partnersAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Text('Error: $e'),
+            data: (partners) {
+              if (partners.isEmpty) {
+                return Text(
+                  'No walk partners yet',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.outline,
+                  ),
                 );
-              }).toList(),
-            );
-          },
-        ),
+              }
+              final sorted = List<WalkPartner>.from(partners);
+              if (_sort == _PartnerSort.level) {
+                sorted.sort((a, b) {
+                  final cmp = a.levelSortPriority.compareTo(b.levelSortPriority);
+                  if (cmp != 0) return cmp;
+                  return b.lastSharedWalk.compareTo(a.lastSharedWalk);
+                });
+              } else {
+                sorted.sort((a, b) =>
+                    b.lastSharedWalk.compareTo(a.lastSharedWalk));
+              }
+              return Column(
+                children: sorted
+                    .map((p) => _PartnerTile(
+                          partner: p,
+                          myDogId: widget.dogId,
+                        ))
+                    .toList(),
+              );
+            },
+          ),
+        ],
       ],
     );
   }
+}
 
-  void _showAddRelationship(BuildContext context, WidgetRef ref) {
+class _PartnerTile extends ConsumerWidget {
+  const _PartnerTile({required this.partner, required this.myDogId});
+
+  final WalkPartner partner;
+  final int myDogId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final hasLevel = partner.level != null;
+
+    // Format last walk date as dd.MM
+    final parts = partner.lastSharedWalk.split('-');
+    final displayDate =
+        parts.length == 3 ? '${parts[2]}.${parts[1]}' : partner.lastSharedWalk;
+
+    return InkWell(
+      onTap: () => _showEditLevel(context, ref),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        child: Row(
+          children: [
+            // Dog name
+            Expanded(
+              child: Text(
+                partner.dogName,
+                style: theme.textTheme.bodyMedium,
+              ),
+            ),
+            // Level badge
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: hasLevel
+                    ? relationshipColor(partner.level!)
+                    : theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                hasLevel
+                    ? relationshipLevelDisplayName(partner.level!)
+                    : '?',
+                style: TextStyle(
+                  color: hasLevel
+                      ? relationshipTextColor(partner.level!)
+                      : theme.colorScheme.outline,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Last walk date
+            Text(
+              displayDate,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.outline,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showEditLevel(BuildContext context, WidgetRef ref) {
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (ctx) => _AddRelationshipSheet(dogId: dogId, parentRef: ref),
+      builder: (ctx) => _EditLevelSheet(
+        myDogId: myDogId,
+        otherDogId: partner.dogId,
+        otherDogName: partner.dogName,
+        currentLevel: partner.level,
+        parentRef: ref,
+      ),
     );
   }
 }
 
-class _AddRelationshipSheet extends ConsumerStatefulWidget {
-  const _AddRelationshipSheet({required this.dogId, required this.parentRef});
+class _EditLevelSheet extends ConsumerStatefulWidget {
+  const _EditLevelSheet({
+    required this.myDogId,
+    required this.otherDogId,
+    required this.otherDogName,
+    required this.currentLevel,
+    required this.parentRef,
+  });
 
-  final int dogId;
+  final int myDogId;
+  final int otherDogId;
+  final String otherDogName;
+  final DogRelationshipLevel? currentLevel;
   final WidgetRef parentRef;
 
   @override
-  ConsumerState<_AddRelationshipSheet> createState() =>
-      _AddRelationshipSheetState();
+  ConsumerState<_EditLevelSheet> createState() => _EditLevelSheetState();
 }
 
-class _AddRelationshipSheetState extends ConsumerState<_AddRelationshipSheet> {
-  int? _selectedDogId;
-  String? _selectedDogName;
-  DogRelationshipLevel? _selectedLevel;
+class _EditLevelSheetState extends ConsumerState<_EditLevelSheet> {
+  late DogRelationshipLevel? _selectedLevel;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedLevel = widget.currentLevel;
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final dogsAsync = ref.watch(managedDogsProvider);
-    final existingRelsAsync =
-        ref.watch(dogRelationshipsProvider(widget.dogId));
-    final existingDogIds = existingRelsAsync.valueOrNull
-            ?.map((r) => r.otherDogId(widget.dogId))
-            .toSet() ??
-        {};
 
-    return DraggableScrollableSheet(
-      expand: false,
-      initialChildSize: 0.7,
-      minChildSize: 0.4,
-      maxChildSize: 0.9,
-      builder: (context, scrollController) => Column(
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 12, bottom: 4),
+          Center(
             child: Container(
               width: 40,
               height: 4,
+              margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
                 color: theme.colorScheme.outlineVariant,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: [
-                Text('Add relationship',
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w600)),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.close_rounded),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
+          Text(
+            widget.otherDogName,
+            style: theme.textTheme.titleMedium
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
-          if (_selectedDogId == null) ...[
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text('Select a dog',
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: theme.colorScheme.outline)),
-            ),
-            Expanded(
-              child: dogsAsync.when(
-                loading: () =>
-                    const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(child: Text('Error: $e')),
-                data: (dogs) {
-                  final available = dogs
-                      .where((d) =>
-                          d.id != widget.dogId &&
-                          !existingDogIds.contains(d.id))
-                      .toList();
-                  return ListView.builder(
-                    controller: scrollController,
-                    itemCount: available.length,
-                    itemBuilder: (context, index) {
-                      final dog = available[index];
-                      return ListTile(
-                        dense: true,
-                        title: Text(dog.name),
-                        subtitle: Text(
-                            [dog.shelterId, dog.kennel, dog.region]
-                                .where((s) => s != null && s.isNotEmpty)
-                                .join(' · ')),
-                        onTap: () => setState(() {
-                          _selectedDogId = dog.id;
-                          _selectedDogName = dog.name;
-                        }),
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-          ] else ...[
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text('Dog: $_selectedDogName',
-                          style: theme.textTheme.bodyMedium),
-                      TextButton(
-                        onPressed: () => setState(() {
-                          _selectedDogId = null;
-                          _selectedDogName = null;
-                          _selectedLevel = null;
-                        }),
-                        child: const Text('Change'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text('Select level',
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(color: theme.colorScheme.outline)),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: DogRelationshipLevel.values.map((level) {
-                      final isSelected = _selectedLevel == level;
-                      return ActionChip(
-                        avatar: isSelected
-                            ? const Icon(Icons.check, size: 16)
-                            : null,
-                        label: Text(relationshipLevelDisplayName(level)),
-                        backgroundColor: relationshipColor(level),
-                        labelStyle: TextStyle(
-                          color: relationshipTextColor(level),
-                          fontWeight: FontWeight.w600,
-                        ),
-                        side: isSelected
-                            ? BorderSide(
-                                color: relationshipTextColor(level), width: 2)
-                            : BorderSide.none,
-                        onPressed: () =>
-                            setState(() => _selectedLevel = level),
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton(
-                      onPressed: _selectedLevel == null
-                          ? null
-                          : () async {
-                              final repo =
-                                  ref.read(dogDetailRepositoryProvider);
-                              await repo.upsertRelationship(
-                                dogId1: widget.dogId,
-                                dogId2: _selectedDogId!,
-                                level: _selectedLevel!,
-                              );
-                              widget.parentRef.invalidate(
-                                  dogRelationshipsProvider(widget.dogId));
-                              widget.parentRef
-                                  .invalidate(allRelationshipsProvider);
-                              widget.parentRef
-                                  .invalidate(relationshipLookupProvider);
-                              if (context.mounted) Navigator.pop(context);
-                            },
-                      child: const Text('Save'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _RelationshipTile extends StatelessWidget {
-  const _RelationshipTile({
-    required this.relationship,
-    required this.myDogId,
-  });
-
-  final DogRelationship relationship;
-  final int myDogId;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final otherName = relationship.otherDogName(myDogId);
-    final color = relationshipColor(relationship.level);
-    final textColor = relationshipTextColor(relationship.level);
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 4),
-      child: ListTile(
-        dense: true,
-        title: Text(otherName),
-        subtitle: relationship.notes != null
-            ? Text(
-                relationship.notes!,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.outline,
-                ),
-              )
-            : null,
-        trailing: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Text(
-            relationshipLevelDisplayName(relationship.level),
-            style: TextStyle(
-              color: textColor,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-        onTap: () => _showRelationshipDetail(context),
-      ),
-    );
-  }
-
-  void _showRelationshipDetail(BuildContext context) {
-    final otherId = relationship.otherDogId(myDogId);
-    final otherName = relationship.otherDogName(myDogId);
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => _RelationshipDetailSheet(
-        dogId: myDogId,
-        otherDogId: otherId,
-        otherDogName: otherName,
-        level: relationship.level,
-        notes: relationship.notes,
-      ),
-    );
-  }
-}
-
-class _RelationshipDetailSheet extends ConsumerWidget {
-  const _RelationshipDetailSheet({
-    required this.dogId,
-    required this.otherDogId,
-    required this.otherDogName,
-    required this.level,
-    this.notes,
-  });
-
-  final int dogId;
-  final int otherDogId;
-  final String otherDogName;
-  final DogRelationshipLevel level;
-  final String? notes;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final color = relationshipColor(level);
-    final textColor = relationshipTextColor(level);
-
-    // Get walk history for both dogs to find shared walks
-    final myHistoryAsync = ref.watch(dogWalkHistoryProvider(dogId));
-    final otherHistoryAsync = ref.watch(dogWalkHistoryProvider(otherDogId));
-
-    return DraggableScrollableSheet(
-      expand: false,
-      initialChildSize: 0.6,
-      minChildSize: 0.3,
-      maxChildSize: 0.9,
-      builder: (context, scrollController) {
-        return Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.outlineVariant,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      otherDogName,
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: color,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      relationshipLevelDisplayName(level),
-                      style: TextStyle(
-                        color: textColor,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              if (notes != null) ...[
-                const SizedBox(height: 8),
-                Text(
-                  notes!,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.outline,
-                  ),
-                ),
-              ],
-              const SizedBox(height: 16),
-              Text(
-                'Walks together',
-                style: theme.textTheme.titleSmall?.copyWith(
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: DogRelationshipLevel.values.map((level) {
+              final isSelected = _selectedLevel == level;
+              return ActionChip(
+                avatar:
+                    isSelected ? const Icon(Icons.check, size: 16) : null,
+                label: Text(relationshipLevelDisplayName(level)),
+                backgroundColor: relationshipColor(level),
+                labelStyle: TextStyle(
+                  color: relationshipTextColor(level),
                   fontWeight: FontWeight.w600,
                 ),
-              ),
-              const SizedBox(height: 8),
-              Expanded(
-                child: _buildSharedWalks(
-                  context,
-                  myHistoryAsync,
-                  otherHistoryAsync,
-                  scrollController,
-                ),
-              ),
-            ],
+                side: isSelected
+                    ? BorderSide(
+                        color: relationshipTextColor(level), width: 2)
+                    : BorderSide.none,
+                onPressed: () => setState(() => _selectedLevel = level),
+              );
+            }).toList(),
           ),
-        );
-      },
-    );
-  }
-
-  Widget _buildSharedWalks(
-    BuildContext context,
-    AsyncValue<List<DogWalkHistory>> myAsync,
-    AsyncValue<List<DogWalkHistory>> otherAsync,
-    ScrollController scrollController,
-  ) {
-    final theme = Theme.of(context);
-
-    if (myAsync is AsyncLoading || otherAsync is AsyncLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (myAsync is AsyncError) return Text('Error: ${myAsync.error}');
-    if (otherAsync is AsyncError) return Text('Error: ${otherAsync.error}');
-
-    final myWalks = myAsync.valueOrNull ?? [];
-
-    // Find walks where the other dog was in the same group
-    final sharedWalks = myWalks.where((w) {
-      return w.groupDogs.any((g) => g.dogId == otherDogId);
-    }).toList();
-
-    if (sharedWalks.isEmpty) {
-      return Text(
-        'No shared walks recorded',
-        style: theme.textTheme.bodyMedium?.copyWith(
-          color: theme.colorScheme.outline,
-        ),
-      );
-    }
-
-    return ListView.builder(
-      controller: scrollController,
-      itemCount: sharedWalks.length,
-      itemBuilder: (context, index) {
-        final walk = sharedWalks[index];
-        final allGroupNames =
-            walk.groupDogs.map((g) => g.dogName).join(', ');
-        final dateParts = walk.walkDate.split('-');
-        final displayDate = dateParts.length == 3
-            ? '${dateParts[2]}.${dateParts[1]}.${dateParts[0]}'
-            : walk.walkDate;
-
-        return ListTile(
-          dense: true,
-          title: Text(displayDate),
-          subtitle: Text(
-            [
-              if (walk.volunteerName != null) walk.volunteerName!,
-              if (allGroupNames.isNotEmpty) 'Group: $allGroupNames',
-            ].join(' · '),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: _selectedLevel == null
+                  ? null
+                  : () async {
+                      final repo = ref.read(dogDetailRepositoryProvider);
+                      await repo.upsertRelationship(
+                        dogId1: widget.myDogId,
+                        dogId2: widget.otherDogId,
+                        level: _selectedLevel!,
+                      );
+                      widget.parentRef
+                          .invalidate(walkPartnersProvider(widget.myDogId));
+                      widget.parentRef.invalidate(allRelationshipsProvider);
+                      widget.parentRef.invalidate(relationshipLookupProvider);
+                      if (context.mounted) Navigator.pop(context);
+                    },
+              child: const Text('Save'),
+            ),
           ),
-        );
-      },
+          const SizedBox(height: 8),
+        ],
+      ),
     );
   }
 }
@@ -647,9 +459,13 @@ class _WalkHistorySection extends ConsumerWidget {
               );
             }
             return Column(
-              children: walks
-                  .map((w) => _WalkHistoryTile(walk: w))
-                  .toList(),
+              children: [
+                for (var i = 0; i < walks.length; i++)
+                  _WalkHistoryTile(
+                    walk: walks[i],
+                    showDivider: i < walks.length - 1,
+                  ),
+              ],
             );
           },
         ),
@@ -659,51 +475,93 @@ class _WalkHistorySection extends ConsumerWidget {
 }
 
 class _WalkHistoryTile extends StatelessWidget {
-  const _WalkHistoryTile({required this.walk});
+  const _WalkHistoryTile({required this.walk, this.showDivider = true});
 
   final DogWalkHistory walk;
+  final bool showDivider;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final groupNames =
-        walk.groupDogs.map((g) => g.dogName).join(', ');
-    // Format date as dd.MM.yyyy
+
+    // Format date as dd.MM (year unnecessary for 3-month window)
     final parts = walk.walkDate.split('-');
     final displayDate = parts.length == 3
-        ? '${parts[2]}.${parts[1]}.${parts[0]}'
+        ? '${parts[2]}.${parts[1]}'
         : walk.walkDate;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 4),
-      child: ListTile(
-        dense: true,
-        title: Text(displayDate),
-        subtitle: Text(
-          [
-            if (walk.volunteerName != null) walk.volunteerName!,
-            if (groupNames.isNotEmpty) 'with $groupNames',
-            if (walk.notes != null && walk.notes!.isNotEmpty) walk.notes!,
-          ].join(' · '),
-          style: theme.textTheme.bodySmall,
-        ),
-        trailing: walk.groupIndex != null && walk.groupIndex! > 0
-            ? Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.secondaryContainer,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  'G${walk.groupIndex}',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onSecondaryContainer,
+    // Truncate group dogs: show up to 3 names, then "+N more"
+    final dogs = walk.groupDogs;
+    String? groupLine;
+    if (dogs.isNotEmpty) {
+      if (dogs.length <= 3) {
+        groupLine = 'with ${dogs.map((g) => g.dogName).join(', ')}';
+      } else {
+        final shown = dogs.take(3).map((g) => g.dogName).join(', ');
+        groupLine = 'with $shown, +${dogs.length - 3} more';
+      }
+    }
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Date · Volunteer on one line
+              Row(
+                children: [
+                  Text(
+                    displayDate,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (walk.volunteerName != null) ...[
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      child: Text('·',
+                          style: TextStyle(color: theme.colorScheme.outline)),
+                    ),
+                    Expanded(
+                      child: Text(
+                        walk.volunteerName!,
+                        style: theme.textTheme.bodyMedium,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              // Group dogs (if any)
+              if (groupLine != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2, left: 0),
+                  child: Text(
+                    groupLine,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.outline,
+                    ),
                   ),
                 ),
-              )
-            : null,
-      ),
+              // Notes (if any)
+              if (walk.notes != null && walk.notes!.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text(
+                    walk.notes!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontStyle: FontStyle.italic,
+                      color: theme.colorScheme.outline,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        if (showDivider) const Divider(height: 1),
+      ],
     );
   }
 }

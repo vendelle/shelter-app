@@ -15,14 +15,14 @@ void main() {
     test('yard is green', () {
       expect(
         relationshipColor(DogRelationshipLevel.yard),
-        const Color(0xFF4CAF50),
+        const Color(0xFF388E3C),
       );
     });
 
     test('incompatible is red', () {
       expect(
         relationshipColor(DogRelationshipLevel.incompatible),
-        const Color(0xFFE53935),
+        const Color(0xFFD32F2F),
       );
     });
   });

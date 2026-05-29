@@ -4,6 +4,7 @@ import '../../../../core/api/api_providers.dart';
 import '../../data/dog_detail_repository.dart';
 import '../../domain/dog_relationship.dart';
 import '../../domain/dog_walk_history.dart';
+import '../../domain/walk_partner.dart';
 
 final dogDetailRepositoryProvider = Provider<DogDetailRepository>((ref) {
   return ApiDogDetailRepository(ref.watch(apiClientProvider));
@@ -22,6 +23,11 @@ final allRelationshipsProvider =
 final dogWalkHistoryProvider =
     FutureProvider.family<List<DogWalkHistory>, int>((ref, dogId) {
   return ref.watch(dogDetailRepositoryProvider).getWalkHistory(dogId);
+});
+
+final walkPartnersProvider =
+    FutureProvider.family<List<WalkPartner>, int>((ref, dogId) {
+  return ref.watch(dogDetailRepositoryProvider).getWalkPartners(dogId);
 });
 
 /// All relationships as a lookup map: canonical (min, max) pair → level.
