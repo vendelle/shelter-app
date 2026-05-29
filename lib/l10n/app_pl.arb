@@ -224,5 +224,25 @@
   "exportFrom": "Od",
   "exportTo": "Do",
   "exportButton": "Pobierz CSV",
-  "exportFailed": "Eksport nie powiódł się"
+  "exportFailed": "Eksport nie powiódł się",
+
+  "relationships": "Ziomki",
+  "sortByLevel": "wg poziomu",
+  "sortByDate": "wg daty",
+  "showSection": "Pokaż",
+  "hideSection": "Ukryj",
+  "noWalkPartners": "Brak partnerów spacerowych",
+  "walkHistory3Months": "Historia spacerów",
+  "noWalksInPast3Months": "Brak spacerów",
+  "withDogs": "z {dogs}",
+  "@withDogs": { "placeholders": { "dogs": { "type": "String" } } },
+  "withDogsAndMore": "z {dogs}, +{count} więcej",
+  "@withDogsAndMore": { "placeholders": { "dogs": { "type": "String" }, "count": { "type": "int" } } },
+  "saveFailed": "Nie udało się zapisać",
+  "levelYard": "Wybieg",
+  "levelContactGood": "Kontakt+",
+  "levelContactCaution": "Kontakt-",
+  "levelParallelGood": "Równo+",
+  "levelParallelCaution": "Równo-",
+  "levelIncompatible": "Nie"
 }

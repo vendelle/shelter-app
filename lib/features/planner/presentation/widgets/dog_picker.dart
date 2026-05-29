@@ -283,6 +283,7 @@ class _DogPickerTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     final familiarityColor = _getFamiliarityColor(dog.familiarity, colorScheme);
     final showDot = dog.familiarity != DogFamiliarityLevel.unknown;
 
@@ -340,7 +341,7 @@ class _DogPickerTile extends StatelessWidget {
                 final (name, level) = r;
                 final color = relationshipColor(level);
                 final textColor = relationshipTextColor(level);
-                final label = relationshipLevelDisplayName(level);
+                final label = relationshipLevelDisplayName(level, l10n);
                 return Container(
                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                   decoration: BoxDecoration(

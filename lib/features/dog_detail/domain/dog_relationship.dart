@@ -1,3 +1,5 @@
+import 'package:shelter_app/l10n/app_localizations.dart';
+
 /// Relationship level between two dogs.
 enum DogRelationshipLevel {
   /// Yard pair — can share the yard freely
@@ -42,14 +44,14 @@ String relationshipLevelToString(DogRelationshipLevel level) {
   };
 }
 
-String relationshipLevelDisplayName(DogRelationshipLevel level) {
+String relationshipLevelDisplayName(DogRelationshipLevel level, AppLocalizations l10n) {
   return switch (level) {
-    DogRelationshipLevel.yard => 'Yard pair',
-    DogRelationshipLevel.contactGood => 'Contact+',
-    DogRelationshipLevel.contactCaution => 'Contact-',
-    DogRelationshipLevel.parallelGood => 'Parallel+',
-    DogRelationshipLevel.parallelCaution => 'Parallel-',
-    DogRelationshipLevel.incompatible => 'Incompatible',
+    DogRelationshipLevel.yard => l10n.levelYard,
+    DogRelationshipLevel.contactGood => l10n.levelContactGood,
+    DogRelationshipLevel.contactCaution => l10n.levelContactCaution,
+    DogRelationshipLevel.parallelGood => l10n.levelParallelGood,
+    DogRelationshipLevel.parallelCaution => l10n.levelParallelCaution,
+    DogRelationshipLevel.incompatible => l10n.levelIncompatible,
   };
 }
 

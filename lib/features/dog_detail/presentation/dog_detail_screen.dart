@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shelter_app/l10n/app_localizations.dart';
 
 import '../domain/dog_relationship.dart';
 import '../domain/dog_walk_history.dart';
@@ -88,7 +89,6 @@ class _DogInfoHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final chips = <String>[
-      if (shelterId != null && shelterId!.isNotEmpty) shelterId!,
       if (kennel != null && kennel!.isNotEmpty) 'K: $kennel',
       if (region != null && region!.isNotEmpty) region!,
     ];
@@ -96,11 +96,26 @@ class _DogInfoHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          dogName,
-          style: theme.textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            Text(
+              dogName,
+              style: theme.textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            if (shelterId != null && shelterId!.isNotEmpty) ...[
+              const SizedBox(width: 8),
+              Text(
+                shelterId!,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: theme.colorScheme.outline,
+                ),
+              ),
+            ],
+          ],
         ),
         if (chips.isNotEmpty) ...[
           const SizedBox(height: 8),
@@ -142,6 +157,7 @@ class _RelationshipsSectionState extends ConsumerState<_RelationshipsSection> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final partnersAsync = ref.watch(walkPartnersProvider(widget.dogId));
 
     return Column(
@@ -151,36 +167,43 @@ class _RelationshipsSectionState extends ConsumerState<_RelationshipsSection> {
         Row(
           children: [
             Text(
-              'Relationships',
+              l10n.relationships,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w600,
               ),
             ),
             const Spacer(),
-            // Sort toggle
-            SegmentedButton<_PartnerSort>(
-              segments: const [
-                ButtonSegment(
-                  value: _PartnerSort.level,
-                  icon: Icon(Icons.sort_rounded, size: 16),
-                  label: Text('Level'),
-                ),
-                ButtonSegment(
-                  value: _PartnerSort.date,
-                  icon: Icon(Icons.calendar_today_rounded, size: 16),
-                  label: Text('Date'),
-                ),
-              ],
-              selected: {_sort},
-              onSelectionChanged: (s) => setState(() => _sort = s.first),
-              style: ButtonStyle(
-                visualDensity: VisualDensity.compact,
-                textStyle: WidgetStatePropertyAll(
-                  theme.textTheme.labelSmall,
+            // Compact sort toggle
+            InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () => setState(() => _sort = _sort == _PartnerSort.level
+                  ? _PartnerSort.date
+                  : _PartnerSort.level),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _sort == _PartnerSort.level
+                          ? Icons.sort_rounded
+                          : Icons.calendar_today_rounded,
+                      size: 14,
+                      color: theme.colorScheme.outline,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      _sort == _PartnerSort.level
+                          ? l10n.sortByLevel
+                          : l10n.sortByDate,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.outline,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-            const SizedBox(width: 4),
             IconButton(
               icon: Icon(
                 _collapsed
@@ -188,7 +211,7 @@ class _RelationshipsSectionState extends ConsumerState<_RelationshipsSection> {
                     : Icons.expand_less_rounded,
                 size: 20,
               ),
-              tooltip: _collapsed ? 'Show' : 'Hide',
+              tooltip: _collapsed ? l10n.showSection : l10n.hideSection,
               onPressed: () => setState(() => _collapsed = !_collapsed),
             ),
           ],
@@ -197,11 +220,11 @@ class _RelationshipsSectionState extends ConsumerState<_RelationshipsSection> {
           const SizedBox(height: 8),
           partnersAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Text('Error: $e'),
+            error: (e, _) => Text('${l10n.saveFailed}: $e'),
             data: (partners) {
               if (partners.isEmpty) {
                 return Text(
-                  'No walk partners yet',
+                  l10n.noWalkPartners,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.outline,
                   ),
@@ -243,6 +266,7 @@ class _PartnerTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final hasLevel = partner.level != null;
 
     // Format last walk date as dd.MM
@@ -256,7 +280,6 @@ class _PartnerTile extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
         child: Row(
           children: [
-            // Dog name
             Expanded(
               child: Text(
                 partner.dogName,
@@ -274,7 +297,7 @@ class _PartnerTile extends ConsumerWidget {
               ),
               child: Text(
                 hasLevel
-                    ? relationshipLevelDisplayName(partner.level!)
+                    ? relationshipLevelDisplayName(partner.level!, l10n)
                     : '?',
                 style: TextStyle(
                   color: hasLevel
@@ -336,17 +359,13 @@ class _EditLevelSheet extends ConsumerStatefulWidget {
 }
 
 class _EditLevelSheetState extends ConsumerState<_EditLevelSheet> {
-  late DogRelationshipLevel? _selectedLevel;
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedLevel = widget.currentLevel;
-  }
+  bool _saving = false;
+  String? _error;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -371,54 +390,70 @@ class _EditLevelSheetState extends ConsumerState<_EditLevelSheet> {
                 ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: DogRelationshipLevel.values.map((level) {
-              final isSelected = _selectedLevel == level;
-              return ActionChip(
-                avatar:
-                    isSelected ? const Icon(Icons.check, size: 16) : null,
-                label: Text(relationshipLevelDisplayName(level)),
-                backgroundColor: relationshipColor(level),
-                labelStyle: TextStyle(
-                  color: relationshipTextColor(level),
-                  fontWeight: FontWeight.w600,
-                ),
-                side: isSelected
-                    ? BorderSide(
-                        color: relationshipTextColor(level), width: 2)
-                    : BorderSide.none,
-                onPressed: () => setState(() => _selectedLevel = level),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: _selectedLevel == null
-                  ? null
-                  : () async {
-                      final repo = ref.read(dogDetailRepositoryProvider);
-                      await repo.upsertRelationship(
-                        dogId1: widget.myDogId,
-                        dogId2: widget.otherDogId,
-                        level: _selectedLevel!,
-                      );
-                      widget.parentRef
-                          .invalidate(walkPartnersProvider(widget.myDogId));
-                      widget.parentRef.invalidate(allRelationshipsProvider);
-                      widget.parentRef.invalidate(relationshipLookupProvider);
-                      if (context.mounted) Navigator.pop(context);
-                    },
-              child: const Text('Save'),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                _error!,
+                style: TextStyle(color: theme.colorScheme.error),
+              ),
             ),
-          ),
+          if (_saving)
+            const Center(child: CircularProgressIndicator())
+          else
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: DogRelationshipLevel.values.map((level) {
+                final isSelected = widget.currentLevel == level;
+                return ActionChip(
+                  avatar:
+                      isSelected ? const Icon(Icons.check, size: 16) : null,
+                  label: Text(relationshipLevelDisplayName(level, l10n)),
+                  backgroundColor: relationshipColor(level),
+                  labelStyle: TextStyle(
+                    color: relationshipTextColor(level),
+                    fontWeight: FontWeight.w600,
+                  ),
+                  side: isSelected
+                      ? BorderSide(
+                          color: relationshipTextColor(level), width: 2)
+                      : BorderSide.none,
+                  onPressed: () => _saveAndClose(level),
+                );
+              }).toList(),
+            ),
           const SizedBox(height: 8),
         ],
       ),
     );
+  }
+
+  Future<void> _saveAndClose(DogRelationshipLevel level) async {
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      final repo = ref.read(dogDetailRepositoryProvider);
+      await repo.upsertRelationship(
+        dogId1: widget.myDogId,
+        dogId2: widget.otherDogId,
+        level: level,
+      );
+      widget.parentRef.invalidate(walkPartnersProvider(widget.myDogId));
+      widget.parentRef.invalidate(allRelationshipsProvider);
+      widget.parentRef.invalidate(relationshipLookupProvider);
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
+        setState(() {
+          _saving = false;
+          _error = '${l10n.saveFailed}: $e';
+        });
+      }
+    }
   }
 }
 
@@ -434,13 +469,14 @@ class _WalkHistorySection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final historyAsync = ref.watch(dogWalkHistoryProvider(dogId));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Walk history (3 months)',
+          l10n.walkHistory3Months,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w600,
           ),
@@ -448,11 +484,11 @@ class _WalkHistorySection extends ConsumerWidget {
         const SizedBox(height: 8),
         historyAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Text('Error: $e'),
+          error: (e, _) => Text('${l10n.saveFailed}: $e'),
           data: (walks) {
             if (walks.isEmpty) {
               return Text(
-                'No walks in the past 3 months',
+                l10n.noWalksInPast3Months,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.outline,
                 ),
@@ -483,6 +519,7 @@ class _WalkHistoryTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     // Format date as dd.MM (year unnecessary for 3-month window)
     final parts = walk.walkDate.split('-');
@@ -495,10 +532,10 @@ class _WalkHistoryTile extends StatelessWidget {
     String? groupLine;
     if (dogs.isNotEmpty) {
       if (dogs.length <= 3) {
-        groupLine = 'with ${dogs.map((g) => g.dogName).join(', ')}';
+        groupLine = l10n.withDogs(dogs.map((g) => g.dogName).join(', '));
       } else {
         final shown = dogs.take(3).map((g) => g.dogName).join(', ');
-        groupLine = 'with $shown, +${dogs.length - 3} more';
+        groupLine = l10n.withDogsAndMore(shown, dogs.length - 3);
       }
     }
 

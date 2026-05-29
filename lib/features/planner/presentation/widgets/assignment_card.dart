@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shelter_app/l10n/app_localizations.dart';
 
 import '../../../dog_detail/domain/dog_relationship.dart';
 import '../../../dog_detail/presentation/relationship_colors.dart';
@@ -35,9 +36,13 @@ class VolunteerColumn extends StatelessWidget {
 
   List<(String, DogRelationshipLevel)> _getRelationships(DogEntry entry) {
     final rels = <(String, DogRelationshipLevel)>[];
-    if (relationshipLookup != null) {
+    if (relationshipLookup != null &&
+        entry.groupIndex != null &&
+        entry.groupIndex! > 0) {
       for (final other in assignment.dogs) {
         if (other.dogId == entry.dogId) continue;
+        // Only show relationships within the same walking group
+        if (other.groupIndex != entry.groupIndex) continue;
         final key = entry.dogId < other.dogId
             ? (entry.dogId, other.dogId)
             : (other.dogId, entry.dogId);
@@ -336,7 +341,8 @@ class _RelationshipDot extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = relationshipColor(level);
     final textColor = relationshipTextColor(level);
-    final shortName = relationshipLevelDisplayName(level);
+    final l10n = AppLocalizations.of(context)!;
+    final shortName = relationshipLevelDisplayName(level, l10n);
 
     return Tooltip(
       message: '$dogName: $shortName',

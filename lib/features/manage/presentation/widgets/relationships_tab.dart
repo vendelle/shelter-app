@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shelter_app/l10n/app_localizations.dart';
 
 import '../../../dog_detail/domain/dog_relationship.dart';
 import '../../../dog_detail/presentation/providers/dog_detail_providers.dart';
@@ -45,6 +46,7 @@ class _RelationshipMatrix extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
     // Build lookup map
     final lookup = <(int, int), DogRelationship>{};
@@ -74,7 +76,7 @@ class _RelationshipMatrix extends StatelessWidget {
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
-                  relationshipLevelDisplayName(level),
+                  relationshipLevelDisplayName(level, l10n),
                   style: TextStyle(
                     color: relationshipTextColor(level),
                     fontSize: 10,
@@ -246,6 +248,7 @@ class _MatrixCell extends ConsumerWidget {
 
   void _showLevelPicker(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     showModalBottomSheet(
       context: context,
@@ -277,7 +280,7 @@ class _MatrixCell extends ConsumerWidget {
                         avatar: isSelected
                             ? const Icon(Icons.check, size: 16)
                             : null,
-                        label: Text(relationshipLevelDisplayName(level)),
+                        label: Text(relationshipLevelDisplayName(level, l10n)),
                         backgroundColor: relationshipColor(level),
                         labelStyle: TextStyle(
                           color: relationshipTextColor(level),

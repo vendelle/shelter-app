@@ -5,7 +5,7 @@ import pool from './connection';
 /**
  * GET /api/dog-history?dog_id=X
  *
- * Returns walk history for a dog over the past 3 months.
+ * Returns walk history for a dog.
  * Each walk includes the volunteer name and all dogs in the same group
  * on that date (i.e. dogs with the same group_index walked on the same day).
  */
@@ -36,7 +36,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 			LEFT JOIN volunteers v ON w.volunteer_id = v.id
 			WHERE w.dog_id = $1
 				AND w.deleted_at IS NULL
-				AND w.walk_date >= current_date - interval '3 months'
 			ORDER BY w.walk_date DESC, w.id DESC`,
 			[dogId],
 		);

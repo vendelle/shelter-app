@@ -33,26 +33,6 @@ void main() {
       }
     });
 
-    test('relationshipLevelDisplayName returns English labels', () {
-      expect(relationshipLevelDisplayName(DogRelationshipLevel.yard),
-          'Yard pair');
-      expect(
-          relationshipLevelDisplayName(DogRelationshipLevel.contactGood),
-          'Contact+');
-      expect(
-          relationshipLevelDisplayName(DogRelationshipLevel.contactCaution),
-          'Contact-');
-      expect(
-          relationshipLevelDisplayName(DogRelationshipLevel.parallelGood),
-          'Parallel+');
-      expect(
-          relationshipLevelDisplayName(
-              DogRelationshipLevel.parallelCaution),
-          'Parallel-');
-      expect(
-          relationshipLevelDisplayName(DogRelationshipLevel.incompatible),
-          'Incompatible');
-    });
   });
 
   group('DogRelationship', () {

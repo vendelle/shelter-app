@@ -172,5 +172,25 @@
   "exportFrom": "From",
   "exportTo": "To",
   "exportButton": "Download CSV",
-  "exportFailed": "Export failed"
+  "exportFailed": "Export failed",
+
+  "relationships": "Buddies",
+  "sortByLevel": "by level",
+  "sortByDate": "by date",
+  "showSection": "Show",
+  "hideSection": "Hide",
+  "noWalkPartners": "No walk partners yet",
+  "walkHistory3Months": "Walk history",
+  "noWalksInPast3Months": "No walks yet",
+  "withDogs": "with {dogs}",
+  "@withDogs": { "placeholders": { "dogs": { "type": "String" } } },
+  "withDogsAndMore": "with {dogs}, +{count} more",
+  "@withDogsAndMore": { "placeholders": { "dogs": { "type": "String" }, "count": { "type": "int" } } },
+  "saveFailed": "Failed to save",
+  "levelYard": "Yard pair",
+  "levelContactGood": "Contact+",
+  "levelContactCaution": "Contact-",
+  "levelParallelGood": "Parallel+",
+  "levelParallelCaution": "Parallel-",
+  "levelIncompatible": "Incompatible"
 }
