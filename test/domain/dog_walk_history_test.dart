@@ -20,10 +20,10 @@ void main() {
       expect(w.groupIndex, 1);
       expect(w.notes, 'Good walk');
       expect(w.groupDogs, hasLength(2));
-      expect(w.groupDogs![0].dogId, 5);
-      expect(w.groupDogs![0].dogName, 'Azor');
-      expect(w.groupDogs![1].dogId, 8);
-      expect(w.groupDogs![1].dogName, 'Rex');
+      expect(w.groupDogs[0].dogId, 5);
+      expect(w.groupDogs[0].dogName, 'Azor');
+      expect(w.groupDogs[1].dogId, 8);
+      expect(w.groupDogs[1].dogName, 'Rex');
     });
 
     test('fromJson handles solo walk', () {
