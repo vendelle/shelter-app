@@ -58,12 +58,15 @@ class ManageRepository {
     required String name,
     required String shelterId,
     required String kennel,
+    String? region,
   }) async {
-    final data = await _api.post('/api/dogs', body: {
+    final body = <String, dynamic>{
       'name': name,
       'shelterid': shelterId,
       'kennel': kennel,
-    });
+    };
+    if (region != null) body['region'] = region;
+    final data = await _api.post('/api/dogs', body: body);
     return Dog.fromJson(data as Map<String, dynamic>);
   }
 
@@ -72,11 +75,15 @@ class ManageRepository {
     String? name,
     String? shelterId,
     String? kennel,
+    String? region,
+    bool clearRegion = false,
   }) async {
     final body = <String, dynamic>{'id': id};
     if (name != null) body['name'] = name;
     if (shelterId != null) body['shelterid'] = shelterId;
     if (kennel != null) body['kennel'] = kennel;
+    if (region != null) body['region'] = region;
+    if (clearRegion) body['region'] = '';
     final data = await _api.patch('/api/dogs', body: body);
     return Dog.fromJson(data as Map<String, dynamic>);
   }

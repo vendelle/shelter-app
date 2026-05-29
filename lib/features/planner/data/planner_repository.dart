@@ -41,8 +41,12 @@ class ApiPlannerRepository implements PlannerRepository {
         ),
       );
 
+      // Skip rows with no dog (note-only volunteers)
+      final dogId = m['dog_id'] as int?;
+      if (dogId == null) continue;
+
       byVolunteer[volunteerId]!.dogs.add(DogEntry(
-        dogId: m['dog_id'] as int,
+        dogId: dogId,
         dogName: m['dog_name'] as String? ?? 'Unknown',
         shelterId: m['shelterid'] as String?,
         kennel: m['kennel'] as String?,

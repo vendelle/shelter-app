@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { handleError, setCorsHeaders } from './util';
+import { handleError, setCorsHeaders, hasColumn } from './util';
 import pool from './connection';
+import { getRegionForKennel } from './kennel-regions';
 
 /**
  * GET  /api/dayplan?date=YYYY-MM-DD  → walks + volunteer notes for that date
@@ -18,6 +19,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 				return res.status(400).json({ error: 'date query parameter is required' });
 			}
 
+			const hasRegionCol = await hasColumn('dogs', 'region');
+			const regionSelect = hasRegionCol ? 'd.region AS db_region,' : '';
+
 			// Walks with dog info
 			const walksRes = await pool.query(
 				`SELECT
@@ -25,6 +29,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 					w.dog_id,
 					d.name AS dog_name,
 					d.kennel,
+					d.shelterid,
+					${regionSelect}
 					w.volunteer_id,
 					v.first_name || ' ' || v.last_name AS volunteer_name,
 					w.notes AS dog_note,
@@ -33,7 +39,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 				LEFT JOIN dogs d ON w.dog_id = d.id
 				LEFT JOIN volunteers v ON w.volunteer_id = v.id
 				WHERE w.walk_date = $1 AND w.deleted_at IS NULL
-				ORDER BY w.volunteer_id, w.id`,
+				ORDER BY w.sort_order NULLS LAST, w.id`,
 				[date],
 			);
 
@@ -51,15 +57,46 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 				]),
 			);
 
-			// Attach volunteer_note to each walk row
+			// Attach volunteer_note and computed region to each walk row
 			const rows = walksRes.rows.map(
 				(r: { volunteer_id: number; [key: string]: unknown }) => ({
 					...r,
+					region: (r.db_region as string) || getRegionForKennel(r.kennel as string),
+					db_region: undefined,
 					volunteer_note: volNotes.get(r.volunteer_id) || null,
 				}),
 			);
 
-			return res.status(200).json(rows);
+			// Include note-only volunteers (those with a note but no walks)
+			const volunteersWithWalks = new Set(
+				walksRes.rows.map((r: { volunteer_id: number }) => r.volunteer_id),
+			);
+			const noteOnlyVolunteers: Array<Record<string, unknown>> = [];
+			for (const [volunteerId, note] of volNotes) {
+				if (!volunteersWithWalks.has(volunteerId)) {
+					// Fetch volunteer name
+					const vRes = await pool.query(
+						`SELECT first_name || ' ' || last_name AS volunteer_name FROM volunteers WHERE id = $1`,
+						[volunteerId],
+					);
+					const volunteerName = vRes.rows[0]?.volunteer_name || 'Unknown';
+					noteOnlyVolunteers.push({
+						id: null,
+						dog_id: null,
+						dog_name: null,
+						kennel: null,
+						shelterid: null,
+						region: null,
+						volunteer_id: volunteerId,
+						volunteer_name: volunteerName,
+						dog_note: null,
+						group_index: null,
+						volunteer_note: note,
+					});
+				}
+			}
+
+			return res.status(200).json([...rows, ...noteOnlyVolunteers]);
 		}
 
 		if (req.method === 'POST') {
@@ -115,21 +152,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 					(w: { dog_id: number }) => !existingMap.has(`${w.dog_id}`),
 				);
 				for (const w of inserts) {
+					const idx = walks.indexOf(w);
 					await pool.query(
-						`INSERT INTO walks (dog_id, volunteer_id, walk_date, notes, group_index)
-						 VALUES ($1, $2, $3, $4, $5)`,
+						`INSERT INTO walks (dog_id, volunteer_id, walk_date, notes, group_index, sort_order)
+						 VALUES ($1, $2, $3, $4, $5, $6)`,
 						[
 							w.dog_id,
 							w.volunteer_id || null,
 							walk_date,
 							w.dog_note || null,
 							w.group_index ?? null,
+							idx,
 						],
 					);
 				}
 
-				// Updates
-				for (const w of walks) {
+				// Updates (always update sort_order even if nothing else changed)
+				for (let i = 0; i < walks.length; i++) {
+					const w = walks[i];
 					const existing = existingMap.get(`${w.dog_id}`) as
 						| {
 								id: number;
@@ -139,22 +179,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 						  }
 						| undefined;
 					if (existing) {
-						const needsUpdate =
-							existing.volunteer_id !== (w.volunteer_id || null) ||
-							existing.notes !== (w.dog_note || null) ||
-							existing.group_index !== (w.group_index ?? null);
-
-						if (needsUpdate) {
-							await pool.query(
-								'UPDATE walks SET volunteer_id = $1, notes = $2, group_index = $3 WHERE id = $4',
-								[
-									w.volunteer_id || null,
-									w.dog_note || null,
-									w.group_index ?? null,
-									existing.id,
-								],
-							);
-						}
+						await pool.query(
+							'UPDATE walks SET volunteer_id = $1, notes = $2, group_index = $3, sort_order = $4 WHERE id = $5',
+							[
+								w.volunteer_id || null,
+								w.dog_note || null,
+								w.group_index ?? null,
+								i,
+								existing.id,
+							],
+						);
 					}
 				}
 

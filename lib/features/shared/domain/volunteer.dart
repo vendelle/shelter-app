@@ -1,3 +1,5 @@
+import 'package:shelter_app/l10n/app_localizations.dart';
+
 enum VolunteerRole {
   senior,
   independent,
@@ -28,6 +30,17 @@ enum VolunteerRole {
       VolunteerRole.independent => 'Independent supporter',
       VolunteerRole.supporter => 'Supporter',
       VolunteerRole.newHelper => 'New',
+    };
+  }
+}
+
+extension VolunteerRoleL10n on VolunteerRole {
+  String localizedLabel(AppLocalizations l10n) {
+    return switch (this) {
+      VolunteerRole.senior => l10n.roleSenior,
+      VolunteerRole.independent => l10n.roleIndependent,
+      VolunteerRole.supporter => l10n.roleSupporter,
+      VolunteerRole.newHelper => l10n.roleNew,
     };
   }
 }

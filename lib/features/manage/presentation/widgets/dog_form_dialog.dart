@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shelter_app/l10n/app_localizations.dart';
 
 class DogFormDialog extends StatefulWidget {
   const DogFormDialog({
@@ -6,6 +7,8 @@ class DogFormDialog extends StatefulWidget {
     this.initialName,
     this.initialShelterId,
     this.initialKennel,
+    this.initialRegion,
+    this.initialRegionOverride,
     this.isArchived = false,
     required this.onSave,
     this.onArchiveToggle,
@@ -14,8 +17,10 @@ class DogFormDialog extends StatefulWidget {
   final String? initialName;
   final String? initialShelterId;
   final String? initialKennel;
+  final String? initialRegion;
+  final String? initialRegionOverride;
   final bool isArchived;
-  final Future<void> Function(String name, String shelterId, String kennel) onSave;
+  final Future<void> Function(String name, String shelterId, String kennel, {String? region, bool clearRegion}) onSave;
   final Future<void> Function()? onArchiveToggle;
 
   @override
@@ -27,7 +32,9 @@ class _DogFormDialogState extends State<DogFormDialog> {
   late final TextEditingController _nameController;
   late final TextEditingController _shelterIdController;
   late final TextEditingController _kennelController;
+  late final TextEditingController _regionController;
   bool _saving = false;
+  bool _regionOverrideMode = false;
 
   bool get _isEditing => widget.initialName != null;
 
@@ -39,6 +46,10 @@ class _DogFormDialogState extends State<DogFormDialog> {
         TextEditingController(text: widget.initialShelterId ?? '');
     _kennelController =
         TextEditingController(text: widget.initialKennel ?? '');
+    _regionController =
+        TextEditingController(text: widget.initialRegionOverride ?? '');
+    _regionOverrideMode = widget.initialRegionOverride != null &&
+        widget.initialRegionOverride!.isNotEmpty;
   }
 
   @override
@@ -46,13 +57,16 @@ class _DogFormDialogState extends State<DogFormDialog> {
     _nameController.dispose();
     _shelterIdController.dispose();
     _kennelController.dispose();
+    _regionController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
     return AlertDialog(
-      title: Text(_isEditing ? 'Edit Dog' : 'Add Dog'),
+      title: Text(_isEditing ? l10n.editDog : l10n.addDogButton),
       content: Form(
         key: _formKey,
         child: Column(
@@ -60,30 +74,84 @@ class _DogFormDialogState extends State<DogFormDialog> {
           children: [
             TextFormField(
               controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Name'),
+              decoration: InputDecoration(labelText: l10n.name),
               validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'Name is required' : null,
+                  v == null || v.trim().isEmpty ? l10n.nameRequired : null,
               textCapitalization: TextCapitalization.words,
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _shelterIdController,
-              decoration: const InputDecoration(labelText: 'Shelter ID'),
+              decoration: InputDecoration(labelText: l10n.shelterId),
               validator: (v) => v == null || v.trim().isEmpty
-                  ? 'Shelter ID is required'
+                  ? l10n.shelterIdRequired
                   : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _kennelController,
-              decoration: const InputDecoration(
-                labelText: 'Kennel',
-                hintText: '3-digit number',
+              decoration: InputDecoration(
+                labelText: l10n.kennel,
+                hintText: l10n.kennelHint,
               ),
               keyboardType: TextInputType.number,
               validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'Kennel is required' : null,
+                  v == null || v.trim().isEmpty ? l10n.kennelRequired : null,
             ),
+            const SizedBox(height: 12),
+            // Region display / override
+            if (!_regionOverrideMode)
+              Row(
+                children: [
+                  Expanded(
+                    child: InputDecorator(
+                      decoration: InputDecoration(
+                        labelText: l10n.region,
+                        border: const OutlineInputBorder(),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                      ),
+                      child: Text(
+                        widget.initialRegion ?? '—',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.outline,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: () => setState(() {
+                      _regionOverrideMode = true;
+                    }),
+                    child: Text(l10n.overrideRegion),
+                  ),
+                ],
+              )
+            else
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _regionController,
+                      decoration: InputDecoration(
+                        labelText: l10n.region,
+                        hintText: widget.initialRegion != null
+                            ? l10n.regionAuto(widget.initialRegion!)
+                            : null,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: () => setState(() {
+                      _regionOverrideMode = false;
+                      _regionController.clear();
+                    }),
+                    child: Text(l10n.resetRegion),
+                  ),
+                ],
+              ),
             if (_isEditing && widget.onArchiveToggle != null) ...[
               const SizedBox(height: 20),
               const Divider(),
@@ -93,7 +161,7 @@ class _DogFormDialogState extends State<DogFormDialog> {
                   onPressed: _saving ? null : _toggleArchive,
                   icon: Icon(widget.isArchived ? Icons.undo : Icons.home_outlined,
                       size: 18),
-                  label: Text(widget.isArchived ? 'Restore' : 'Mark as adopted'),
+                  label: Text(widget.isArchived ? l10n.restore : l10n.markAsAdopted),
                   style: TextButton.styleFrom(
                     foregroundColor: widget.isArchived
                         ? null
@@ -108,7 +176,7 @@ class _DogFormDialogState extends State<DogFormDialog> {
       actions: [
         TextButton(
           onPressed: _saving ? null : () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(l10n.cancel),
         ),
         FilledButton(
           onPressed: _saving ? null : _save,
@@ -118,7 +186,7 @@ class _DogFormDialogState extends State<DogFormDialog> {
                   height: 16,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : Text(_isEditing ? 'Save' : 'Add'),
+              : Text(_isEditing ? l10n.save : l10n.add),
         ),
       ],
     );
@@ -132,7 +200,7 @@ class _DogFormDialogState extends State<DogFormDialog> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed: $e')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.failed(e.toString()))),
         );
         setState(() => _saving = false);
       }
@@ -147,12 +215,16 @@ class _DogFormDialogState extends State<DogFormDialog> {
         _nameController.text.trim(),
         _shelterIdController.text.trim(),
         _kennelController.text.trim(),
+        region: _regionOverrideMode && _regionController.text.trim().isNotEmpty
+            ? _regionController.text.trim()
+            : null,
+        clearRegion: !_regionOverrideMode && widget.initialRegionOverride != null,
       );
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save: $e')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.failedToSave(e.toString()))),
         );
         setState(() => _saving = false);
       }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shelter_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -13,6 +14,7 @@ class DogsTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final showArchived = ref.watch(showArchivedDogsProvider);
     final dogsAsync = ref.watch(managedDogsProvider);
+    final l10n = AppLocalizations.of(context)!;
 
     return Column(
       children: [
@@ -22,9 +24,9 @@ class DogsTab extends ConsumerWidget {
             children: [
               const Spacer(),
               SegmentedButton<bool>(
-                segments: const [
-                  ButtonSegment(value: false, label: Text('Current')),
-                  ButtonSegment(value: true, label: Text('Adopted')),
+                segments: [
+                  ButtonSegment(value: false, label: Text(l10n.current)),
+                  ButtonSegment(value: true, label: Text(l10n.adopted)),
                 ],
                 selected: {showArchived},
                 onSelectionChanged: (selected) {
@@ -43,8 +45,8 @@ class DogsTab extends ConsumerWidget {
               if (dogs.isEmpty) {
                 return Center(
                   child: Text(showArchived
-                      ? 'No adopted dogs'
-                      : 'No dogs found'),
+                      ? l10n.noAdoptedDogs
+                      : l10n.noDogsFound),
                 );
               }
               return ListView.builder(
@@ -64,7 +66,7 @@ class DogsTab extends ConsumerWidget {
               child: FilledButton.icon(
                 onPressed: () => _showAddDogDialog(context, ref),
                 icon: const Icon(Icons.add),
-                label: const Text('Add Dog'),
+                label: Text(l10n.addDogButton),
               ),
             ),
           ),
@@ -76,12 +78,13 @@ class DogsTab extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => DogFormDialog(
-        onSave: (name, shelterId, kennel) async {
+        onSave: (name, shelterId, kennel, {String? region, bool clearRegion = false}) async {
           final repo = ref.read(manageRepositoryProvider);
           await repo.createDog(
             name: name,
             shelterId: shelterId,
             kennel: kennel,
+            region: region,
           );
           ref.invalidate(managedDogsProvider);
         },
@@ -108,30 +111,14 @@ class _DogListTile extends ConsumerWidget {
       subtitle: Text(
         [
           dog.shelterId,
-          'K: ${dog.kennel}',
+          dog.kennel,
           if (dog.region != null) dog.region!,
         ].join(' · '),
       ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (dog.region != null)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: Chip(
-                label: Text(
-                  dog.region!,
-                  style: const TextStyle(fontSize: 12),
-                ),
-                visualDensity: VisualDensity.compact,
-              ),
-            ),
-          IconButton(
-            icon: const Icon(Icons.edit_outlined),
-            tooltip: 'Edit',
-            onPressed: () => _showEditDialog(context, ref),
-          ),
-        ],
+      trailing: IconButton(
+        icon: const Icon(Icons.edit_outlined),
+        tooltip: AppLocalizations.of(context)!.edit,
+        onPressed: () => _showEditDialog(context, ref),
       ),
     );
   }
@@ -143,14 +130,18 @@ class _DogListTile extends ConsumerWidget {
         initialName: dog.name,
         initialShelterId: dog.shelterId,
         initialKennel: dog.kennel,
+        initialRegion: dog.region,
+        initialRegionOverride: dog.regionOverride,
         isArchived: dog.archived,
-        onSave: (name, shelterId, kennel) async {
+        onSave: (name, shelterId, kennel, {String? region, bool clearRegion = false}) async {
           final repo = ref.read(manageRepositoryProvider);
           await repo.updateDog(
             id: dog.id,
             name: name,
             shelterId: shelterId,
             kennel: kennel,
+            region: region,
+            clearRegion: clearRegion,
           );
           ref.invalidate(managedDogsProvider);
         },

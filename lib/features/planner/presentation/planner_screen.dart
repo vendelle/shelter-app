@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shelter_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -9,6 +10,7 @@ import 'widgets/assignment_card.dart';
 import 'widgets/date_navigator.dart';
 import 'widgets/dog_picker.dart';
 import 'widgets/group_colors.dart';
+import 'widgets/planner_share.dart';
 import 'widgets/volunteer_picker.dart';
 
 class PlannerScreen extends ConsumerWidget {
@@ -19,16 +21,53 @@ class PlannerScreen extends ConsumerWidget {
     final date = ref.watch(selectedDateProvider);
     final plannerState = ref.watch(plannerNotifierProvider);
     final notifier = ref.read(plannerNotifierProvider.notifier);
-    final savedAsync = ref.watch(savedAssignmentsProvider);
-
-    final hasModifications = savedAsync.whenOrNull(
-          data: (saved) => plannerState.isModified(saved),
-        ) ??
-        false;
+    final detailLevel = ref.watch(plannerDetailLevelProvider);
+    final isOverview = detailLevel == PlannerDetailLevel.overview;
+    final isCompact = detailLevel != PlannerDetailLevel.detailed;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Walk Planner'),
+        title: Text(AppLocalizations.of(context)!.walkPlanner),
+        actions: [
+          if (plannerState.assignments.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.share_rounded),
+              tooltip: AppLocalizations.of(context)!.sharePlan,
+              onPressed: () => sharePlannerImage(
+                context: context,
+                date: date,
+                assignments: plannerState.assignments,
+                totalDogs: ref.read(totalDogCountProvider).valueOrNull ?? 0,
+                detailed: detailLevel == PlannerDetailLevel.detailed,
+              ),
+            ),
+          IconButton(
+            icon: Icon(switch (detailLevel) {
+              PlannerDetailLevel.compact => Icons.unfold_more,
+              PlannerDetailLevel.detailed => Icons.visibility_outlined,
+              PlannerDetailLevel.overview => Icons.unfold_less,
+            }),
+            tooltip: switch (detailLevel) {
+              PlannerDetailLevel.compact => AppLocalizations.of(
+                context,
+              )!.showMore,
+              PlannerDetailLevel.detailed => AppLocalizations.of(
+                context,
+              )!.overviewMode,
+              PlannerDetailLevel.overview => AppLocalizations.of(
+                context,
+              )!.showLess,
+            },
+            onPressed: () {
+              final next = switch (detailLevel) {
+                PlannerDetailLevel.compact => PlannerDetailLevel.detailed,
+                PlannerDetailLevel.detailed => PlannerDetailLevel.overview,
+                PlannerDetailLevel.overview => PlannerDetailLevel.compact,
+              };
+              ref.read(plannerDetailLevelProvider.notifier).state = next;
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -44,31 +83,30 @@ class PlannerScreen extends ConsumerWidget {
             child: plannerState.isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : plannerState.error != null
-                    ? _ErrorBody(
-                        message: plannerState.error!,
-                        onRetry: notifier.reload,
-                      )
-                    : plannerState.assignments.isEmpty
-                        ? _EmptyBody(
-                            onAddVolunteer: () =>
-                                _addVolunteer(context, ref),
-                          )
-                        : _ColumnsGrid(
-                            plannerState: plannerState,
-                            ref: ref,
-                            onAddVolunteer: () =>
-                                _addVolunteer(context, ref),
-                          ),
+                ? _ErrorBody(
+                    message: plannerState.error!,
+                    onRetry: notifier.reload,
+                  )
+                : plannerState.assignments.isEmpty
+                ? _EmptyBody(onAddVolunteer: () => _addVolunteer(context, ref))
+                : _ColumnsGrid(
+                    plannerState: plannerState,
+                    ref: ref,
+                    compact: isCompact,
+                    overview: isOverview,
+                    onAddVolunteer: () => _addVolunteer(context, ref),
+                  ),
           ),
 
-          // Save bar
-          _SaveBar(
-            isModified: hasModifications,
-            isSaving: plannerState.isSaving,
+          // Status bar
+          _StatusBar(
+            saveStatus: plannerState.saveStatus,
+            autoSaveEnabled: plannerState.autoSaveEnabled,
             assignmentCount: plannerState.assignments.length,
             dogCount: plannerState.assignedDogIds.length,
             totalDogs: ref.watch(totalDogCountProvider).valueOrNull ?? 0,
-            onSave: () => notifier.save(),
+            onToggleAutoSave: notifier.toggleAutoSave,
+            onSave: notifier.save,
           ),
         ],
       ),
@@ -92,30 +130,50 @@ class _ColumnsGrid extends StatelessWidget {
     required this.plannerState,
     required this.ref,
     required this.onAddVolunteer,
+    this.compact = true,
+    this.overview = false,
   });
 
   final PlannerState plannerState;
   final WidgetRef ref;
   final VoidCallback onAddVolunteer;
+  final bool compact;
+  final bool overview;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final usable = constraints.maxWidth - 24; // 12px padding each side
-        const gap = 8.0;
+        final maxWidth =
+            constraints.maxWidth.isFinite && constraints.maxWidth > 0
+            ? constraints.maxWidth
+            : MediaQuery.sizeOf(context).width;
+        final usable = (maxWidth - 24).clamp(
+          120.0,
+          1400.0,
+        ); // 12px padding each side
+        final gap = overview ? 6.0 : 8.0;
         int cols;
-        if (usable < 360) {
-          cols = 1;
-        } else if (usable < 540) {
-          cols = 2;
+        if (overview) {
+          // Overview: force more columns — min 2 always, aim for tighter fit
+          if (usable < 300) {
+            cols = 2;
+          } else {
+            cols = (usable / 150).floor().clamp(2, 8);
+          }
         } else {
-          cols = (usable / 180).floor().clamp(3, 8);
+          if (usable < 360) {
+            cols = 1;
+          } else if (usable < 540) {
+            cols = 2;
+          } else {
+            cols = (usable / 180).floor().clamp(3, 8);
+          }
         }
         final colWidth = (usable - (cols - 1) * gap) / cols;
 
         return SingleChildScrollView(
-          padding: const EdgeInsets.all(12),
+          padding: EdgeInsets.all(overview ? 8 : 12),
           child: Wrap(
             spacing: gap,
             runSpacing: gap,
@@ -126,24 +184,32 @@ class _ColumnsGrid extends StatelessWidget {
                   child: VolunteerColumn(
                     assignment: assignment,
                     relationshipLookup: ref.watch(relationshipLookupProvider).valueOrNull,
+                    compact: compact,
+                    overview: overview,
                     onRemoveVolunteer: () =>
                         _confirmRemove(context, ref, assignment),
                     onRemoveDog: (dogId) => ref
                         .read(plannerNotifierProvider.notifier)
-                        .removeDogFromVolunteer(
-                            assignment.volunteerId, dogId),
-                    onAddDog: () =>
-                        _addDogs(context, assignment),
-                    onTapDog: (dogId) => _showDogActions(
-                        context, ref, assignment, dogId),
+                        .removeDogFromVolunteer(assignment.volunteerId, dogId),
+                    onAddDog: () => _addDogs(context, assignment),
+                    onTapDog: (dogId) =>
+                        _showDogActions(context, ref, assignment, dogId),
                     onEditVolunteerNote: () =>
                         _editVolunteerNote(context, ref, assignment),
+                    onReorderDogs: (oldIndex, newIndex) => ref
+                        .read(plannerNotifierProvider.notifier)
+                        .reorderDogs(
+                          assignment.volunteerId,
+                          oldIndex,
+                          newIndex,
+                        ),
                   ),
                 ),
-              SizedBox(
-                width: colWidth,
-                child: _AddVolunteerButton(onTap: onAddVolunteer),
-              ),
+              if (!overview)
+                SizedBox(
+                  width: colWidth,
+                  child: _AddVolunteerButton(onTap: onAddVolunteer),
+                ),
             ],
           ),
         );
@@ -166,7 +232,10 @@ class _ColumnsGrid extends StatelessWidget {
   }
 
   void _confirmRemove(
-      BuildContext context, WidgetRef ref, VolunteerAssignment a) {
+    BuildContext context,
+    WidgetRef ref,
+    VolunteerAssignment a,
+  ) {
     if (a.dogs.isEmpty) {
       ref.read(plannerNotifierProvider.notifier).removeVolunteer(a.volunteerId);
       return;
@@ -174,13 +243,17 @@ class _ColumnsGrid extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Remove ${a.volunteerName}?'),
+        title: Text(
+          AppLocalizations.of(context)!.removeVolunteerTitle(a.volunteerName),
+        ),
         content: Text(
-            'This will unassign ${a.dogs.length} dog${a.dogs.length == 1 ? '' : 's'}.'),
+          AppLocalizations.of(context)!.removeVolunteerContent(a.dogs.length),
+        ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(AppLocalizations.of(context)!.cancel),
+          ),
           FilledButton(
             onPressed: () {
               ref
@@ -188,15 +261,19 @@ class _ColumnsGrid extends StatelessWidget {
                   .removeVolunteer(a.volunteerId);
               Navigator.pop(ctx);
             },
-            child: const Text('Remove'),
+            child: Text(AppLocalizations.of(context)!.remove),
           ),
         ],
       ),
     );
   }
 
-  void _showDogActions(BuildContext context, WidgetRef ref,
-      VolunteerAssignment assignment, int dogId) {
+  void _showDogActions(
+    BuildContext context,
+    WidgetRef ref,
+    VolunteerAssignment assignment,
+    int dogId,
+  ) {
     final entry = assignment.dogs.firstWhere((d) => d.dogId == dogId);
     final notifier = ref.read(plannerNotifierProvider.notifier);
     final maxGroup = ref.read(plannerNotifierProvider).maxGroupIndex;
@@ -215,14 +292,20 @@ class _ColumnsGrid extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(entry.dogName,
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w600)),
+                Text(
+                  entry.dogName,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 const SizedBox(height: 16),
                 // Group color picker
-                Text('Walk group',
-                    style: theme.textTheme.labelMedium
-                        ?.copyWith(color: theme.colorScheme.outline)),
+                Text(
+                  AppLocalizations.of(ctx)!.walkGroup,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: theme.colorScheme.outline,
+                  ),
+                ),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
@@ -230,12 +313,15 @@ class _ColumnsGrid extends StatelessWidget {
                     // "No group" option
                     _GroupChip(
                       groupIndex: null,
-                      label: 'Solo',
-                      isSelected: entry.groupIndex == null ||
-                          entry.groupIndex == 0,
+                      label: AppLocalizations.of(ctx)!.solo,
+                      isSelected:
+                          entry.groupIndex == null || entry.groupIndex == 0,
                       onTap: () {
                         notifier.updateDogGroup(
-                            assignment.volunteerId, dogId, null);
+                          assignment.volunteerId,
+                          dogId,
+                          null,
+                        );
                         Navigator.pop(ctx);
                       },
                     ),
@@ -243,11 +329,14 @@ class _ColumnsGrid extends StatelessWidget {
                     for (var i = 1; i <= maxGroup + 1; i++)
                       _GroupChip(
                         groupIndex: i,
-                        label: 'Group $i',
+                        label: AppLocalizations.of(ctx)!.groupN(i),
                         isSelected: entry.groupIndex == i,
                         onTap: () {
                           notifier.updateDogGroup(
-                              assignment.volunteerId, dogId, i);
+                            assignment.volunteerId,
+                            dogId,
+                            i,
+                          );
                           Navigator.pop(ctx);
                         },
                       ),
@@ -257,15 +346,12 @@ class _ColumnsGrid extends StatelessWidget {
                 // Add note
                 ListTile(
                   leading: const Icon(Icons.note_add_outlined),
-                  title: const Text('Add note'),
-                  subtitle: entry.note != null
-                      ? Text(entry.note!)
-                      : null,
+                  title: Text(AppLocalizations.of(ctx)!.addNote),
+                  subtitle: entry.note != null ? Text(entry.note!) : null,
                   contentPadding: EdgeInsets.zero,
                   onTap: () {
                     Navigator.pop(ctx);
-                    _editDogNote(
-                        context, ref, assignment.volunteerId, entry);
+                    _editDogNote(context, ref, assignment.volunteerId, entry);
                   },
                 ),
                 // View profile
@@ -285,15 +371,20 @@ class _ColumnsGrid extends StatelessWidget {
                 ),
                 // Remove
                 ListTile(
-                  leading: Icon(Icons.delete_outline_rounded,
-                      color: theme.colorScheme.error),
-                  title: Text('Remove',
-                      style:
-                          TextStyle(color: theme.colorScheme.error)),
+                  leading: Icon(
+                    Icons.delete_outline_rounded,
+                    color: theme.colorScheme.error,
+                  ),
+                  title: Text(
+                    AppLocalizations.of(ctx)!.remove,
+                    style: TextStyle(color: theme.colorScheme.error),
+                  ),
                   contentPadding: EdgeInsets.zero,
                   onTap: () {
                     notifier.removeDogFromVolunteer(
-                        assignment.volunteerId, dogId);
+                      assignment.volunteerId,
+                      dogId,
+                    );
                     Navigator.pop(ctx);
                   },
                 ),
@@ -305,45 +396,55 @@ class _ColumnsGrid extends StatelessWidget {
     );
   }
 
-  void _editDogNote(BuildContext context, WidgetRef ref,
-      int volunteerId, DogEntry entry) {
+  void _editDogNote(
+    BuildContext context,
+    WidgetRef ref,
+    int volunteerId,
+    DogEntry entry,
+  ) {
     final controller = TextEditingController(text: entry.note ?? '');
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Note for ${entry.dogName}'),
+        title: Text(AppLocalizations.of(context)!.noteFor(entry.dogName)),
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: const InputDecoration(
-            hintText: 'e.g. hospital, bring to vet',
+          decoration: InputDecoration(
+            hintText: AppLocalizations.of(context)!.noteHintDog,
           ),
           textCapitalization: TextCapitalization.sentences,
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(AppLocalizations.of(context)!.cancel),
+          ),
           FilledButton(
             onPressed: () {
               final text = controller.text.trim();
-              ref.read(plannerNotifierProvider.notifier).updateDogNote(
-                  volunteerId,
-                  entry.dogId,
-                  text.isEmpty ? null : text);
+              ref
+                  .read(plannerNotifierProvider.notifier)
+                  .updateDogNote(
+                    volunteerId,
+                    entry.dogId,
+                    text.isEmpty ? null : text,
+                  );
               Navigator.pop(ctx);
             },
-            child: const Text('Save'),
+            child: Text(AppLocalizations.of(context)!.save),
           ),
         ],
       ),
     );
   }
 
-  void _editVolunteerNote(BuildContext context, WidgetRef ref,
-      VolunteerAssignment assignment) {
-    final controller =
-        TextEditingController(text: assignment.note ?? '');
+  void _editVolunteerNote(
+    BuildContext context,
+    WidgetRef ref,
+    VolunteerAssignment assignment,
+  ) {
+    final controller = TextEditingController(text: assignment.note ?? '');
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -351,26 +452,28 @@ class _ColumnsGrid extends StatelessWidget {
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: const InputDecoration(
-            hintText: 'e.g. 10-13, 2 dogs only',
+          decoration: InputDecoration(
+            hintText: AppLocalizations.of(context)!.noteHintVolunteer,
           ),
           textCapitalization: TextCapitalization.sentences,
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(AppLocalizations.of(context)!.cancel),
+          ),
           FilledButton(
             onPressed: () {
               final text = controller.text.trim();
               ref
                   .read(plannerNotifierProvider.notifier)
                   .updateVolunteerNote(
-                      assignment.volunteerId,
-                      text.isEmpty ? null : text);
+                    assignment.volunteerId,
+                    text.isEmpty ? null : text,
+                  );
               Navigator.pop(ctx);
             },
-            child: const Text('Save'),
+            child: Text(AppLocalizations.of(context)!.save),
           ),
         ],
       ),
@@ -394,23 +497,19 @@ class _AddVolunteerButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          border: Border.all(
-            color: theme.colorScheme.outlineVariant,
-          ),
+          border: Border.all(color: theme.colorScheme.outlineVariant),
           borderRadius: BorderRadius.circular(6),
-          color: theme.colorScheme.surfaceContainerHighest
-              .withValues(alpha: 0.4),
+          color: theme.colorScheme.surfaceContainerHighest.withValues(
+            alpha: 0.4,
+          ),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.person_add_outlined,
-              color: theme.colorScheme.outline,
-            ),
+            Icon(Icons.person_add_outlined, color: theme.colorScheme.outline),
             const SizedBox(height: 4),
             Text(
-              'Add volunteer',
+              AppLocalizations.of(context)!.addVolunteerButton,
               style: theme.textTheme.labelSmall?.copyWith(
                 color: theme.colorScheme.outline,
               ),
@@ -488,17 +587,23 @@ class _EmptyBody extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.table_chart_outlined,
-              size: 64, color: theme.colorScheme.outlineVariant),
+          Icon(
+            Icons.table_chart_outlined,
+            size: 64,
+            color: theme.colorScheme.outlineVariant,
+          ),
           const SizedBox(height: 16),
-          Text('No walks planned yet',
-              style: theme.textTheme.titleMedium
-                  ?.copyWith(color: theme.colorScheme.outline)),
+          Text(
+            AppLocalizations.of(context)!.noWalksPlannedYet,
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: theme.colorScheme.outline,
+            ),
+          ),
           const SizedBox(height: 8),
           FilledButton.tonalIcon(
             onPressed: onAddVolunteer,
             icon: const Icon(Icons.person_add_rounded, size: 18),
-            label: const Text('Add first volunteer'),
+            label: Text(AppLocalizations.of(context)!.addFirstVolunteer),
           ),
         ],
       ),
@@ -525,20 +630,27 @@ class _ErrorBody extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline_rounded,
-                size: 48, color: theme.colorScheme.error),
+            Icon(
+              Icons.error_outline_rounded,
+              size: 48,
+              color: theme.colorScheme.error,
+            ),
             const SizedBox(height: 16),
-            Text('Failed to load plan',
-                style: theme.textTheme.titleMedium),
+            Text(
+              AppLocalizations.of(context)!.failedToLoadPlan,
+              style: theme.textTheme.titleMedium,
+            ),
             const SizedBox(height: 8),
-            Text(message,
-                style: theme.textTheme.bodySmall,
-                textAlign: TextAlign.center),
+            Text(
+              message,
+              style: theme.textTheme.bodySmall,
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 24),
             FilledButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Retry'),
+              label: Text(AppLocalizations.of(context)!.retry),
             ),
           ],
         ),
@@ -548,24 +660,26 @@ class _ErrorBody extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Save bar
+// Status bar (replaces save bar — auto-save indicator)
 // ---------------------------------------------------------------------------
 
-class _SaveBar extends StatelessWidget {
-  const _SaveBar({
-    required this.isModified,
-    required this.isSaving,
+class _StatusBar extends StatelessWidget {
+  const _StatusBar({
+    required this.saveStatus,
+    required this.autoSaveEnabled,
     required this.assignmentCount,
     required this.dogCount,
     required this.totalDogs,
+    required this.onToggleAutoSave,
     required this.onSave,
   });
 
-  final bool isModified;
-  final bool isSaving;
+  final SaveStatus saveStatus;
+  final bool autoSaveEnabled;
   final int assignmentCount;
   final int dogCount;
   final int totalDogs;
+  final VoidCallback onToggleAutoSave;
   final VoidCallback onSave;
 
   @override
@@ -574,38 +688,213 @@ class _SaveBar extends StatelessWidget {
 
     return SafeArea(
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,
           border: Border(
             top: BorderSide(
-                color: theme.colorScheme.outlineVariant, width: 0.5),
+              color: theme.colorScheme.outlineVariant,
+              width: 0.5,
+            ),
           ),
         ),
         child: Row(
           children: [
             Expanded(
               child: Text(
-                '$assignmentCount volunteers  •  $dogCount/$totalDogs dogs',
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: theme.colorScheme.outline),
+                AppLocalizations.of(
+                  context,
+                )!.nVolunteersNDogs(assignmentCount, dogCount, totalDogs),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.outline,
+                ),
               ),
             ),
-            FilledButton(
-              onPressed: isModified && !isSaving ? onSave : null,
-              child: isSaving
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
-                    )
-                  : Text(isModified ? 'Save' : 'Saved'),
+            if (autoSaveEnabled)
+              _SaveStatusIndicator(status: saveStatus)
+            else
+              _ManualSaveButton(status: saveStatus, onSave: onSave),
+            const SizedBox(width: 8),
+            _AutoSaveToggle(
+              enabled: autoSaveEnabled,
+              onToggle: onToggleAutoSave,
             ),
           ],
         ),
       ),
     );
+  }
+}
+
+class _AutoSaveToggle extends StatelessWidget {
+  const _AutoSaveToggle({required this.enabled, required this.onToggle});
+
+  final bool enabled;
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return GestureDetector(
+      onTap: onToggle,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            AppLocalizations.of(context)!.autoSave,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.outline,
+            ),
+          ),
+          const SizedBox(width: 4),
+          SizedBox(
+            height: 20,
+            width: 34,
+            child: Transform.scale(
+              scale: 0.6,
+              child: Switch.adaptive(
+                value: enabled,
+                onChanged: (_) => onToggle(),
+                activeThumbColor: theme.colorScheme.secondaryContainer,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ManualSaveButton extends StatelessWidget {
+  const _ManualSaveButton({required this.status, required this.onSave});
+
+  final SaveStatus status;
+  final VoidCallback onSave;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isSaving = status == SaveStatus.saving;
+    final hasChanges =
+        status == SaveStatus.unsaved || status == SaveStatus.error;
+
+    if (isSaving) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 14,
+            height: 14,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: theme.colorScheme.outline,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            AppLocalizations.of(context)!.saving,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.outline,
+            ),
+          ),
+        ],
+      );
+    }
+
+    return TextButton.icon(
+      onPressed: hasChanges ? onSave : null,
+      icon: Icon(
+        status == SaveStatus.error ? Icons.error_outline : Icons.save_outlined,
+        size: 16,
+      ),
+      label: Text(
+        status == SaveStatus.error
+            ? AppLocalizations.of(context)!.saveError
+            : hasChanges
+            ? AppLocalizations.of(context)!.save
+            : AppLocalizations.of(context)!.saved,
+      ),
+      style: TextButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        textStyle: theme.textTheme.bodySmall,
+      ),
+    );
+  }
+}
+
+class _SaveStatusIndicator extends StatelessWidget {
+  const _SaveStatusIndicator({required this.status});
+  final SaveStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    switch (status) {
+      case SaveStatus.idle:
+        return const SizedBox.shrink();
+      case SaveStatus.unsaved:
+        return Text(
+          AppLocalizations.of(context)!.unsaved,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.outline,
+          ),
+        );
+      case SaveStatus.saving:
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: theme.colorScheme.outline,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              AppLocalizations.of(context)!.saving,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.outline,
+              ),
+            ),
+          ],
+        );
+      case SaveStatus.saved:
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.check_circle_outline,
+              size: 16,
+              color: theme.colorScheme.primary,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              AppLocalizations.of(context)!.saved,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ],
+        );
+      case SaveStatus.error:
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.error_outline, size: 16, color: theme.colorScheme.error),
+            const SizedBox(width: 4),
+            Text(
+              AppLocalizations.of(context)!.saveError,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.error,
+              ),
+            ),
+          ],
+        );
+    }
   }
 }

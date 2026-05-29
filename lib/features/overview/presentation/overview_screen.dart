@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:shelter_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'providers/overview_providers.dart';
 import 'widgets/dog_walk_tile.dart';
+import 'widgets/export_walks_sheet.dart';
 import 'widgets/stat_card.dart';
 
 class OverviewScreen extends ConsumerWidget {
@@ -13,13 +15,25 @@ class OverviewScreen extends ConsumerWidget {
     final summariesAsync = ref.watch(dogWalkSummariesProvider);
     final statsAsync = ref.watch(overviewStatsProvider);
 
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Walk Overview'),
+        title: Text(l10n.walkOverview),
         actions: [
           IconButton(
+            icon: const Icon(Icons.download_rounded),
+            tooltip: l10n.exportWalks,
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                builder: (_) => const ExportWalksSheet(),
+              );
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.refresh_rounded),
-            tooltip: 'Refresh',
+            tooltip: l10n.refresh,
             onPressed: () => ref.invalidate(dogWalkSummariesProvider),
           ),
         ],
@@ -85,28 +99,27 @@ class _WeekHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final now = DateTime.now();
     // Monday of this week
     final monday = now.subtract(Duration(days: now.weekday - 1));
     final sunday = monday.add(const Duration(days: 6));
 
+    final months = [
+      l10n.monthJan, l10n.monthFeb, l10n.monthMar, l10n.monthApr,
+      l10n.monthMay, l10n.monthJun, l10n.monthJul, l10n.monthAug,
+      l10n.monthSep, l10n.monthOct, l10n.monthNov, l10n.monthDec,
+    ];
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
       child: Text(
-        '${_formatShortDate(monday)} – ${_formatShortDate(sunday)}',
+        '${months[monday.month - 1]} ${monday.day} – ${months[sunday.month - 1]} ${sunday.day}',
         style: theme.textTheme.bodyMedium?.copyWith(
           color: theme.colorScheme.outline,
         ),
       ),
     );
-  }
-
-  String _formatShortDate(DateTime date) {
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-    ];
-    return '${months[date.month - 1]} ${date.day}';
   }
 }
 
@@ -125,21 +138,21 @@ class _StatsRow extends StatelessWidget {
           children: [
             Expanded(
               child: StatCard(
-                label: 'Dogs',
+                label: AppLocalizations.of(context)!.dogs,
                 value: '${stats.totalDogs}',
                 icon: Icons.pets_rounded,
               ),
             ),
             Expanded(
               child: StatCard(
-                label: 'This week',
+                label: AppLocalizations.of(context)!.thisWeek,
                 value: '${stats.thisWeekDays}/${stats.goal}',
                 icon: Icons.calendar_today_rounded,
               ),
             ),
             Expanded(
               child: StatCard(
-                label: 'Last week',
+                label: AppLocalizations.of(context)!.lastWeek,
                 value: '${stats.lastWeekDays}/${stats.goal}',
                 icon: Icons.history_rounded,
               ),
@@ -165,7 +178,7 @@ class _SectionHeader extends StatelessWidget {
       child: Row(
         children: [
           Text(
-            'All dogs',
+            AppLocalizations.of(context)!.allDogs,
             style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w600,
             ),
@@ -187,7 +200,7 @@ class _SectionHeader extends StatelessWidget {
           ),
           const Spacer(),
           Text(
-            'Most urgent first',
+            AppLocalizations.of(context)!.mostUrgentFirst,
             style: theme.textTheme.labelSmall?.copyWith(
               color: theme.colorScheme.outline,
             ),
@@ -221,7 +234,7 @@ class _ErrorView extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'Failed to load data',
+              AppLocalizations.of(context)!.failedToLoadData,
               style: theme.textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
@@ -236,7 +249,7 @@ class _ErrorView extends StatelessWidget {
             FilledButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Retry'),
+              label: Text(AppLocalizations.of(context)!.retry),
             ),
           ],
         ),

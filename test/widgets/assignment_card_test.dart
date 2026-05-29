@@ -36,6 +36,7 @@ void main() {
               onRemoveVolunteer: () {},
               onTapDog: (_) {},
               onEditVolunteerNote: () {},
+              onReorderDogs: (oldIndex, newIndex) {},
             ),
           ),
         ),
@@ -106,6 +107,7 @@ void main() {
                 onRemoveVolunteer: () {},
                 onTapDog: (_) {},
                 onEditVolunteerNote: () {},
+                onReorderDogs: (oldIndex, newIndex) {},
               ),
             ),
           ),
@@ -129,6 +131,7 @@ void main() {
                 onRemoveVolunteer: () {},
                 onTapDog: (_) {},
                 onEditVolunteerNote: () => editNoteCalled = true,
+                onReorderDogs: (oldIndex, newIndex) {},
               ),
             ),
           ),
@@ -148,6 +151,100 @@ void main() {
 
       expect(find.text('Anna'), findsOneWidget);
       expect(find.byIcon(Icons.add_rounded), findsOneWidget);
+    });
+  });
+
+  group('VolunteerColumn overview mode', () {
+    late VolunteerAssignment assignment;
+
+    setUp(() {
+      assignment = VolunteerAssignment(
+        volunteerId: 1,
+        volunteerName: 'Anna Kowalska',
+        dogs: [
+          const DogEntry(dogId: 10, dogName: 'Burek', kennel: 'A1'),
+          const DogEntry(
+            dogId: 11,
+            dogName: 'Luna',
+            kennel: 'A2',
+            groupIndex: 1,
+            note: 'shy dog',
+          ),
+        ],
+        note: '10-13 only',
+      );
+    });
+
+    Widget buildOverview({VolunteerAssignment? overrideAssignment}) {
+      return MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: VolunteerColumn(
+              assignment: overrideAssignment ?? assignment,
+              overview: true,
+              onAddDog: () {},
+              onRemoveDog: (_) {},
+              onRemoveVolunteer: () {},
+              onTapDog: (_) {},
+              onEditVolunteerNote: () {},
+              onReorderDogs: (oldIndex, newIndex) {},
+            ),
+          ),
+        ),
+      );
+    }
+
+    testWidgets('hides add dog button', (tester) async {
+      await tester.pumpWidget(buildOverview());
+
+      expect(find.byIcon(Icons.add_rounded), findsNothing);
+    });
+
+    testWidgets('still displays volunteer name and note', (tester) async {
+      await tester.pumpWidget(buildOverview());
+
+      expect(find.text('Anna Kowalska'), findsOneWidget);
+      expect(find.text('10-13 only'), findsOneWidget);
+    });
+
+    testWidgets('still displays dog names and notes', (tester) async {
+      await tester.pumpWidget(buildOverview());
+
+      expect(find.textContaining('Burek'), findsOneWidget);
+      expect(find.textContaining('Luna'), findsOneWidget);
+      expect(find.text('shy dog'), findsOneWidget);
+    });
+
+    testWidgets('does not have Dismissible widgets', (tester) async {
+      await tester.pumpWidget(buildOverview());
+
+      expect(find.byType(Dismissible), findsNothing);
+    });
+
+    testWidgets('header tap does not trigger onEditVolunteerNote',
+        (tester) async {
+      var editNoteCalled = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: VolunteerColumn(
+                assignment: assignment,
+                overview: true,
+                onAddDog: () {},
+                onRemoveDog: (_) {},
+                onRemoveVolunteer: () {},
+                onTapDog: (_) {},
+                onEditVolunteerNote: () => editNoteCalled = true,
+                onReorderDogs: (oldIndex, newIndex) {},
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Anna Kowalska'));
+      expect(editNoteCalled, isFalse);
     });
   });
 }

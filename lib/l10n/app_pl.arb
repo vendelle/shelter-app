@@ -1,0 +1,228 @@
+{
+  "@@locale": "pl",
+
+  "appTitle": "Schroniskowy Tracker Spacerów",
+
+  "navOverview": "Przegląd",
+  "navPlanner": "Planer",
+  "navManage": "Zarządzaj",
+
+  "walkOverview": "Przegląd spacerów",
+  "refresh": "Odśwież",
+  "dogs": "Psy",
+  "thisWeek": "Ten tydzień",
+  "lastWeek": "Ostatni tydzień",
+  "allDogs": "Wszystkie psy",
+  "mostUrgentFirst": "Najpilniejsze",
+  "failedToLoadData": "Nie udało się załadować danych",
+  "retry": "Ponów",
+
+  "walkPlanner": "Planer spacerów",
+  "sharePlan": "Udostępnij plan",
+  "walkGroup": "Grupa spacerowa",
+  "solo": "Solo",
+  "groupN": "Grupa {n}",
+  "@groupN": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
+  "addNote": "Dodaj notatkę",
+  "noteFor": "Notatka dla {name}",
+  "@noteFor": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "noteHintDog": "np. szpital, zabrać do weterynarza",
+  "noteHintVolunteer": "np. 10-13, tylko 2 psy",
+  "remove": "Usuń",
+  "cancel": "Anuluj",
+  "save": "Zapisz",
+  "saved": "Zapisano",
+  "unsaved": "Niezapisane",
+  "saving": "Zapisuję…",
+  "saveError": "Błąd zapisu",
+  "autoSave": "Autozapis",
+  "noWalksPlannedYet": "Brak zaplanowanych spacerów",
+  "addFirstVolunteer": "Dodaj pierwszego wolo",
+  "addVolunteer": "Dodaj wolo",
+  "addVolunteerButton": "Dodaj wolo",
+  "searchVolunteers": "Szukaj wolo...",
+  "allVolunteersAssigned": "Wszyscy wolo są już przypisani",
+  "noVolunteersMatch": "Brak wolo pasujących do wyszukiwania",
+  "addDog": "Dodaj psa",
+  "selectDogs": "Wybierz psy",
+  "tapToAddLongPress": "Dotknij, aby dodać • Przytrzymaj, aby wybrać kilka",
+  "allDogsAssigned": "Wszystkie psy są już przypisane",
+  "addNDogs": "Dodaj {count} {count, plural, one{psa} few{psy} other{psów}}",
+  "@addNDogs": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "removeVolunteerTitle": "Usunąć {name}?",
+  "@removeVolunteerTitle": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "removeVolunteerContent": "Spowoduje to odpisanie {count} {count, plural, one{psa} few{psów} other{psów}}.",
+  "@removeVolunteerContent": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "failedToLoadPlan": "Nie udało się załadować planu",
+  "nVolunteersNDogs": "{volunteers} wolo  •  {dogs}/{total} psów",
+  "@nVolunteersNDogs": {
+    "placeholders": {
+      "volunteers": { "type": "int" },
+      "dogs": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+
+  "manage": "Zarządzaj",
+  "dogsTitleTab": "Psy",
+  "volunteersTab": "Wolontariusze",
+  "current": "Obecne",
+  "adopted": "Adoptowane",
+  "addDogButton": "Dodaj psa",
+  "noDogsFound": "Nie znaleziono psów",
+  "noAdoptedDogs": "Brak adoptowanych psów",
+  "editDog": "Edytuj psa",
+  "name": "Imię",
+  "shelterId": "ID schroniska",
+  "kennel": "Boks",
+  "kennelHint": "3-cyfrowy numer",
+  "nameRequired": "Imię jest wymagane",
+  "shelterIdRequired": "ID schroniska jest wymagane",
+  "kennelRequired": "Boks jest wymagany",
+  "markAsAdopted": "Oznacz jako adoptowanego",
+  "restore": "Przywróć",
+  "add": "Dodaj",
+  "edit": "Edytuj",
+
+  "active": "Aktywni",
+  "inactive": "Nieaktywni",
+  "addVolunteerTitle": "Dodaj wolo",
+  "editVolunteer": "Edytuj wolo",
+  "firstName": "Imię",
+  "lastName": "Nazwisko",
+  "role": "Rola",
+  "firstNameRequired": "Imię jest wymagane",
+  "lastNameRequired": "Nazwisko jest wymagane",
+  "markAsInactive": "Oznacz jako nieaktywnego",
+  "reactivate": "Reaktywuj",
+  "noVolunteersFound": "Nie znaleziono wolo",
+  "noInactiveVolunteers": "Brak nieaktywnych wolo",
+  "dogFamiliarity": "{name} — Znajomość psów",
+  "@dogFamiliarity": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "allGood": "Dobrze idzie",
+  "difficultButPossible": "Trudny, ale możliwy",
+  "noChance": "Bez szans",
+  "close": "Zamknij",
+  "failed": "Nie udało się: {error}",
+  "@failed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "failedToSave": "Nie udało się zapisać: {error}",
+  "@failedToSave": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+
+  "roleSenior": "Wolontariusz",
+  "roleIndependent": "Samodzielny opiekun",
+  "roleSupporter": "Wspierający",
+  "roleNew": "Nowy",
+
+  "usingSystemTheme": "Motyw systemowy",
+  "switchToLightMode": "Przełącz na jasny motyw",
+  "switchToDarkMode": "Przełącz na ciemny motyw",
+
+  "today": "Dziś",
+  "weekdayMon": "Pon",
+  "weekdayTue": "Wt",
+  "weekdayWed": "Śr",
+  "weekdayThu": "Czw",
+  "weekdayFri": "Pt",
+  "weekdaySat": "Sob",
+  "weekdaySun": "Niedz",
+  "weekdayFullMon": "Poniedzia\u0142ek",
+  "weekdayFullTue": "Wtorek",
+  "weekdayFullWed": "\u015aroda",
+  "weekdayFullThu": "Czwartek",
+  "weekdayFullFri": "Pi\u0105tek",
+  "weekdayFullSat": "Sobota",
+  "weekdayFullSun": "Niedziela",
+  "monthJan": "Sty",
+  "monthFeb": "Lut",
+  "monthMar": "Mar",
+  "monthApr": "Kwi",
+  "monthMay": "Maj",
+  "monthJun": "Cze",
+  "monthJul": "Lip",
+  "monthAug": "Sie",
+  "monthSep": "Wrz",
+  "monthOct": "Pa\u017a",
+  "monthNov": "Lis",
+  "monthDec": "Gru",
+  "monthFullJan": "stycznia",
+  "monthFullFeb": "lutego",
+  "monthFullMar": "marca",
+  "monthFullApr": "kwietnia",
+  "monthFullMay": "maja",
+  "monthFullJun": "czerwca",
+  "monthFullJul": "lipca",
+  "monthFullAug": "sierpnia",
+  "monthFullSep": "wrze\u015bnia",
+  "monthFullOct": "pa\u017adziernika",
+  "monthFullNov": "listopada",
+  "monthFullDec": "grudnia",
+  "fullDateFormat": "{weekday}, {day} {month} {year}",
+  "@fullDateFormat": {
+    "placeholders": {
+      "weekday": { "type": "String" },
+      "day": { "type": "int" },
+      "month": { "type": "String" },
+      "year": { "type": "int" }
+    }
+  },
+
+  "kennelLabel": "Boks: {kennel}",
+  "@kennelLabel": {
+    "placeholders": {
+      "kennel": { "type": "String" }
+    }
+  },
+
+  "region": "Rejon",
+  "regionAuto": "Auto: {region}",
+  "@regionAuto": {
+    "placeholders": {
+      "region": { "type": "String" }
+    }
+  },
+  "overrideRegion": "Zmień",
+  "resetRegion": "Przywróć auto",
+  "showMore": "Pokaż szczegóły",
+  "showLess": "Ukryj szczegóły",
+  "overviewMode": "Podgląd",
+
+  "languageToggle": "Zmień język",
+
+  "exportWalks": "Eksportuj spacery",
+  "exportFrom": "Od",
+  "exportTo": "Do",
+  "exportButton": "Pobierz CSV",
+  "exportFailed": "Eksport nie powiódł się"
+}

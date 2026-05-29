@@ -82,6 +82,11 @@ export function mockResponse(): MockResponse {
 		return res as MockResponse;
 	});
 
+	res.send = jest.fn((body: unknown) => {
+		res._body = body;
+		return res as MockResponse;
+	});
+
 	res.end = jest.fn(() => res as MockResponse);
 
 	res.setHeader = jest.fn((key: string, value: string | string[]) => {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shelter_app/l10n/app_localizations.dart';
 
 import '../../domain/dog_walk_summary.dart';
 import '../../../shared/presentation/walk_theme.dart';
@@ -89,8 +90,7 @@ class DogWalkTile extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 2),
-                        _TrendIndicator(
-                          trend: summary.trend,
+                        _LastWeekWalks(
                           lastWeekWalks: summary.lastWeekWalks,
                         ),
                       ],
@@ -169,36 +169,24 @@ class _WalkDotsRow extends StatelessWidget {
   }
 }
 
-class _TrendIndicator extends StatelessWidget {
-  const _TrendIndicator({
-    required this.trend,
+class _LastWeekWalks extends StatelessWidget {
+  const _LastWeekWalks({
     required this.lastWeekWalks,
   });
 
-  final int trend;
   final int lastWeekWalks;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          trendIcon(trend),
-          size: 14,
-          color: trendColor(trend, colorScheme),
-        ),
-        const SizedBox(width: 2),
-        Text(
-          '$lastWeekWalks last wk',
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: colorScheme.outline,
-          ),
-        ),
-      ],
+    return Text(
+      '$lastWeekWalks ${l10n.lastWeek}',
+      style: theme.textTheme.labelSmall?.copyWith(
+        color: colorScheme.outline,
+      ),
     );
   }
 }

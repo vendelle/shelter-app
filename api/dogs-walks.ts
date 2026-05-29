@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { handleError, setCorsHeaders } from './util';
+import { handleError, setCorsHeaders, hasColumn } from './util';
 import pool from './connection';
 import { getRegionForKennel } from './kennel-regions';
 
@@ -17,12 +17,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 	try {
 		if (req.method === 'GET') {
 			console.log('[dogs-walks] Querying database...');
+			const hasRegionCol = await hasColumn('dogs', 'region');
+			const regionSelect = hasRegionCol ? 'd.region AS db_region,' : '';
 			const result = await pool.query(`
 				SELECT
 					d.id,
 					d.name,
 					d.kennel,
 					d.shelterid,
+					${regionSelect}
 					COALESCE(
 						COUNT(DISTINCT CASE
 							WHEN w.walk_date BETWEEN date_trunc('week', current_date)
@@ -51,7 +54,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 			console.log('[dogs-walks] Got', result.rows.length, 'rows');
 			const rows = result.rows.map((row: Record<string, unknown>) => ({
 				...row,
-				region: getRegionForKennel(row.kennel as string),
+				region: (row.db_region as string) || getRegionForKennel(row.kennel as string),
+				db_region: undefined,
 			}));
 			return res.status(200).json(rows);
 		}

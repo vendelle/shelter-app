@@ -11,6 +11,14 @@ jest.mock('../connection', () => {
 	};
 });
 
+jest.mock('../util', () => {
+	const actual = jest.requireActual('../util');
+	return {
+		...actual,
+		hasColumn: jest.fn().mockResolvedValue(true),
+	};
+});
+
 import handler from '../dogs-walks';
 
 describe('GET /api/dogs-walks', () => {
@@ -33,8 +41,8 @@ describe('GET /api/dogs-walks', () => {
 
 		expect(res._status).toBe(200);
 		expect(res._body).toEqual([
-			{ ...rows[0], region: 'R2' },
-			{ ...rows[1], region: 'R3' },
+			{ ...rows[0], region: 'R5', db_region: undefined },
+			{ ...rows[1], region: 'R5', db_region: undefined },
 		]);
 		expect(res._body).toHaveLength(2);
 	});

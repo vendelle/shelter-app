@@ -12,6 +12,15 @@ jest.mock('../connection', () => {
 	};
 });
 
+// Mock hasColumn to always return true (region column exists)
+jest.mock('../util', () => {
+	const actual = jest.requireActual('../util');
+	return {
+		...actual,
+		hasColumn: jest.fn().mockResolvedValue(true),
+	};
+});
+
 import handler from '../dogs';
 
 describe('GET /api/dogs', () => {
@@ -32,8 +41,8 @@ describe('GET /api/dogs', () => {
 
 		expect(res._status).toBe(200);
 		expect(res._body).toEqual([
-			{ ...dogs[0], region: 'R2' },
-			{ ...dogs[1], region: 'R3' },
+			{ ...dogs[0], region: 'R5', region_override: null },
+			{ ...dogs[1], region: 'R5', region_override: null },
 		]);
 		expect(mockPool.query).toHaveBeenCalledWith(
 			expect.stringContaining('archived IS NOT TRUE'),
@@ -126,7 +135,7 @@ describe('POST /api/dogs', () => {
 		);
 
 		expect(res._status).toBe(201);
-		expect(res._body).toEqual({ ...newDog, region: 'R4' });
+		expect(res._body).toEqual({ ...newDog, region: 'R5', region_override: null });
 	});
 
 	it('returns 400 when name is missing', async () => {
@@ -175,7 +184,7 @@ describe('PATCH /api/dogs', () => {
 		);
 
 		expect(res._status).toBe(200);
-		expect(res._body).toEqual({ ...updated, region: 'R2' });
+		expect(res._body).toEqual({ ...updated, region: 'R5', region_override: null });
 	});
 
 	it('updates multiple fields', async () => {
@@ -244,7 +253,7 @@ describe('PUT /api/dogs', () => {
 		);
 
 		expect(res._status).toBe(200);
-		expect(res._body).toEqual({ ...archived, region: 'R2' });
+		expect(res._body).toEqual({ ...archived, region: 'R5', region_override: null });
 	});
 
 	it('unarchives a dog', async () => {
@@ -257,7 +266,7 @@ describe('PUT /api/dogs', () => {
 		);
 
 		expect(res._status).toBe(200);
-		expect(res._body).toEqual({ ...unarchived, region: 'R2' });
+		expect(res._body).toEqual({ ...unarchived, region: 'R5', region_override: null });
 	});
 
 	it('returns 400 when id query param is missing', async () => {
