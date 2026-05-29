@@ -62,7 +62,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 				}
 
 				return {
-					walk_date: walk.walk_date,
+					walk_date: walk.walk_date instanceof Date
+						? walk.walk_date.toISOString().slice(0, 10)
+						: walk.walk_date,
 					volunteer_name: walk.volunteer_name,
 					group_index: walk.group_index,
 					notes: walk.notes,

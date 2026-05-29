@@ -63,6 +63,18 @@ describe('GET /api/dog-history', () => {
 		expect(res._body).toEqual({ error: 'dog_id query param is required' });
 	});
 
+	it('formats Date objects as yyyy-MM-dd strings', async () => {
+		const walks = [
+			{ id: 1, walk_date: new Date('2026-05-29'), group_index: null, notes: null, volunteer_name: 'Jan Nowak' },
+		];
+		mockPool._setResults([{ rows: walks }]);
+
+		await handler(mockRequest({ method: 'GET', query: { dog_id: '1' } }), res);
+
+		expect(res._status).toBe(200);
+		expect((res._body as any[])[0].walk_date).toBe('2026-05-29');
+	});
+
 	it('returns 405 for unsupported methods', async () => {
 		await handler(mockRequest({ method: 'POST' }), res);
 		expect(res._status).toBe(405);

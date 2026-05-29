@@ -590,10 +590,14 @@ class _RelationshipDetailSheet extends ConsumerWidget {
         final walk = sharedWalks[index];
         final allGroupNames =
             walk.groupDogs.map((g) => g.dogName).join(', ');
+        final dateParts = walk.walkDate.split('-');
+        final displayDate = dateParts.length == 3
+            ? '${dateParts[2]}.${dateParts[1]}.${dateParts[0]}'
+            : walk.walkDate;
 
         return ListTile(
           dense: true,
-          title: Text(walk.walkDate),
+          title: Text(displayDate),
           subtitle: Text(
             [
               if (walk.volunteerName != null) walk.volunteerName!,
@@ -664,12 +668,17 @@ class _WalkHistoryTile extends StatelessWidget {
     final theme = Theme.of(context);
     final groupNames =
         walk.groupDogs.map((g) => g.dogName).join(', ');
+    // Format date as dd.MM.yyyy
+    final parts = walk.walkDate.split('-');
+    final displayDate = parts.length == 3
+        ? '${parts[2]}.${parts[1]}.${parts[0]}'
+        : walk.walkDate;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 4),
       child: ListTile(
         dense: true,
-        title: Text(walk.walkDate),
+        title: Text(displayDate),
         subtitle: Text(
           [
             if (walk.volunteerName != null) walk.volunteerName!,

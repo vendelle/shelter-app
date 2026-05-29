@@ -19,8 +19,9 @@ class DogWalkHistory {
             ?.map((d) => GroupDog.fromJson(d as Map<String, dynamic>))
             .toList() ??
         [];
+    final rawDate = json['walk_date'] as String;
     return DogWalkHistory(
-      walkDate: json['walk_date'] as String,
+      walkDate: rawDate.contains('T') ? rawDate.substring(0, 10) : rawDate,
       volunteerName: json['volunteer_name'] as String?,
       groupIndex: json['group_index'] as int?,
       notes: json['notes'] as String?,
