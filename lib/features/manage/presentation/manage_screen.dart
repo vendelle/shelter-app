@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/locale/locale_provider.dart';
 import '../../../core/theme/theme_providers.dart';
 import 'widgets/dogs_tab.dart';
-import 'widgets/relationships_tab.dart';
+// Relationship matrix tab is temporarily disabled (messy UI) — see
+// widgets/relationships_tab.dart. Code kept for when it's revisited.
+// import 'widgets/relationships_tab.dart';
 import 'widgets/volunteers_tab.dart';
 
 class ManageScreen extends ConsumerWidget {
@@ -21,7 +23,7 @@ class ManageScreen extends ConsumerWidget {
         Localizations.localeOf(context).languageCode;
 
     return DefaultTabController(
-      length: 3,
+      length: 2,
       child: Scaffold(
         appBar: AppBar(
           title: Text(l10n.manage),
@@ -54,7 +56,6 @@ class ManageScreen extends ConsumerWidget {
             tabs: [
               Tab(icon: const Icon(Icons.pets), text: l10n.dogsTitleTab),
               Tab(icon: const Icon(Icons.people), text: l10n.volunteersTab),
-              Tab(icon: const Icon(Icons.grid_on), text: 'Relations'),
             ],
           ),
         ),
@@ -62,7 +63,6 @@ class ManageScreen extends ConsumerWidget {
           children: [
             DogsTab(),
             VolunteersTab(),
-            RelationshipsTab(),
           ],
         ),
       ),

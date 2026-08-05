@@ -44,6 +44,10 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
+      // Buddies is the default tab; switch to Profile.
+      await tester.tap(find.text('Profil'));
+      await tester.pumpAndSettle();
+
       // Dog name displayed (in AppBar + profile tab header)
       expect(find.text('Burek'), findsNWidgets(2));
       // Shelter ID displayed inline (not as chip)
@@ -69,9 +73,34 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
+      // Buddies is the default tab; switch to Profile.
+      await tester.tap(find.text('Profil'));
+      await tester.pumpAndSettle();
+
       expect(find.text('Azor'), findsNWidgets(2));
       // No chips when no kennel/region
       expect(find.byType(Chip), findsNothing);
+    });
+
+    testWidgets('opens on the buddies tab by default', (tester) async {
+      await tester.pumpWidget(_buildTestWidget(
+        const DogDetailScreen(
+          dogId: 7,
+          dogName: 'Sadełko',
+        ),
+        overrides: [
+          walkPartnersProvider(7)
+              .overrideWith((ref) => Future.value(<WalkPartner>[])),
+          dogWalkHistoryProvider(7)
+              .overrideWith((ref) => Future.value(<DogWalkHistory>[])),
+        ],
+      ));
+      await tester.pumpAndSettle();
+
+      final tabController = DefaultTabController.of(
+        tester.element(find.byType(TabBarView)),
+      );
+      expect(tabController.index, 1);
     });
 
     testWidgets('shows tab labels from l10n', (tester) async {
@@ -111,9 +140,7 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      // Relationships is the second tab; switch to it.
-      await tester.tap(find.text('Psiumple'));
-      await tester.pumpAndSettle();
+      // Buddies is the default tab.
       expect(find.text('Brak partnerów spacerowych'), findsOneWidget);
 
       // Walks is the third tab; switch to it.
@@ -138,9 +165,7 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Psiumple'));
-      await tester.pumpAndSettle();
-
+      // Buddies is the default tab.
       await tester.tap(find.byIcon(Icons.help_outline_rounded));
       await tester.pumpAndSettle();
 
