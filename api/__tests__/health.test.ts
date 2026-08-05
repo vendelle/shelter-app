@@ -2,7 +2,7 @@ import { createMockPool, mockRequest, mockResponse, type MockPool, type MockResp
 
 let mockPool: MockPool;
 
-jest.mock('../connection', () => {
+jest.mock('../_lib/connection', () => {
 	mockPool = createMockPool();
 	return {
 		__esModule: true,

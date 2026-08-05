@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { handleError, setCorsHeaders } from './util';
-import pool from './connection';
+import { handleError, setCorsHeaders } from './_lib/util';
+import pool from './_lib/connection';
 
 const VALID_LEVELS = ['yard', 'contact_good', 'contact_caution', 'parallel_good', 'parallel_caution', 'incompatible'];
 

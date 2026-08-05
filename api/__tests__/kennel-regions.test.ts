@@ -1,4 +1,4 @@
-import { getRegionForKennel, getRegionNumberForKennel } from '../kennel-regions';
+import { getRegionForKennel, getRegionNumberForKennel } from '../_lib/kennel-regions';
 
 describe('kennel-regions', () => {
 	describe('getRegionForKennel', () => {

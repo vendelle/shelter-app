@@ -3,7 +3,7 @@ import { createMockPool, mockRequest, mockResponse, type MockPool, type MockResp
 // Mock the connection module before importing the handler
 let mockPool: MockPool;
 
-jest.mock('../connection', () => {
+jest.mock('../_lib/connection', () => {
 	mockPool = createMockPool();
 	return {
 		__esModule: true,
@@ -13,8 +13,8 @@ jest.mock('../connection', () => {
 });
 
 // Mock hasColumn to always return true (region column exists)
-jest.mock('../util', () => {
-	const actual = jest.requireActual('../util');
+jest.mock('../_lib/util', () => {
+	const actual = jest.requireActual('../_lib/util');
 	return {
 		...actual,
 		hasColumn: jest.fn().mockResolvedValue(true),

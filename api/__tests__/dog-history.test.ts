@@ -1,7 +1,7 @@
 import { createMockPool, mockRequest, mockResponse, MockResponse } from './helpers';
 
 const mockPool = createMockPool();
-jest.mock('../connection', () => mockPool);
+jest.mock('../_lib/connection', () => mockPool);
 
 import handler from '../dog-history';
 
