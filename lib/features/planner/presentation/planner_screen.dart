@@ -222,7 +222,6 @@ class _ColumnsGrid extends StatelessWidget {
       context: context,
       volunteerId: assignment.volunteerId,
       alreadyAssignedDogIds: plannerState.assignedDogIds,
-      volunteerDogs: assignment.dogs,
     );
     if (entries != null && entries.isNotEmpty) {
       ref

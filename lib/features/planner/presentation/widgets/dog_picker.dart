@@ -3,9 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:shelter_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../dog_detail/domain/dog_relationship.dart';
-import '../../../dog_detail/presentation/providers/dog_detail_providers.dart';
-import '../../../dog_detail/presentation/relationship_colors.dart';
 import '../../domain/planner_dog.dart';
 import '../../domain/volunteer_assignment.dart';
 import '../providers/planner_providers.dart';
@@ -18,7 +15,6 @@ Future<List<DogEntry>?> showDogPicker({
   required BuildContext context,
   required int volunteerId,
   required Set<int> alreadyAssignedDogIds,
-  List<DogEntry> volunteerDogs = const [],
 }) async {
   return showModalBottomSheet<List<DogEntry>>(
     context: context,
@@ -30,7 +26,6 @@ Future<List<DogEntry>?> showDogPicker({
     builder: (context) => _DogPickerSheet(
       volunteerId: volunteerId,
       alreadyAssignedDogIds: alreadyAssignedDogIds,
-      volunteerDogs: volunteerDogs,
     ),
   );
 }
@@ -39,12 +34,10 @@ class _DogPickerSheet extends ConsumerStatefulWidget {
   const _DogPickerSheet({
     required this.volunteerId,
     required this.alreadyAssignedDogIds,
-    this.volunteerDogs = const [],
   });
 
   final int volunteerId;
   final Set<int> alreadyAssignedDogIds;
-  final List<DogEntry> volunteerDogs;
 
   @override
   ConsumerState<_DogPickerSheet> createState() => _DogPickerSheetState();
@@ -171,19 +164,6 @@ class _DogPickerSheetState extends ConsumerState<_DogPickerSheet> {
                     itemBuilder: (context, index) {
                       final dog = available[index];
                       final isSelected = _selected.contains(dog.id);
-                      final lookup = ref.watch(relationshipLookupProvider).valueOrNull;
-                      final rels = <(String, DogRelationshipLevel)>[];
-                      if (lookup != null) {
-                        for (final assigned in widget.volunteerDogs) {
-                          final key = dog.id < assigned.dogId
-                              ? (dog.id, assigned.dogId)
-                              : (assigned.dogId, dog.id);
-                          final rel = lookup[key];
-                          if (rel != null) {
-                            rels.add((assigned.dogName, rel.level));
-                          }
-                        }
-                      }
 
                       return _DogPickerTile(
                         dog: dog,
@@ -191,7 +171,6 @@ class _DogPickerSheetState extends ConsumerState<_DogPickerSheet> {
                         isMultiSelect: _multiSelect,
                         onTap: () => _onTap(dog),
                         onLongPress: () => _onLongPress(dog),
-                        relationships: rels,
                       );
                     },
                   );
@@ -269,7 +248,6 @@ class _DogPickerTile extends StatelessWidget {
     required this.isMultiSelect,
     required this.onTap,
     required this.onLongPress,
-    this.relationships = const [],
   });
 
   final PlannerDog dog;
@@ -277,13 +255,11 @@ class _DogPickerTile extends StatelessWidget {
   final bool isMultiSelect;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
-  final List<(String, DogRelationshipLevel)> relationships;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final l10n = AppLocalizations.of(context)!;
     final familiarityColor = _getFamiliarityColor(dog.familiarity, colorScheme);
     final showDot = dog.familiarity != DogFamiliarityLevel.unknown;
 
@@ -333,33 +309,6 @@ class _DogPickerTile extends StatelessWidget {
               dog.thisWeekWalks == 0 ? FontWeight.w600 : FontWeight.normal,
         ),
       ),
-      subtitle: relationships.isNotEmpty
-          ? Wrap(
-              spacing: 4,
-              runSpacing: 2,
-              children: relationships.map((r) {
-                final (name, level) = r;
-                final color = relationshipColor(level);
-                final textColor = relationshipTextColor(level);
-                final label = relationshipLevelDisplayName(level, l10n);
-                return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    '$name: $label',
-                    style: TextStyle(
-                      color: textColor,
-                      fontSize: 9,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                );
-              }).toList(),
-            )
-          : null,
     );
   }
 

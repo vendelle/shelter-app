@@ -141,9 +141,9 @@
   },
 
   "roleSenior": "Wolontariusz",
-  "roleIndependent": "Samodzielny opiekun",
+  "roleIndependent": "Samodzielny",
   "roleSupporter": "Wspierający",
-  "roleNew": "Nowy",
+  "roleNew": "Pomoc",
 
   "usingSystemTheme": "Motyw systemowy",
   "switchToLightMode": "Przełącz na jasny motyw",
@@ -227,7 +227,7 @@
   "exportFailed": "Eksport nie powiódł się",
 
   "profileTab": "Profil",
-  "relationships": "Ziomki",
+  "relationships": "Psiumple",
   "sortByLevel": "wg poziomu",
   "sortByDate": "wg daty",
   "noWalkPartners": "Brak partnerów spacerowych",
@@ -244,5 +244,15 @@
   "levelContactCaution": "Kontakt-",
   "levelParallelGood": "Równo+",
   "levelParallelCaution": "Równo-",
-  "levelIncompatible": "Nie"
+  "levelIncompatible": "Nie",
+
+  "relationshipLegendTooltip": "Co oznaczają poziomy?",
+  "relationshipLegendTitle": "Poziomy relacji",
+  "levelDescYard": "Para wybiegowa — mogą swobodnie dzielić wybieg.",
+  "levelDescContactGood": "Pieski chodzą na spacerach blisko siebie, w kontakcie, i nie mają żadnych (poważnych) spięć.",
+  "levelDescContactCaution": "Równolegle jest ok, czasami chodzą w kontakcie, ale trzeba moderować interakcję.",
+  "levelDescParallelGood": "Na spacerach równoległych psy są wyluzowane, ale nie próbowaliśmy jeszcze iść w kontakcie.",
+  "levelDescParallelCaution": "Przy spacerze równoległym pojawiają się emocje, ale widzimy przyszłość w pracy nad tą relacją.",
+  "levelDescIncompatible": "Ten duet się póki co nie sprawdza — nie parujemy ich.",
+  "relationshipLegendContactNote": "W kontakcie: psy się mogą obwąchać, kręcić się koło siebie."
 }

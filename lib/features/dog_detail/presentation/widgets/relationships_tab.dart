@@ -7,6 +7,7 @@ import '../../domain/walk_partner.dart';
 import '../providers/dog_detail_providers.dart';
 import '../relationship_colors.dart';
 import 'detail_tab_scaffold.dart';
+import 'relationship_legend_sheet.dart';
 
 enum _PartnerSort { level, date }
 
@@ -34,9 +35,15 @@ class _RelationshipsTabState extends ConsumerState<RelationshipsTab> {
         await ref.read(walkPartnersProvider(widget.dogId).future);
       },
       children: [
-        // Sort toggle
+        // Legend + sort toggle
         Row(
           children: [
+            IconButton(
+              icon: const Icon(Icons.help_outline_rounded, size: 20),
+              tooltip: l10n.relationshipLegendTooltip,
+              visualDensity: VisualDensity.compact,
+              onPressed: () => showRelationshipLegend(context),
+            ),
             const Spacer(),
             InkWell(
               borderRadius: BorderRadius.circular(12),
@@ -236,12 +243,23 @@ class _EditLevelSheetState extends ConsumerState<_EditLevelSheet> {
               ),
             ),
           ),
-          Text(
-            widget.otherDogName,
-            style: theme.textTheme.titleMedium
-                ?.copyWith(fontWeight: FontWeight.w600),
+          Row(
+            children: [
+              Text(
+                widget.otherDogName,
+                style: theme.textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w600),
+              ),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.help_outline_rounded, size: 20),
+                tooltip: l10n.relationshipLegendTooltip,
+                visualDensity: VisualDensity.compact,
+                onPressed: () => showRelationshipLegend(context),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           if (_error != null)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),

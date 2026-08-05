@@ -55,6 +55,19 @@ String relationshipLevelDisplayName(DogRelationshipLevel level, AppLocalizations
   };
 }
 
+/// Full explanation of what a relationship level means, for the legend shown
+/// alongside the level picker.
+String relationshipLevelDescription(DogRelationshipLevel level, AppLocalizations l10n) {
+  return switch (level) {
+    DogRelationshipLevel.yard => l10n.levelDescYard,
+    DogRelationshipLevel.contactGood => l10n.levelDescContactGood,
+    DogRelationshipLevel.contactCaution => l10n.levelDescContactCaution,
+    DogRelationshipLevel.parallelGood => l10n.levelDescParallelGood,
+    DogRelationshipLevel.parallelCaution => l10n.levelDescParallelCaution,
+    DogRelationshipLevel.incompatible => l10n.levelDescIncompatible,
+  };
+}
+
 /// A relationship between two dogs.
 class DogRelationship {
   final int id;

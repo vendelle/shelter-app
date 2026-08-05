@@ -91,7 +91,7 @@ void main() {
 
       // Polish l10n tab labels, all visible at once in the TabBar.
       expect(find.text('Profil'), findsOneWidget);
-      expect(find.text('Ziomki'), findsOneWidget);
+      expect(find.text('Psiumple'), findsOneWidget);
       expect(find.text('Spacery'), findsOneWidget);
     });
 
@@ -112,7 +112,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Relationships is the second tab; switch to it.
-      await tester.tap(find.text('Ziomki'));
+      await tester.tap(find.text('Psiumple'));
       await tester.pumpAndSettle();
       expect(find.text('Brak partnerów spacerowych'), findsOneWidget);
 
@@ -120,6 +120,31 @@ void main() {
       await tester.tap(find.text('Spacery'));
       await tester.pumpAndSettle();
       expect(find.text('Brak spacerów'), findsOneWidget);
+    });
+
+    testWidgets('help button on relationships tab opens the level legend',
+        (tester) async {
+      await tester.pumpWidget(_buildTestWidget(
+        const DogDetailScreen(
+          dogId: 6,
+          dogName: 'Kicia',
+        ),
+        overrides: [
+          walkPartnersProvider(6)
+              .overrideWith((ref) => Future.value(<WalkPartner>[])),
+          dogWalkHistoryProvider(6)
+              .overrideWith((ref) => Future.value(<DogWalkHistory>[])),
+        ],
+      ));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Psiumple'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.help_outline_rounded));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Poziomy relacji'), findsOneWidget);
     });
 
     testWidgets('caps walk history to the last 20 walks', (tester) async {
