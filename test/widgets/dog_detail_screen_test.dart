@@ -11,6 +11,10 @@ Widget _buildTestWidget(Widget child, {List<Override> overrides = const []}) {
   return ProviderScope(
     overrides: overrides,
     child: MaterialApp(
+      // NoSplash avoids a shader-loading crash on tester.tap() in this test
+      // environment (unrelated to app behavior — ink_sparkle.frag can't be
+      // decoded by the test runner's Skia build).
+      theme: ThemeData(splashFactory: NoSplash.splashFactory),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       locale: const Locale('pl'),
@@ -21,7 +25,8 @@ Widget _buildTestWidget(Widget child, {List<Override> overrides = const []}) {
 
 void main() {
   group('DogDetailScreen', () {
-    testWidgets('shows dog name and shelter ID inline', (tester) async {
+    testWidgets('shows dog name and shelter ID inline on profile tab',
+        (tester) async {
       await tester.pumpWidget(_buildTestWidget(
         const DogDetailScreen(
           dogId: 1,
@@ -39,7 +44,7 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      // Dog name displayed (in AppBar + header)
+      // Dog name displayed (in AppBar + profile tab header)
       expect(find.text('Burek'), findsNWidgets(2));
       // Shelter ID displayed inline (not as chip)
       expect(find.text('S-123'), findsOneWidget);
@@ -69,7 +74,7 @@ void main() {
       expect(find.byType(Chip), findsNothing);
     });
 
-    testWidgets('shows section titles from l10n', (tester) async {
+    testWidgets('shows tab labels from l10n', (tester) async {
       await tester.pumpWidget(_buildTestWidget(
         const DogDetailScreen(
           dogId: 3,
@@ -84,12 +89,14 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      // Polish l10n titles
+      // Polish l10n tab labels, all visible at once in the TabBar.
+      expect(find.text('Profil'), findsOneWidget);
       expect(find.text('Ziomki'), findsOneWidget);
-      expect(find.text('Historia spacerów'), findsOneWidget);
+      expect(find.text('Spacery'), findsOneWidget);
     });
 
-    testWidgets('shows empty state for walk partners', (tester) async {
+    testWidgets('shows empty state for walk partners on relationships tab',
+        (tester) async {
       await tester.pumpWidget(_buildTestWidget(
         const DogDetailScreen(
           dogId: 4,
@@ -104,8 +111,44 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
+      // Relationships is the second tab; switch to it.
+      await tester.tap(find.text('Ziomki'));
+      await tester.pumpAndSettle();
       expect(find.text('Brak partnerów spacerowych'), findsOneWidget);
+
+      // Walks is the third tab; switch to it.
+      await tester.tap(find.text('Spacery'));
+      await tester.pumpAndSettle();
       expect(find.text('Brak spacerów'), findsOneWidget);
+    });
+
+    testWidgets('caps walk history to the last 20 walks', (tester) async {
+      final walks = List.generate(
+        25,
+        (i) => DogWalkHistory(walkDate: '2026-01-${(i + 1).toString().padLeft(2, '0')}'),
+      );
+      await tester.pumpWidget(_buildTestWidget(
+        const DogDetailScreen(
+          dogId: 5,
+          dogName: 'Luna',
+        ),
+        overrides: [
+          walkPartnersProvider(5)
+              .overrideWith((ref) => Future.value(<WalkPartner>[])),
+          dogWalkHistoryProvider(5).overrideWith((ref) => Future.value(walks)),
+        ],
+      ));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Spacery'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Ostatnie 20 spacerów'), findsOneWidget);
+      // Only the first 20 entries of the (API-sorted) list are rendered.
+      expect(find.text('01.01'), findsOneWidget);
+      expect(find.text('20.01'), findsOneWidget);
+      expect(find.text('21.01'), findsNothing);
+      expect(find.text('25.01'), findsNothing);
     });
   });
 }
