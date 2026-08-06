@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../shared/domain/dog.dart';
 import '../../../shared/domain/volunteer.dart';
 import '../../../planner/domain/planner_dog.dart';
+import '../familiarity_colors.dart';
 import '../providers/manage_providers.dart';
 
 class FamiliarityDialog extends ConsumerStatefulWidget {
@@ -139,7 +140,7 @@ class _DogFamiliarityRow extends StatelessWidget {
           _LevelButton(
             level: DogFamiliarityLevel.good,
             currentLevel: level,
-            color: const Color(0xFF2A9D8F),
+            color: familiarityColor(DogFamiliarityLevel.good),
             icon: Icons.sentiment_very_satisfied,
             tooltip: AppLocalizations.of(context)!.allGood,
             onTap: () => onChanged(
@@ -152,7 +153,7 @@ class _DogFamiliarityRow extends StatelessWidget {
           _LevelButton(
             level: DogFamiliarityLevel.difficult,
             currentLevel: level,
-            color: const Color(0xFFE8A317),
+            color: familiarityColor(DogFamiliarityLevel.difficult),
             icon: Icons.sentiment_neutral,
             tooltip: AppLocalizations.of(context)!.difficultButPossible,
             onTap: () => onChanged(
@@ -165,7 +166,7 @@ class _DogFamiliarityRow extends StatelessWidget {
           _LevelButton(
             level: DogFamiliarityLevel.never,
             currentLevel: level,
-            color: Colors.red,
+            color: familiarityColor(DogFamiliarityLevel.never),
             icon: Icons.sentiment_very_dissatisfied,
             tooltip: AppLocalizations.of(context)!.noChance,
             onTap: () => onChanged(

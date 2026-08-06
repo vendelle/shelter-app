@@ -17,8 +17,11 @@ A full-stack web application for managing daily dog walk schedules at an animal 
 
 ## Features
 
-- **Walk Planner** — Assign dogs to volunteers for a specific date. Supports group walks (color-coded), per-dog notes, and per-volunteer notes.
-- **Walk Overview** — Dashboard showing all dogs with this-week and last-week walk counts, sorted by urgency.
+- **Walk Planner** — Assign dogs to volunteers for a specific date. Supports group walks (color-coded), drag-to-reorder dogs within a volunteer, auto-save, per-dog/per-volunteer notes, a compact overview mode, and sharing the day's plan as an image (with a tick-check reminder).
+- **Walk Overview** — Dashboard showing all dogs with this-week and last-week walk counts, sorted by urgency, plus CSV export of walk history with a date range filter.
+- **Manage** — CRUD for dogs and volunteers, volunteer roles, per-volunteer dog familiarity ratings, dark mode and language toggle.
+- **Dog Detail** — Per-dog profile, color-coded relationship levels with other dogs ("buddies"), and recent walk history.
+- **Volunteer Profile** — Per-volunteer stats (avg visits/month, avg walks/visit), dogs walked most often in the last 90 days (color-coded by frequency, with familiarity), and a 6-month visit history grouped by month.
 - **Responsive Layout** — 1-column on mobile, 2+ columns on wider screens using `Wrap`.
 
 ## Localization (i18n)
@@ -42,36 +45,55 @@ The app supports multiple languages using Flutter's `intl` package.
 
 ```
 lib/
-├── main.dart                 # Entry point
-├── app.dart                  # MaterialApp + theme + router
+├── main.dart                  # Entry point
+├── app.dart                   # MaterialApp + theme + router
 ├── core/
-│   ├── api/                  # ApiClient, providers
-│   └── theme/                # App theme
-├── routing/                  # go_router config (3 tabs)
+│   ├── api/                   # ApiClient, providers
+│   ├── locale/                # Locale persistence + provider
+│   └── theme/                 # App theme (light/dark)
+├── routing/                   # go_router config (3 tabs + dog/volunteer detail routes)
 └── features/
-    ├── overview/             # Walk dashboard
-    │   ├── data/             # ApiOverviewRepository
-    │   ├── domain/           # DogWalkSummary model
-    │   └── presentation/     # OverviewScreen
-    ├── planner/              # Daily walk planner
-    │   ├── data/             # ApiPlannerRepository
-    │   ├── domain/           # VolunteerAssignment, DogEntry, PlannerDog
+    ├── overview/               # Walk dashboard
+    │   ├── data/                # ApiOverviewRepository
+    │   ├── domain/               # DogWalkSummary model
+    │   └── presentation/         # OverviewScreen, StatCard, CSV export sheet
+    ├── planner/                 # Daily walk planner
+    │   ├── data/                  # ApiPlannerRepository
+    │   ├── domain/                 # VolunteerAssignment, PlannerDog
     │   └── presentation/
-    │       ├── providers/    # PlannerNotifier (StateNotifier)
-    │       └── widgets/      # VolunteerColumn, DogPicker, DateNavigator
+    │       ├── providers/           # PlannerNotifier (StateNotifier, auto-save)
+    │       └── widgets/              # AssignmentCard, DogPicker, DateNavigator, PlannerShare
+    ├── manage/                  # Dog/volunteer CRUD admin screen
+    │   ├── data/                  # ManageRepository (dogs, volunteers, familiarity)
+    │   └── presentation/
+    │       ├── providers/           # managedDogsProvider, managedVolunteersProvider, familiarityProvider
+    │       └── widgets/              # DogsTab, VolunteersTab, form dialogs, FamiliarityDialog
+    ├── dog_detail/               # Per-dog profile screen
+    │   ├── data/                  # ApiDogDetailRepository
+    │   ├── domain/                 # DogRelationship, DogWalkHistory, WalkPartner
+    │   └── presentation/            # DogDetailScreen (profile/relationships/walks tabs)
+    ├── volunteer_detail/         # Volunteer profile screen
+    │   ├── data/                   # ApiVolunteerDetailRepository
+    │   ├── domain/                  # VolunteerProfile, VolunteerVisit, VolunteerDogWalkCount
+    │   └── presentation/             # VolunteerDetailScreen
     └── shared/
-        └── domain/           # Volunteer model
+        └── domain/                 # Dog, Volunteer models
 
-api/                          # Vercel serverless functions
-├── connection.ts             # Lazy PostgreSQL pool
-├── util.ts                   # CORS headers, error handling
-├── dogs.ts                   # GET /api/dogs
-├── volunteers.ts             # GET /api/volunteers
-├── dogs-walks.ts             # GET /api/dogs-walks (with walk counts)
-├── dayplan.ts                # GET/POST /api/dayplan (full planner state)
-├── health.ts                 # GET /api/health (diagnostics)
-├── __tests__/                # Jest tests (41 tests, 100% line coverage)
-└── migrations/               # SQL migration scripts
+api/                            # Vercel serverless functions
+├── connection.ts                # Lazy PostgreSQL pool
+├── util.ts                      # CORS headers, error handling
+├── dogs.ts                      # GET/POST/PATCH/PUT /api/dogs
+├── volunteers.ts                # GET/POST/PATCH/PUT /api/volunteers (?id=X → one volunteer's profile stats)
+├── walks.ts                     # GET/POST/DELETE /api/walks (?format=csv → date-range export)
+├── dogs-walks.ts                 # GET /api/dogs-walks (this/last-week walk counts)
+├── dog-history.ts                # GET /api/dog-history (a dog's walk history)
+├── dog-relationships.ts          # GET/PUT/DELETE /api/dog-relationships
+├── walk-partners.ts              # GET /api/walk-partners
+├── familiarity.ts                # GET/PUT/DELETE /api/familiarity
+├── dayplan.ts                    # GET/POST /api/dayplan (full planner state)
+├── health.ts                     # GET /api/health (diagnostics)
+├── __tests__/                    # Jest tests (178 tests; coverage enforced in CI)
+└── migrations/                   # SQL migration scripts
 ```
 
 ## Getting Started

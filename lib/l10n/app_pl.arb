@@ -254,5 +254,37 @@
   "levelDescParallelGood": "Na spacerach równoległych psy są wyluzowane, ale nie próbowaliśmy jeszcze iść w kontakcie.",
   "levelDescParallelCaution": "Przy spacerze równoległym pojawiają się emocje, ale widzimy przyszłość w pracy nad tą relacją.",
   "levelDescIncompatible": "Ten duet się póki co nie sprawdza — nie parujemy ich.",
-  "relationshipLegendContactNote": "W kontakcie: psy się mogą obwąchać, kręcić się koło siebie."
+  "relationshipLegendContactNote": "W kontakcie: psy się mogą obwąchać, kręcić się koło siebie.",
+
+  "statsSectionTitle": "Statystyki",
+  "avgVisitsPerMonthLabel": "Śr. wizyt / miesiąc",
+  "avgWalksPerVisitLabel": "Śr. spacerów / wizytę",
+  "last6Months": "ostatnie 6 miesięcy",
+  "dogsWalkedMostOften": "Najczęściej spacerowane psy",
+  "last90Days": "ostatnie 90 dni",
+  "dogWalkCountSnackbar": "{name}: {count} {count, plural, one{spacer} few{spacery} other{spacerów}} ({period})",
+  "@dogWalkCountSnackbar": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "count": { "type": "int" },
+      "period": { "type": "String" }
+    }
+  },
+  "dogsLegendCaption": "Kolor = liczba spacerów (90 dni) • kropka = znajomość psa",
+  "visitsSectionTitle": "Wizyty",
+  "totalVisitsLabel": "{count} {count, plural, one{wizyta} few{wizyty} other{wizyt}} łącznie",
+  "@totalVisitsLabel": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "walksCount": "{count} {count, plural, one{spacer} few{spacery} other{spacerów}}",
+  "@walksCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "noVisitsInPast6Months": "Brak wizyt w ostatnich 6 miesiącach",
+  "archivedBadge": "Zarchiwizowany",
+  "noActiveDogs": "Brak aktywnych psów"
 }

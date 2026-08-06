@@ -8,6 +8,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
 	try {
 		if (req.method === 'GET') {
+			// Single-volunteer profile mode: aggregated visit/dog stats for one
+			// volunteer, used by the volunteer profile screen. Kept on this
+			// endpoint (rather than a new function) to stay within the
+			// project's serverless function budget — see DECISIONS.md.
+			if (req.query.id) {
+				return await getVolunteerProfile(req, res);
+			}
+
 			const includeArchived = req.query.include_archived === 'true';
 			const onlyArchived = req.query.only_archived === 'true';
 			let whereClause = 'WHERE archived IS NOT TRUE';
@@ -71,4 +79,56 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 	} catch (error) {
 		handleError(error, res);
 	}
+}
+
+/**
+ * GET /api/volunteers?id=X
+ *
+ * Aggregated stats for a single volunteer's profile screen:
+ * - `visits`: one row per date with a walk in the past 6 months, with the
+ *   number of walks logged that day.
+ * - `dogs`: every active dog with how many times this volunteer walked it
+ *   in the past 90 days (0 included, so dogs never walked still show up).
+ */
+async function getVolunteerProfile(req: VercelRequest, res: VercelResponse) {
+	const id = req.query.id as string;
+
+	const volunteerResult = await pool.query(
+		`SELECT id, first_name, last_name, COALESCE(archived, false) as archived, COALESCE(role, 'new') as role
+		 FROM volunteers WHERE id = $1`,
+		[id],
+	);
+	if (volunteerResult.rows.length === 0) {
+		return res.status(404).json({ error: 'Volunteer not found' });
+	}
+
+	const visitsResult = await pool.query(
+		`SELECT w.walk_date, COUNT(*)::int AS walk_count
+		 FROM walks w
+		 WHERE w.volunteer_id = $1
+		 	AND w.deleted_at IS NULL
+		 	AND w.walk_date >= CURRENT_DATE - INTERVAL '6 months'
+		 GROUP BY w.walk_date
+		 ORDER BY w.walk_date DESC`,
+		[id],
+	);
+
+	const dogsResult = await pool.query(
+		`SELECT d.id AS dog_id, d.name AS dog_name, COUNT(w.id)::int AS walk_count
+		 FROM dogs d
+		 LEFT JOIN walks w ON w.dog_id = d.id
+		 	AND w.volunteer_id = $1
+		 	AND w.deleted_at IS NULL
+		 	AND w.walk_date >= CURRENT_DATE - INTERVAL '90 days'
+		 WHERE d.archived IS NOT TRUE
+		 GROUP BY d.id, d.name
+		 ORDER BY walk_count DESC, d.name ASC`,
+		[id],
+	);
+
+	return res.status(200).json({
+		volunteer: volunteerResult.rows[0],
+		visits: visitsResult.rows,
+		dogs: dogsResult.rows,
+	});
 }
