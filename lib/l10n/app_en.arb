@@ -202,5 +202,42 @@
   "levelDescParallelGood": "Relaxed on parallel walks, but we haven't tried contact yet.",
   "levelDescParallelCaution": "Parallel walks bring up some emotions, but we see potential in working on this pair.",
   "levelDescIncompatible": "This pair doesn't work for now — we don't pair them.",
-  "relationshipLegendContactNote": "In contact: dogs may sniff each other and hang out close together."
+  "relationshipLegendContactNote": "In contact: dogs may sniff each other and hang out close together.",
+
+  "statsSectionTitle": "Statistics",
+  "avgVisitsPerMonthLabel": "Avg visits / month",
+  "avgWalksPerVisitLabel": "Avg walks / visit",
+  "last6Months": "last 6 months",
+  "dogsWalkedMostOften": "Dogs walked most often",
+  "last90Days": "last 90 days",
+  "dogWalkCountTooltip": "{name}: {count} {count, plural, one{walk} other{walks}}",
+  "@dogWalkCountTooltip": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "count": { "type": "int" }
+    }
+  },
+  "dogFamiliarityDotCaption": "Dot = dog familiarity",
+  "visitsSectionTitle": "Visits",
+  "totalVisitsLabel": "{count} {count, plural, one{visit} other{visits}} total",
+  "@totalVisitsLabel": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "visitsCountLabel": "{count} {count, plural, one{visit} other{visits}}",
+  "@visitsCountLabel": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "walksCount": "{count} {count, plural, one{walk} other{walks}}",
+  "@walksCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "noVisitsInPast6Months": "No visits in the past 6 months",
+  "archivedBadge": "Archived",
+  "noActiveDogs": "No active dogs"
 }

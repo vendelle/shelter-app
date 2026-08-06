@@ -87,6 +87,51 @@ describe('GET /api/volunteers', () => {
 	});
 });
 
+describe('GET /api/volunteers?id=X (profile)', () => {
+	let res: MockResponse;
+
+	beforeEach(() => {
+		res = mockResponse();
+	});
+
+	it('returns volunteer, visits, and dogs', async () => {
+		const volunteer = { id: 1, first_name: 'Anna', last_name: 'Kowalska', archived: false, role: 'senior' };
+		const visits = [
+			{ walk_date: '2026-08-04', walk_count: 2 },
+			{ walk_date: '2026-08-01', walk_count: 2 },
+		];
+		const dogs = [
+			{ dog_id: 1, dog_name: 'Rex', walk_count: 12 },
+			{ dog_id: 2, dog_name: 'Cody', walk_count: 0 },
+		];
+		mockPool._setResults([{ rows: [volunteer] }, { rows: visits }, { rows: dogs }]);
+
+		await handler(mockRequest({ method: 'GET', query: { id: '1' } }), res);
+
+		expect(res._status).toBe(200);
+		expect(res._body).toEqual({ volunteer, visits, dogs });
+	});
+
+	it('returns 404 when volunteer does not exist', async () => {
+		mockPool._setResults([{ rows: [] }]);
+
+		await handler(mockRequest({ method: 'GET', query: { id: '999' } }), res);
+
+		expect(res._status).toBe(404);
+		expect(res._body).toEqual({ error: 'Volunteer not found' });
+	});
+
+	it('returns empty visits and dogs when the volunteer has no walks', async () => {
+		const volunteer = { id: 2, first_name: 'Jan', last_name: 'Nowak', archived: false, role: 'new' };
+		mockPool._setResults([{ rows: [volunteer] }, { rows: [] }, { rows: [] }]);
+
+		await handler(mockRequest({ method: 'GET', query: { id: '2' } }), res);
+
+		expect(res._status).toBe(200);
+		expect(res._body).toEqual({ volunteer, visits: [], dogs: [] });
+	});
+});
+
 describe('POST /api/volunteers', () => {
 	let res: MockResponse;
 

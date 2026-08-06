@@ -276,6 +276,19 @@ Within each feature, we use a lightweight `data/domain/presentation` split:
 
 ---
 
+## Volunteer Profile Stats: Extend `/api/volunteers`, Don't Add a New Function
+
+**Decision**: The volunteer profile screen's aggregated stats (visits over 6 months, dogs walked over 90 days) are served by `GET /api/volunteers?id=X` — a new branch inside the existing handler — rather than a new `api/volunteer-profile.ts` function.
+
+**Why?**
+- Each file under `api/` becomes its own Vercel serverless function; the project intentionally keeps that count low (10 functions before this change) rather than growing one-per-feature.
+- `id` is otherwise unused by the list endpoint, so branching on its presence doesn't change any existing behavior or response shape.
+- Precedent already exists for this pattern: `walks.ts` dispatches to a CSV export mode via `format=csv` on the same `GET` handler.
+
+**When to revisit:** If the profile query grows complex enough to need its own file for readability, or if the function-count constraint is lifted (e.g. moving off the Hobby-tier limit).
+
+---
+
 ## Day Plan Dog Reordering: Drag & Drop Within Volunteer
 
 **Decision**: Allow drag-to-reorder for dogs within a volunteer's column using `ReorderableListView` with drag handles. No cross-volunteer drag.
