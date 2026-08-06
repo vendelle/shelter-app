@@ -210,15 +210,14 @@
   "last6Months": "last 6 months",
   "dogsWalkedMostOften": "Dogs walked most often",
   "last90Days": "last 90 days",
-  "dogWalkCountTooltip": "{name}: {count} {count, plural, one{walk} other{walks}} ({period})",
+  "dogWalkCountTooltip": "{name}: {count} {count, plural, one{walk} other{walks}}",
   "@dogWalkCountTooltip": {
     "placeholders": {
       "name": { "type": "String" },
-      "count": { "type": "int" },
-      "period": { "type": "String" }
+      "count": { "type": "int" }
     }
   },
-  "dogsLegendCaption": "Color = walk count (90 days) • dot = dog familiarity",
+  "dogFamiliarityDotCaption": "Dot = dog familiarity",
   "visitsSectionTitle": "Visits",
   "totalVisitsLabel": "{count} {count, plural, one{visit} other{visits}} total",
   "@totalVisitsLabel": {

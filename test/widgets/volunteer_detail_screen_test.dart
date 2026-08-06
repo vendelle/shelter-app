@@ -106,6 +106,13 @@ void main() {
       expect(find.text('Rex'), findsOneWidget);
       expect(find.text('Cody'), findsOneWidget);
       expect(find.text('Brak wizyt w ostatnich 6 miesiącach'), findsOneWidget);
+
+      // Color-swatch legend explains what each bucket means.
+      expect(find.text('0'), findsOneWidget);
+      expect(find.text('1-2'), findsOneWidget);
+      expect(find.text('3-5'), findsOneWidget);
+      expect(find.text('5-10'), findsOneWidget);
+      expect(find.text('10+'), findsOneWidget);
     });
 
     testWidgets(

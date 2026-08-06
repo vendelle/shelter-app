@@ -58,20 +58,57 @@ class VolunteerDogsSection extends ConsumerWidget {
                   dog: dog,
                   familiarity: familiarityMap[dog.dogId] ??
                       DogFamiliarityLevel.unknown,
-                  tooltipMessage: l10n.dogWalkCountTooltip(
-                    dog.dogName,
-                    dog.walkCount,
-                    l10n.last90Days,
-                  ),
+                  tooltipMessage:
+                      l10n.dogWalkCountTooltip(dog.dogName, dog.walkCount),
                 ),
             ],
           ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 10),
+        _WalkCountLegend(),
+        const SizedBox(height: 4),
         Text(
-          l10n.dogsLegendCaption,
+          l10n.dogFamiliarityDotCaption,
           style: theme.textTheme.labelSmall
               ?.copyWith(color: theme.colorScheme.outline),
         ),
+      ],
+    );
+  }
+}
+
+/// Color-swatch legend spelling out what each pill color means, e.g.
+/// "🟨 1-2  🟧 3-5  🟥 5-10  🟪 10+" — the buckets aren't self-explanatory
+/// from color alone.
+class _WalkCountLegend extends StatelessWidget {
+  const _WalkCountLegend();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Wrap(
+      spacing: 12,
+      runSpacing: 4,
+      children: [
+        for (final sample in walkCountBucketSamples)
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: walkCountColor(context, sample),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+              const SizedBox(width: 5),
+              Text(
+                walkCountBucketLabel(sample),
+                style: theme.textTheme.labelSmall
+                    ?.copyWith(color: theme.colorScheme.outline),
+              ),
+            ],
+          ),
       ],
     );
   }
@@ -118,11 +155,15 @@ class _DogPill extends StatelessWidget {
             if (familiarity != DogFamiliarityLevel.unknown) ...[
               const SizedBox(width: 6),
               Container(
-                width: 7,
-                height: 7,
+                width: 9,
+                height: 9,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: familiarityColor(familiarity),
+                  // A white ring separates the dot from the pill's own
+                  // color so it reads as a badge rather than clashing
+                  // with whichever bucket color sits behind it.
+                  border: Border.all(color: Colors.white, width: 1.5),
                 ),
               ),
             ],
