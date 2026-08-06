@@ -15,6 +15,7 @@ class FakePlannerRepository implements PlannerRepository {
   List<VolunteerAssignment> assignments = [];
   int saveCallCount = 0;
   List<VolunteerAssignment>? lastSavedAssignments;
+  DateTime? lastSavedDate;
   Completer<void>? saveCompleter;
 
   @override
@@ -27,6 +28,7 @@ class FakePlannerRepository implements PlannerRepository {
       DateTime date, List<VolunteerAssignment> assignments) async {
     saveCallCount++;
     lastSavedAssignments = assignments;
+    lastSavedDate = date;
     if (saveCompleter != null) {
       await saveCompleter!.future;
     }
@@ -299,6 +301,43 @@ void main() {
 
         final state = container.read(plannerNotifierProvider);
         expect(state.saveStatus, SaveStatus.saved);
+      });
+    });
+
+    group('flush on date change', () {
+      test('saves a pending change under the old date, not the new one',
+          () async {
+        await waitForLoad();
+        final notifier = container.read(plannerNotifierProvider.notifier);
+        final oldDate = container.read(selectedDateProvider);
+
+        // Make a change (schedules a save 2s out) then immediately switch
+        // dates, well within the debounce window.
+        notifier.reorderDogs(1, 0, 1);
+        container.read(selectedDateProvider.notifier).state =
+            oldDate.add(const Duration(days: 1));
+
+        await Future<void>.delayed(Duration.zero);
+
+        expect(fakeRepo.saveCallCount, 1);
+        expect(fakeRepo.lastSavedDate, oldDate);
+      });
+
+      test('does not double-save once the original timer would have fired',
+          () async {
+        await waitForLoad();
+        final notifier = container.read(plannerNotifierProvider.notifier);
+        final oldDate = container.read(selectedDateProvider);
+
+        notifier.reorderDogs(1, 0, 1);
+        container.read(selectedDateProvider.notifier).state =
+            oldDate.add(const Duration(days: 1));
+        await Future<void>.delayed(Duration.zero);
+        expect(fakeRepo.saveCallCount, 1);
+
+        // Wait past where the original 2s debounce would have fired.
+        await Future<void>.delayed(const Duration(milliseconds: 2200));
+        expect(fakeRepo.saveCallCount, 1);
       });
     });
   });

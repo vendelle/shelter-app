@@ -4,6 +4,25 @@ import 'package:shelter_app/features/planner/domain/volunteer_assignment.dart';
 import 'package:shelter_app/features/planner/presentation/widgets/planner_share.dart';
 
 void main() {
+  group('columnsForVolunteerCount', () {
+    test('maps small counts 1:1', () {
+      expect(columnsForVolunteerCount(0), 1);
+      expect(columnsForVolunteerCount(1), 1);
+      expect(columnsForVolunteerCount(2), 2);
+      expect(columnsForVolunteerCount(3), 3);
+    });
+
+    test('lays 4 volunteers out as a 2x2 grid', () {
+      expect(columnsForVolunteerCount(4), 2);
+    });
+
+    test('caps larger counts at 3 columns', () {
+      expect(columnsForVolunteerCount(5), 3);
+      expect(columnsForVolunteerCount(6), 3);
+      expect(columnsForVolunteerCount(9), 3);
+    });
+  });
+
   group('formatShareDate', () {
     test('formats Monday in Polish', () {
       final date = DateTime(2026, 4, 20);
