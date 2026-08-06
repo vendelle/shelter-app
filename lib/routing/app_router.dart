@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../features/overview/presentation/overview_screen.dart';
 import '../features/planner/presentation/planner_screen.dart';
 import '../features/manage/presentation/manage_screen.dart';
+import '../features/dog_detail/presentation/dog_detail_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -41,6 +42,20 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
         ],
+      ),
+      GoRoute(
+        path: '/dog/:dogId',
+        builder: (context, state) {
+          final dogId = int.parse(state.pathParameters['dogId']!);
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return DogDetailScreen(
+            dogId: dogId,
+            dogName: extra['dogName'] as String? ?? 'Dog',
+            shelterId: extra['shelterId'] as String?,
+            kennel: extra['kennel'] as String?,
+            region: extra['region'] as String?,
+          );
+        },
       ),
     ],
   );

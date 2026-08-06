@@ -5,6 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/locale/locale_provider.dart';
 import '../../../core/theme/theme_providers.dart';
 import 'widgets/dogs_tab.dart';
+// Relationship matrix tab is temporarily disabled (messy UI) — see
+// widgets/relationships_tab.dart. Code kept for when it's revisited.
+// import 'widgets/relationships_tab.dart';
 import 'widgets/volunteers_tab.dart';
 
 class ManageScreen extends ConsumerWidget {

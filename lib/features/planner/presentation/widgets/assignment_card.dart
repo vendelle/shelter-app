@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:shelter_app/l10n/app_localizations.dart';
 
+import '../../../dog_detail/domain/dog_relationship.dart';
+import '../../../dog_detail/presentation/relationship_colors.dart';
 import '../../domain/volunteer_assignment.dart';
 import 'group_colors.dart';
 
@@ -15,6 +18,7 @@ class VolunteerColumn extends StatelessWidget {
     required this.onTapDog,
     required this.onEditVolunteerNote,
     required this.onReorderDogs,
+    this.relationshipLookup,
     this.compact = true,
     this.overview = false,
   });
@@ -25,9 +29,31 @@ class VolunteerColumn extends StatelessWidget {
   final VoidCallback onRemoveVolunteer;
   final ValueChanged<int> onTapDog;
   final VoidCallback onEditVolunteerNote;
+  final Map<(int, int), DogRelationship>? relationshipLookup;
   final void Function(int oldIndex, int newIndex) onReorderDogs;
   final bool compact;
   final bool overview;
+
+  List<(String, DogRelationshipLevel)> _getRelationships(DogEntry entry) {
+    final rels = <(String, DogRelationshipLevel)>[];
+    if (relationshipLookup != null &&
+        entry.groupIndex != null &&
+        entry.groupIndex! > 0) {
+      for (final other in assignment.dogs) {
+        if (other.dogId == entry.dogId) continue;
+        // Only show relationships within the same walking group
+        if (other.groupIndex != entry.groupIndex) continue;
+        final key = entry.dogId < other.dogId
+            ? (entry.dogId, other.dogId)
+            : (other.dogId, entry.dogId);
+        final rel = relationshipLookup![key];
+        if (rel != null) {
+          rels.add((other.dogName, rel.level));
+        }
+      }
+    }
+    return rels;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -106,6 +132,7 @@ class VolunteerColumn extends StatelessWidget {
                       overview: overview,
                       onRemove: () => onRemoveDog(assignment.dogs[i].dogId),
                       onTap: () => onTapDog(assignment.dogs[i].dogId),
+                      relationships: _getRelationships(assignment.dogs[i]),
                     ),
                   ),
               ],
@@ -118,6 +145,7 @@ class VolunteerColumn extends StatelessWidget {
                   overview: overview,
                   onRemove: () => onRemoveDog(entry.dogId),
                   onTap: () => onTapDog(entry.dogId),
+                  relationships: _getRelationships(entry),
                 )),
           // Add dog button — hidden in overview mode
           if (!overview)
@@ -151,6 +179,7 @@ class _DogRow extends StatelessWidget {
     required this.entry,
     required this.onRemove,
     required this.onTap,
+    this.relationships = const [],
     this.compact = true,
     this.overview = false,
   });
@@ -158,6 +187,8 @@ class _DogRow extends StatelessWidget {
   final DogEntry entry;
   final VoidCallback onRemove;
   final VoidCallback onTap;
+  /// Relationships with other dogs assigned to the same volunteer: (dogName, level).
+  final List<(String, DogRelationshipLevel)> relationships;
   final bool compact;
   final bool overview;
 
@@ -253,6 +284,22 @@ class _DogRow extends StatelessWidget {
                   textAlign: TextAlign.center,
                   overflow: TextOverflow.ellipsis,
                 ),
+              if (relationships.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 3),
+                  child: Wrap(
+                    spacing: 3,
+                    runSpacing: 2,
+                    alignment: WrapAlignment.center,
+                    children: relationships.map((r) {
+                      final (name, level) = r;
+                      return _RelationshipDot(
+                        dogName: name,
+                        level: level,
+                      );
+                    }).toList(),
+                  ),
+                ),
             ],
           ),
         );
@@ -278,5 +325,42 @@ class _DogRow extends StatelessWidget {
     );
 
     return row;
+  }
+}
+
+class _RelationshipDot extends StatelessWidget {
+  const _RelationshipDot({
+    required this.dogName,
+    required this.level,
+  });
+
+  final String dogName;
+  final DogRelationshipLevel level;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = relationshipColor(level);
+    final textColor = relationshipTextColor(level);
+    final l10n = AppLocalizations.of(context)!;
+    final shortName = relationshipLevelDisplayName(level, l10n);
+
+    return Tooltip(
+      message: '$dogName: $shortName',
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Text(
+          shortName,
+          style: TextStyle(
+            color: textColor,
+            fontSize: 8,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
   }
 }

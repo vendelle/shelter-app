@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import pool, { getPool } from './connection';
+import pool, { getPool } from './_lib/connection';
 
 /**
  * GET /api/health — diagnostic endpoint to verify:

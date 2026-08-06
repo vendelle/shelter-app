@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { handleError, setCorsHeaders } from './util';
-import pool from './connection';
+import { handleError, setCorsHeaders } from './_lib/util';
+import pool from './_lib/connection';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
 	setCorsHeaders(res);

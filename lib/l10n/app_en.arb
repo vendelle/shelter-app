@@ -94,9 +94,9 @@
   "failedToSave": "Failed to save: {error}",
 
   "roleSenior": "Volunteer",
-  "roleIndependent": "Independent supporter",
+  "roleIndependent": "Independent",
   "roleSupporter": "Supporter",
-  "roleNew": "New",
+  "roleNew": "Help",
 
   "usingSystemTheme": "Using system theme",
   "switchToLightMode": "Switch to light mode",
@@ -172,5 +172,35 @@
   "exportFrom": "From",
   "exportTo": "To",
   "exportButton": "Download CSV",
-  "exportFailed": "Export failed"
+  "exportFailed": "Export failed",
+
+  "profileTab": "Profile",
+  "relationships": "Buddies",
+  "sortByLevel": "by level",
+  "sortByDate": "by date",
+  "noWalkPartners": "No walk partners yet",
+  "walksTab": "Walks",
+  "last20Walks": "Last 20 walks",
+  "noWalksInPast3Months": "No walks yet",
+  "withDogs": "with {dogs}",
+  "@withDogs": { "placeholders": { "dogs": { "type": "String" } } },
+  "withDogsAndMore": "with {dogs}, +{count} more",
+  "@withDogsAndMore": { "placeholders": { "dogs": { "type": "String" }, "count": { "type": "int" } } },
+  "saveFailed": "Failed to save",
+  "levelYard": "Yard pair",
+  "levelContactGood": "Contact+",
+  "levelContactCaution": "Contact-",
+  "levelParallelGood": "Parallel+",
+  "levelParallelCaution": "Parallel-",
+  "levelIncompatible": "Incompatible",
+
+  "relationshipLegendTooltip": "What do the levels mean?",
+  "relationshipLegendTitle": "Relationship levels",
+  "levelDescYard": "Yard pair — can share the yard together freely.",
+  "levelDescContactGood": "They walk close together, in contact, with no (serious) friction.",
+  "levelDescContactCaution": "Parallel walks are fine; sometimes in contact, but the interaction needs moderating.",
+  "levelDescParallelGood": "Relaxed on parallel walks, but we haven't tried contact yet.",
+  "levelDescParallelCaution": "Parallel walks bring up some emotions, but we see potential in working on this pair.",
+  "levelDescIncompatible": "This pair doesn't work for now — we don't pair them.",
+  "relationshipLegendContactNote": "In contact: dogs may sniff each other and hang out close together."
 }

@@ -2,7 +2,7 @@ import { createMockPool, mockRequest, mockResponse, type MockPool, type MockResp
 
 let mockPool: MockPool;
 
-jest.mock('../connection', () => {
+jest.mock('../_lib/connection', () => {
 	mockPool = createMockPool();
 	return {
 		__esModule: true,
@@ -11,8 +11,8 @@ jest.mock('../connection', () => {
 	};
 });
 
-jest.mock('../util', () => {
-	const actual = jest.requireActual('../util');
+jest.mock('../_lib/util', () => {
+	const actual = jest.requireActual('../_lib/util');
 	return {
 		...actual,
 		hasColumn: jest.fn().mockResolvedValue(true),

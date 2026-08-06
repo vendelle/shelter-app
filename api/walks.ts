@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { handleError, setCorsHeaders } from './util';
-import pool from './connection';
+import { handleError, setCorsHeaders } from './_lib/util';
+import pool from './_lib/connection';
 
 /** Escape a value for CSV — wraps in quotes if it contains comma, quote, or newline. */
 function csvEscape(value: string): string {

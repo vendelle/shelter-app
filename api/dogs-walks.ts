@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { handleError, setCorsHeaders, hasColumn } from './util';
-import pool from './connection';
-import { getRegionForKennel } from './kennel-regions';
+import { handleError, setCorsHeaders, hasColumn } from './_lib/util';
+import pool from './_lib/connection';
+import { getRegionForKennel } from './_lib/kennel-regions';
 
 /**
  * GET /api/dogs-walks
