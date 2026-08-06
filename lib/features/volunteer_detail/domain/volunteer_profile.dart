@@ -54,6 +54,9 @@ class MonthlyVisits {
     required this.visits,
   });
 
+  /// Number of visits (distinct days) in this month.
+  int get visitCount => visits.length;
+
   int get totalWalks => visits.fold(0, (sum, v) => sum + v.walkCount);
 }
 
@@ -89,7 +92,24 @@ class VolunteerProfile {
 
   int get totalWalks => visits.fold(0, (sum, v) => sum + v.walkCount);
 
-  double get avgVisitsPerMonth => totalVisits / monthsTracked;
+  /// Months to average visits over. There's no explicit join date tracked
+  /// yet, so this approximates "months active" from the earliest visit in
+  /// the 6-month window — if they had no visit before that, assume they
+  /// just joined then. Without this, a volunteer who started last month
+  /// would have their average diluted by a flat 6-month divisor and look
+  /// far less active than they are. Capped at [monthsTracked] so it's a
+  /// no-op for anyone active the whole window.
+  int get _monthsActive {
+    if (visits.isEmpty) return monthsTracked;
+    final earliest =
+        visits.map((v) => v.date).reduce((a, b) => a.isBefore(b) ? a : b);
+    final now = DateTime.now();
+    final months =
+        (now.year - earliest.year) * 12 + (now.month - earliest.month) + 1;
+    return months.clamp(1, monthsTracked);
+  }
+
+  double get avgVisitsPerMonth => totalVisits / _monthsActive;
 
   double get avgWalksPerVisit =>
       totalVisits == 0 ? 0 : totalWalks / totalVisits;

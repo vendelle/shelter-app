@@ -108,8 +108,9 @@ void main() {
       expect(find.text('Brak wizyt w ostatnich 6 miesiącach'), findsOneWidget);
     });
 
-    testWidgets('tapping a dog pill shows the exact walk count',
-        (tester) async {
+    testWidgets(
+        'tapping a dog pill shows a tooltip above it with the exact walk '
+        'count, correctly matched to that dog', (tester) async {
       await tester.pumpWidget(_buildTestWidget(
         const VolunteerDetailScreen(volunteerId: 1),
         overrides: [
@@ -117,6 +118,8 @@ void main() {
                 _profile(dogs: const [
                   VolunteerDogWalkCount(
                       dogId: 1, dogName: 'Rex', walkCount: 7),
+                  VolunteerDogWalkCount(
+                      dogId: 2, dogName: 'Luna', walkCount: 2),
                 ]),
               )),
           familiarityProvider(1).overrideWith(
@@ -125,14 +128,28 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
+      // No tooltip visible before tapping.
+      expect(find.textContaining('Rex:'), findsNothing);
+      expect(find.textContaining('Luna:'), findsNothing);
+
       await tester.tap(find.text('Rex'));
       await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
 
-      expect(find.textContaining('Rex:'), findsOneWidget);
+      // Tapping Rex's pill shows Rex's count, not Luna's.
+      expect(find.textContaining('Rex: 7'), findsOneWidget);
+      expect(find.textContaining('Luna:'), findsNothing);
+
+      await tester.tap(find.text('Luna'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      // Switching to Luna's pill shows Luna's count, not a stale Rex one.
+      expect(find.textContaining('Luna: 2'), findsOneWidget);
     });
 
-    testWidgets('groups visits by month with per-month totals',
-        (tester) async {
+    testWidgets('groups visits by month with per-month visit counts and '
+        'weekday next to each date', (tester) async {
       await tester.pumpWidget(_buildTestWidget(
         const VolunteerDetailScreen(volunteerId: 1),
         overrides: [
@@ -154,6 +171,17 @@ void main() {
       expect(find.text('04.08'), findsOneWidget);
       expect(find.text('01.08'), findsOneWidget);
       expect(find.text('22.07'), findsOneWidget);
+
+      // Month header shows visit count (2 visits in August), not walk
+      // count (which would be 4).
+      expect(find.text('2 wizyty'), findsOneWidget);
+      expect(find.text('1 wizyta'), findsOneWidget);
+
+      // Day of week next to each date: 04.08.2026 = Tue, 01.08.2026 = Sat,
+      // 22.07.2026 = Wed.
+      expect(find.text('Wt'), findsOneWidget);
+      expect(find.text('Sob'), findsOneWidget);
+      expect(find.text('Śr'), findsOneWidget);
     });
   });
 }

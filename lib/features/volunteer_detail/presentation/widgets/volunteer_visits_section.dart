@@ -76,7 +76,7 @@ class _MonthGroup extends StatelessWidget {
                       ?.copyWith(fontWeight: FontWeight.w600),
                 ),
                 Text(
-                  l10n.walksCount(month.totalWalks),
+                  l10n.visitsCountLabel(month.visitCount),
                   style: theme.textTheme.labelSmall
                       ?.copyWith(color: theme.colorScheme.outline),
                 ),
@@ -120,6 +120,11 @@ class _VisitRow extends StatelessWidget {
     final parts = visit.walkDate.split('-');
     final displayDate =
         parts.length == 3 ? '${parts[2]}.${parts[1]}' : visit.walkDate;
+    final weekdays = [
+      l10n.weekdayMon, l10n.weekdayTue, l10n.weekdayWed, l10n.weekdayThu,
+      l10n.weekdayFri, l10n.weekdaySat, l10n.weekdaySun,
+    ];
+    final weekday = weekdays[visit.date.weekday - 1];
 
     return Column(
       children: [
@@ -128,7 +133,18 @@ class _VisitRow extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(displayDate, style: theme.textTheme.bodyMedium),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(displayDate, style: theme.textTheme.bodyMedium),
+                  const SizedBox(width: 6),
+                  Text(
+                    weekday,
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: theme.colorScheme.outline),
+                  ),
+                ],
+              ),
               Text(
                 l10n.walksCount(visit.walkCount),
                 style: theme.textTheme.bodySmall

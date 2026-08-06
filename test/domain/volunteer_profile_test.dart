@@ -18,6 +18,9 @@ VolunteerProfile _profile({
   });
 }
 
+String _fmt(DateTime d) =>
+    '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
 void main() {
   group('VolunteerVisit', () {
     test('fromJson strips a time component from the date', () {
@@ -64,7 +67,7 @@ void main() {
       expect(profile.visitsByMonth, isEmpty);
     });
 
-    test('averages are computed over a fixed 6-month window', () {
+    test('avgWalksPerVisit is total walks divided by total visits', () {
       final profile = _profile(visits: [
         {'walk_date': '2026-08-04', 'walk_count': 2},
         {'walk_date': '2026-08-01', 'walk_count': 1},
@@ -73,8 +76,42 @@ void main() {
 
       expect(profile.totalVisits, 3);
       expect(profile.totalWalks, 6);
-      expect(profile.avgVisitsPerMonth, closeTo(3 / 6, 0.0001));
       expect(profile.avgWalksPerVisit, closeTo(6 / 3, 0.0001));
+    });
+
+    test(
+        'avgVisitsPerMonth divides by months since the earliest visit for '
+        'a recent joiner, not a flat 6', () {
+      final now = DateTime.now();
+      final thisMonth = DateTime(now.year, now.month, 1);
+      final lastMonth = DateTime(now.year, now.month - 1, 15);
+
+      // Earliest visit was last month, so this volunteer looks 2 months
+      // active (this month + last), not the full 6-month window.
+      final profile = _profile(visits: [
+        {'walk_date': _fmt(thisMonth), 'walk_count': 2},
+        {
+          'walk_date': _fmt(DateTime(thisMonth.year, thisMonth.month, 2)),
+          'walk_count': 1,
+        },
+        {'walk_date': _fmt(lastMonth), 'walk_count': 1},
+      ]);
+
+      expect(profile.totalVisits, 3);
+      expect(profile.avgVisitsPerMonth, closeTo(3 / 2, 0.0001));
+    });
+
+    test('avgVisitsPerMonth caps the months-active denominator at 6', () {
+      final now = DateTime.now();
+      final eightMonthsAgo = DateTime(now.year, now.month - 8, 10);
+
+      final profile = _profile(visits: [
+        {'walk_date': _fmt(eightMonthsAgo), 'walk_count': 1},
+        {'walk_date': _fmt(now), 'walk_count': 1},
+      ]);
+
+      expect(profile.totalVisits, 2);
+      expect(profile.avgVisitsPerMonth, closeTo(2 / 6, 0.0001));
     });
 
     test('visitsByMonth groups by calendar month, most recent first', () {
@@ -91,14 +128,17 @@ void main() {
       expect(months[0].year, 2026);
       expect(months[0].month, 8);
       expect(months[0].visits, hasLength(2));
+      expect(months[0].visitCount, 2);
       expect(months[0].totalWalks, 3);
 
       expect(months[1].year, 2026);
       expect(months[1].month, 7);
+      expect(months[1].visitCount, 1);
       expect(months[1].totalWalks, 3);
 
       expect(months[2].year, 2025);
       expect(months[2].month, 12);
+      expect(months[2].visitCount, 1);
       expect(months[2].totalWalks, 1);
     });
   });

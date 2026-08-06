@@ -210,8 +210,8 @@
   "last6Months": "last 6 months",
   "dogsWalkedMostOften": "Dogs walked most often",
   "last90Days": "last 90 days",
-  "dogWalkCountSnackbar": "{name}: {count} {count, plural, one{walk} other{walks}} ({period})",
-  "@dogWalkCountSnackbar": {
+  "dogWalkCountTooltip": "{name}: {count} {count, plural, one{walk} other{walks}} ({period})",
+  "@dogWalkCountTooltip": {
     "placeholders": {
       "name": { "type": "String" },
       "count": { "type": "int" },
@@ -222,6 +222,12 @@
   "visitsSectionTitle": "Visits",
   "totalVisitsLabel": "{count} {count, plural, one{visit} other{visits}} total",
   "@totalVisitsLabel": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "visitsCountLabel": "{count} {count, plural, one{visit} other{visits}}",
+  "@visitsCountLabel": {
     "placeholders": {
       "count": { "type": "int" }
     }

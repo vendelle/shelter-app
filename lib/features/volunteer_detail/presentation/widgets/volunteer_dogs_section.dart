@@ -11,8 +11,8 @@ import 'section_header.dart';
 
 /// All active dogs as compact pills, colored by how often this volunteer
 /// walked them in the last 90 days, ranked highest-first. A small dot marks
-/// the volunteer's familiarity with that dog. Tapping a pill reveals the
-/// exact walk count.
+/// the volunteer's familiarity with that dog. Tapping a pill shows a small
+/// tooltip above it with the exact walk count.
 class VolunteerDogsSection extends ConsumerWidget {
   const VolunteerDogsSection({
     super.key,
@@ -49,19 +49,19 @@ class VolunteerDogsSection extends ConsumerWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
+              // Keyed by dog id so each pill (and its Tooltip) stays bound
+              // to the same dog across rebuilds — no shared/queued state
+              // that could show the wrong dog's count.
               for (final dog in dogs)
                 _DogPill(
+                  key: ValueKey(dog.dogId),
                   dog: dog,
-                  familiarity:
-                      familiarityMap[dog.dogId] ?? DogFamiliarityLevel.unknown,
-                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(l10n.dogWalkCountSnackbar(
-                        dog.dogName,
-                        dog.walkCount,
-                        l10n.last90Days,
-                      )),
-                    ),
+                  familiarity: familiarityMap[dog.dogId] ??
+                      DogFamiliarityLevel.unknown,
+                  tooltipMessage: l10n.dogWalkCountTooltip(
+                    dog.dogName,
+                    dog.walkCount,
+                    l10n.last90Days,
                   ),
                 ),
             ],
@@ -79,23 +79,28 @@ class VolunteerDogsSection extends ConsumerWidget {
 
 class _DogPill extends StatelessWidget {
   const _DogPill({
+    super.key,
     required this.dog,
     required this.familiarity,
-    required this.onTap,
+    required this.tooltipMessage,
   });
 
   final VolunteerDogWalkCount dog;
   final DogFamiliarityLevel familiarity;
-  final VoidCallback onTap;
+  final String tooltipMessage;
 
   @override
   Widget build(BuildContext context) {
     final bg = walkCountColor(context, dog.walkCount);
     final fg = walkCountTextColor(context, dog.walkCount);
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
+    // A tap-triggered Tooltip is the "hint cloud above the dog name" —
+    // anchored to this exact pill, so it can't drift to a different dog
+    // the way a queued bottom SnackBar could when tapping around quickly.
+    return Tooltip(
+      message: tooltipMessage,
+      preferBelow: false,
+      triggerMode: TooltipTriggerMode.tap,
       child: Container(
         padding: const EdgeInsets.only(left: 12, right: 8, top: 6, bottom: 6),
         decoration: BoxDecoration(
