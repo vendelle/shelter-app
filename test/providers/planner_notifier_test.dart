@@ -344,6 +344,46 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 2200));
         expect(fakeRepo.saveCallCount, 1);
       });
+
+      test('loading the new date does not wait for a slow pending save',
+          () async {
+        await waitForLoad();
+        final notifier = container.read(plannerNotifierProvider.notifier);
+        final oldDate = container.read(selectedDateProvider);
+
+        // The save for the old date will hang until the completer resolves.
+        fakeRepo.saveCompleter = Completer<void>();
+        notifier.reorderDogs(1, 0, 1);
+        container.read(selectedDateProvider.notifier).state =
+            oldDate.add(const Duration(days: 1));
+
+        // The new date's data should load anyway — not gated on the save.
+        for (var i = 0; i < 10; i++) {
+          await Future<void>.delayed(Duration.zero);
+          if (!container.read(plannerNotifierProvider).isLoading) break;
+        }
+        expect(container.read(plannerNotifierProvider).isLoading, isFalse);
+
+        // The save was fired, just never completed.
+        expect(fakeRepo.saveCallCount, 1);
+        fakeRepo.saveCompleter!.complete();
+      });
+
+      test('preserves autoSaveEnabled across a date switch', () async {
+        await waitForLoad();
+        final notifier = container.read(plannerNotifierProvider.notifier);
+        notifier.toggleAutoSave(); // disable
+
+        final oldDate = container.read(selectedDateProvider);
+        container.read(selectedDateProvider.notifier).state =
+            oldDate.add(const Duration(days: 1));
+        await waitForLoad();
+
+        expect(
+          container.read(plannerNotifierProvider).autoSaveEnabled,
+          isFalse,
+        );
+      });
     });
 
     group('unsaved-changes guard', () {

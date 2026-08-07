@@ -242,14 +242,19 @@ class PlannerNotifier extends StateNotifier<PlannerState> {
   }
 
   Future<void> _loadForDate(DateTime date) async {
-    await _flushPendingSave();
+    // Flush a pending save in the background rather than waiting for it —
+    // blocking the date switch on a save round-trip makes quickly flipping
+    // between days (e.g. to check yesterday) feel sluggish. The save still
+    // happens; it just no longer gates loading the new date.
+    unawaited(_flushPendingSave());
     state = state.copyWith(isLoading: true, error: null, saveStatus: SaveStatus.idle);
     try {
       final repo = _ref.read(plannerRepositoryProvider);
       final assignments = await repo.getAssignments(date);
-      state = PlannerState(
+      state = state.copyWith(
         assignments: assignments,
         isLoading: false,
+        error: null,
       );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
