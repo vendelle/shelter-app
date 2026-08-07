@@ -48,6 +48,7 @@ void main() {
   group('PlannerNotifier', () {
     late ProviderContainer container;
     late FakePlannerRepository fakeRepo;
+    bool Function()? capturedGuardCallback;
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
@@ -73,10 +74,14 @@ void main() {
         ),
       ];
 
+      capturedGuardCallback = null;
       container = ProviderContainer(
         overrides: [
           plannerRepositoryProvider.overrideWithValue(fakeRepo),
           sharedPreferencesProvider.overrideWithValue(prefs),
+          unsavedChangesGuardProvider.overrideWithValue(
+            (cb) => capturedGuardCallback = cb,
+          ),
         ],
       );
     });
@@ -338,6 +343,22 @@ void main() {
         // Wait past where the original 2s debounce would have fired.
         await Future<void>.delayed(const Duration(milliseconds: 2200));
         expect(fakeRepo.saveCallCount, 1);
+      });
+    });
+
+    group('unsaved-changes guard', () {
+      test('registers a callback that tracks unsaved/saving/idle state',
+          () async {
+        await waitForLoad();
+        expect(capturedGuardCallback, isNotNull);
+        expect(capturedGuardCallback!(), isFalse);
+
+        final notifier = container.read(plannerNotifierProvider.notifier);
+        notifier.reorderDogs(1, 0, 1);
+        expect(capturedGuardCallback!(), isTrue);
+
+        await Future<void>.delayed(const Duration(milliseconds: 2200));
+        expect(capturedGuardCallback!(), isFalse);
       });
     });
   });

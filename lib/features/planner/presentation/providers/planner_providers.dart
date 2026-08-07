@@ -8,6 +8,7 @@ import '../../../shared/domain/volunteer.dart';
 import '../../data/planner_repository.dart';
 import '../../domain/planner_dog.dart';
 import '../../domain/volunteer_assignment.dart';
+import 'unsaved_changes_guard.dart';
 
 // ---------------------------------------------------------------------------
 // Repository
@@ -16,6 +17,14 @@ import '../../domain/volunteer_assignment.dart';
 final plannerRepositoryProvider = Provider<PlannerRepository>((ref) {
   return ApiPlannerRepository(ref.watch(apiClientProvider));
 });
+
+// ---------------------------------------------------------------------------
+// Unsaved-changes guard (web only) — exposed as a provider so tests can
+// capture the callback instead of touching dart:html.
+// ---------------------------------------------------------------------------
+
+final unsavedChangesGuardProvider =
+    Provider<void Function(bool Function())>((ref) => configureUnsavedChangesGuard);
 
 // ---------------------------------------------------------------------------
 // Selected date
@@ -150,7 +159,15 @@ class PlannerNotifier extends StateNotifier<PlannerState> {
     _ref.listen(selectedDateProvider, (_, date) {
       _loadForDate(date);
     });
+
+    _ref.read(unsavedChangesGuardProvider)(_hasUnsavedChanges);
   }
+
+  /// Whether there's a change that hasn't made it to the server yet —
+  /// drives the browser close-tab confirmation (web only).
+  bool _hasUnsavedChanges() =>
+      state.saveStatus == SaveStatus.unsaved ||
+      state.saveStatus == SaveStatus.saving;
 
   final Ref _ref;
   Timer? _autoSaveTimer;

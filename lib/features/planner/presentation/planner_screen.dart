@@ -833,6 +833,9 @@ class _SaveStatusIndicator extends StatelessWidget {
     final theme = Theme.of(context);
     switch (status) {
       case SaveStatus.idle:
+      case SaveStatus.saved:
+        // Nothing to say once a change has made it to the server — only
+        // surface the states that need attention (unsaved/saving/error).
         return const SizedBox.shrink();
       case SaveStatus.unsaved:
         return Text(
@@ -858,24 +861,6 @@ class _SaveStatusIndicator extends StatelessWidget {
               AppLocalizations.of(context)!.saving,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.outline,
-              ),
-            ),
-          ],
-        );
-      case SaveStatus.saved:
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.check_circle_outline,
-              size: 16,
-              color: theme.colorScheme.primary,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              AppLocalizations.of(context)!.saved,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.primary,
               ),
             ),
           ],
