@@ -1,4 +1,4 @@
-import { handleError, setCorsHeaders } from '../_lib/util';
+import { handleError, setCorsHeaders, formatDateOnly } from '../_lib/util';
 import { mockResponse, type MockResponse } from './helpers';
 
 describe('util', () => {
@@ -183,6 +183,22 @@ describe('util', () => {
 			expect(pool.query).toHaveBeenCalledTimes(2);
 
 			jest.unmock('../_lib/connection');
+		});
+	});
+
+	describe('formatDateOnly', () => {
+		it('formats a Date as YYYY-MM-DD', () => {
+			expect(formatDateOnly(new Date('2026-03-05T00:00:00Z'))).toBe('2026-03-05');
+		});
+
+		it('passes an already-formatted string through unchanged', () => {
+			expect(formatDateOnly('2026-03-05')).toBe('2026-03-05');
+		});
+
+		it('returns null for null, undefined, or other types', () => {
+			expect(formatDateOnly(null)).toBeNull();
+			expect(formatDateOnly(undefined)).toBeNull();
+			expect(formatDateOnly(42)).toBeNull();
 		});
 	});
 });
