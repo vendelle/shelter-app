@@ -6,7 +6,7 @@ import '../domain/walk_partner.dart';
 abstract class DogDetailRepository {
   Future<List<DogRelationship>> getRelationships(int dogId);
   Future<List<DogRelationship>> getAllRelationships();
-  Future<DogRelationship> upsertRelationship({
+  Future<void> upsertRelationship({
     required int dogId1,
     required int dogId2,
     required DogRelationshipLevel level,
@@ -39,19 +39,24 @@ class ApiDogDetailRepository implements DogDetailRepository {
   }
 
   @override
-  Future<DogRelationship> upsertRelationship({
+  Future<void> upsertRelationship({
     required int dogId1,
     required int dogId2,
     required DogRelationshipLevel level,
     String? notes,
   }) async {
-    final data = await _api.put('/api/dog-relationships', body: {
+    // The PUT response only carries dog_id_1/dog_id_2/level/notes (no dog
+    // names — see api/dog-relationships.ts), unlike the GET endpoints which
+    // join in names for display. Parsing it as a DogRelationship used to
+    // throw on the missing name fields; callers never used the return
+    // value anyway (they invalidate providers and refetch via GET), so
+    // there's nothing to parse here.
+    await _api.put('/api/dog-relationships', body: {
       'dog_id_1': dogId1,
       'dog_id_2': dogId2,
       'level': relationshipLevelToString(level),
       'notes': notes,
     });
-    return DogRelationship.fromJson(data as Map<String, dynamic>);
   }
 
   @override

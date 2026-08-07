@@ -8,7 +8,9 @@ import pool from './_lib/connection';
  * Returns all dogs that have shared a walk group with the given dog,
  * along with their relationship level (if set) and last shared walk date.
  * Results include both dogs with explicit relationships AND dogs with only
- * shared walk history.
+ * shared walk history. Archived (no longer at the shelter) partner dogs
+ * are excluded — there's no reason to set a relationship for a dog that's
+ * already gone.
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
 	setCorsHeaders(res);
@@ -43,6 +45,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 					AND my.deleted_at IS NULL
 					AND my.group_index IS NOT NULL
 					AND my.group_index > 0
+					AND d.archived IS NOT TRUE
 				ORDER BY other.dog_id, my.walk_date DESC
 			)
 			SELECT
