@@ -26,7 +26,7 @@ Future<void> sharePlannerImage({
 
   // Determine columns + image width
   final n = assignments.length;
-  final cols = n <= 3 ? n.clamp(1, 3) : 3;
+  final cols = columnsForVolunteerCount(n);
   final logicalWidth = switch (cols) {
     1 => 420.0,
     2 => 700.0,
@@ -62,6 +62,16 @@ Future<void> sharePlannerImage({
   );
 
   await Share.shareXFiles([xFile]);
+}
+
+/// Determines the number of grid columns for [n] volunteers.
+///
+/// Counts up to 3 map 1:1 to columns. 4 is special-cased to a 2x2 square
+/// instead of a lopsided 3-then-1 row. Anything larger caps at 3 columns.
+int columnsForVolunteerCount(int n) {
+  if (n <= 1) return 1;
+  if (n == 4) return 2;
+  return n.clamp(1, 3);
 }
 
 /// Renders a widget off-screen to a PNG byte buffer.

@@ -8,6 +8,7 @@ import '../../../shared/domain/volunteer.dart';
 import '../../data/planner_repository.dart';
 import '../../domain/planner_dog.dart';
 import '../../domain/volunteer_assignment.dart';
+import 'unsaved_changes_guard.dart';
 
 // ---------------------------------------------------------------------------
 // Repository
@@ -16,6 +17,14 @@ import '../../domain/volunteer_assignment.dart';
 final plannerRepositoryProvider = Provider<PlannerRepository>((ref) {
   return ApiPlannerRepository(ref.watch(apiClientProvider));
 });
+
+// ---------------------------------------------------------------------------
+// Unsaved-changes guard (web only) — exposed as a provider so tests can
+// capture the callback instead of touching dart:html.
+// ---------------------------------------------------------------------------
+
+final unsavedChangesGuardProvider =
+    Provider<void Function(bool Function())>((ref) => configureUnsavedChangesGuard);
 
 // ---------------------------------------------------------------------------
 // Selected date
@@ -150,10 +159,23 @@ class PlannerNotifier extends StateNotifier<PlannerState> {
     _ref.listen(selectedDateProvider, (_, date) {
       _loadForDate(date);
     });
+
+    _ref.read(unsavedChangesGuardProvider)(_hasUnsavedChanges);
   }
+
+  /// Whether there's a change that hasn't made it to the server yet —
+  /// drives the browser close-tab confirmation (web only).
+  bool _hasUnsavedChanges() =>
+      state.saveStatus == SaveStatus.unsaved ||
+      state.saveStatus == SaveStatus.saving;
 
   final Ref _ref;
   Timer? _autoSaveTimer;
+
+  /// The date the pending (unsaved) change belongs to. Captured when the
+  /// change is made, not re-read when the save actually fires — the
+  /// selected date may have moved on by then.
+  DateTime? _pendingSaveDate;
 
   static const _prefsKey = 'planner_autosave';
 
@@ -174,22 +196,27 @@ class PlannerNotifier extends StateNotifier<PlannerState> {
     }
   }
 
-  /// Schedule an auto-save after 2 seconds of inactivity.
+  /// Schedule an auto-save after 2 seconds of inactivity. Remembers which
+  /// date the change belongs to so a later flush can't misattribute it.
   void _scheduleAutoSave() {
     _autoSaveTimer?.cancel();
     state = state.copyWith(saveStatus: SaveStatus.unsaved);
+    _pendingSaveDate = _ref.read(selectedDateProvider);
     if (!state.autoSaveEnabled) return;
-    _autoSaveTimer = Timer(const Duration(seconds: 2), () {
-      _autoSave();
-    });
+    _autoSaveTimer = Timer(const Duration(seconds: 2), _flushPendingSave);
   }
 
-  Future<void> _autoSave() async {
-    if (state.isLoading) return;
+  /// Saves the pending change (if any) right away, for the date it was
+  /// made on. Called by the debounce timer itself, and also on date
+  /// switch / dispose so a change made <2s earlier isn't lost.
+  Future<void> _flushPendingSave() async {
+    _autoSaveTimer?.cancel();
+    if (state.saveStatus != SaveStatus.unsaved || state.isLoading) return;
+    final date = _pendingSaveDate;
+    if (date == null) return;
     state = state.copyWith(saveStatus: SaveStatus.saving);
     try {
       final repo = _ref.read(plannerRepositoryProvider);
-      final date = _ref.read(selectedDateProvider);
       await repo.saveAssignments(date, state.assignments);
       _ref.invalidate(savedAssignmentsProvider);
       if (mounted) {
@@ -204,19 +231,30 @@ class PlannerNotifier extends StateNotifier<PlannerState> {
 
   @override
   void dispose() {
-    _autoSaveTimer?.cancel();
+    // Best-effort: fire the pending save instead of just dropping it.
+    // dispose() can't be async, so this can't be awaited.
+    if (_autoSaveTimer?.isActive ?? false) {
+      unawaited(_flushPendingSave());
+    } else {
+      _autoSaveTimer?.cancel();
+    }
     super.dispose();
   }
 
   Future<void> _loadForDate(DateTime date) async {
-    _autoSaveTimer?.cancel();
+    // Flush a pending save in the background rather than waiting for it —
+    // blocking the date switch on a save round-trip makes quickly flipping
+    // between days (e.g. to check yesterday) feel sluggish. The save still
+    // happens; it just no longer gates loading the new date.
+    unawaited(_flushPendingSave());
     state = state.copyWith(isLoading: true, error: null, saveStatus: SaveStatus.idle);
     try {
       final repo = _ref.read(plannerRepositoryProvider);
       final assignments = await repo.getAssignments(date);
-      state = PlannerState(
+      state = state.copyWith(
         assignments: assignments,
         isLoading: false,
+        error: null,
       );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
@@ -335,19 +373,10 @@ class PlannerNotifier extends StateNotifier<PlannerState> {
     _scheduleAutoSave();
   }
 
-  Future<void> save() async {
-    _autoSaveTimer?.cancel();
-    state = state.copyWith(saveStatus: SaveStatus.saving);
-    try {
-      final repo = _ref.read(plannerRepositoryProvider);
-      final date = _ref.read(selectedDateProvider);
-      await repo.saveAssignments(date, state.assignments);
-      _ref.invalidate(savedAssignmentsProvider);
-      state = state.copyWith(saveStatus: SaveStatus.saved);
-    } catch (e) {
-      state = state.copyWith(saveStatus: SaveStatus.error, error: e.toString());
-    }
-  }
+  /// Forces an immediate save of any pending change. Not currently wired
+  /// to a UI control (there's no manual "Save" button) — kept as a public
+  /// hook and to share the flush logic above.
+  Future<void> save() => _flushPendingSave();
 
   void reload() {
     _loadForDate(_ref.read(selectedDateProvider));

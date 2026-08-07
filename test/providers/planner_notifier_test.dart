@@ -15,6 +15,7 @@ class FakePlannerRepository implements PlannerRepository {
   List<VolunteerAssignment> assignments = [];
   int saveCallCount = 0;
   List<VolunteerAssignment>? lastSavedAssignments;
+  DateTime? lastSavedDate;
   Completer<void>? saveCompleter;
 
   @override
@@ -27,6 +28,7 @@ class FakePlannerRepository implements PlannerRepository {
       DateTime date, List<VolunteerAssignment> assignments) async {
     saveCallCount++;
     lastSavedAssignments = assignments;
+    lastSavedDate = date;
     if (saveCompleter != null) {
       await saveCompleter!.future;
     }
@@ -46,6 +48,7 @@ void main() {
   group('PlannerNotifier', () {
     late ProviderContainer container;
     late FakePlannerRepository fakeRepo;
+    bool Function()? capturedGuardCallback;
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
@@ -71,10 +74,14 @@ void main() {
         ),
       ];
 
+      capturedGuardCallback = null;
       container = ProviderContainer(
         overrides: [
           plannerRepositoryProvider.overrideWithValue(fakeRepo),
           sharedPreferencesProvider.overrideWithValue(prefs),
+          unsavedChangesGuardProvider.overrideWithValue(
+            (cb) => capturedGuardCallback = cb,
+          ),
         ],
       );
     });
@@ -299,6 +306,99 @@ void main() {
 
         final state = container.read(plannerNotifierProvider);
         expect(state.saveStatus, SaveStatus.saved);
+      });
+    });
+
+    group('flush on date change', () {
+      test('saves a pending change under the old date, not the new one',
+          () async {
+        await waitForLoad();
+        final notifier = container.read(plannerNotifierProvider.notifier);
+        final oldDate = container.read(selectedDateProvider);
+
+        // Make a change (schedules a save 2s out) then immediately switch
+        // dates, well within the debounce window.
+        notifier.reorderDogs(1, 0, 1);
+        container.read(selectedDateProvider.notifier).state =
+            oldDate.add(const Duration(days: 1));
+
+        await Future<void>.delayed(Duration.zero);
+
+        expect(fakeRepo.saveCallCount, 1);
+        expect(fakeRepo.lastSavedDate, oldDate);
+      });
+
+      test('does not double-save once the original timer would have fired',
+          () async {
+        await waitForLoad();
+        final notifier = container.read(plannerNotifierProvider.notifier);
+        final oldDate = container.read(selectedDateProvider);
+
+        notifier.reorderDogs(1, 0, 1);
+        container.read(selectedDateProvider.notifier).state =
+            oldDate.add(const Duration(days: 1));
+        await Future<void>.delayed(Duration.zero);
+        expect(fakeRepo.saveCallCount, 1);
+
+        // Wait past where the original 2s debounce would have fired.
+        await Future<void>.delayed(const Duration(milliseconds: 2200));
+        expect(fakeRepo.saveCallCount, 1);
+      });
+
+      test('loading the new date does not wait for a slow pending save',
+          () async {
+        await waitForLoad();
+        final notifier = container.read(plannerNotifierProvider.notifier);
+        final oldDate = container.read(selectedDateProvider);
+
+        // The save for the old date will hang until the completer resolves.
+        fakeRepo.saveCompleter = Completer<void>();
+        notifier.reorderDogs(1, 0, 1);
+        container.read(selectedDateProvider.notifier).state =
+            oldDate.add(const Duration(days: 1));
+
+        // The new date's data should load anyway — not gated on the save.
+        for (var i = 0; i < 10; i++) {
+          await Future<void>.delayed(Duration.zero);
+          if (!container.read(plannerNotifierProvider).isLoading) break;
+        }
+        expect(container.read(plannerNotifierProvider).isLoading, isFalse);
+
+        // The save was fired, just never completed.
+        expect(fakeRepo.saveCallCount, 1);
+        fakeRepo.saveCompleter!.complete();
+      });
+
+      test('preserves autoSaveEnabled across a date switch', () async {
+        await waitForLoad();
+        final notifier = container.read(plannerNotifierProvider.notifier);
+        notifier.toggleAutoSave(); // disable
+
+        final oldDate = container.read(selectedDateProvider);
+        container.read(selectedDateProvider.notifier).state =
+            oldDate.add(const Duration(days: 1));
+        await waitForLoad();
+
+        expect(
+          container.read(plannerNotifierProvider).autoSaveEnabled,
+          isFalse,
+        );
+      });
+    });
+
+    group('unsaved-changes guard', () {
+      test('registers a callback that tracks unsaved/saving/idle state',
+          () async {
+        await waitForLoad();
+        expect(capturedGuardCallback, isNotNull);
+        expect(capturedGuardCallback!(), isFalse);
+
+        final notifier = container.read(plannerNotifierProvider.notifier);
+        notifier.reorderDogs(1, 0, 1);
+        expect(capturedGuardCallback!(), isTrue);
+
+        await Future<void>.delayed(const Duration(milliseconds: 2200));
+        expect(capturedGuardCallback!(), isFalse);
       });
     });
   });
