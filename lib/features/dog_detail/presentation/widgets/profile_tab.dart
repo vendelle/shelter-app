@@ -68,8 +68,29 @@ class ProfileTab extends StatelessWidget {
         if (shelterUrl != null) ...[
           const SizedBox(height: 12),
           TextButton.icon(
-            onPressed: () =>
-                launchUrl(Uri.parse(shelterUrl), mode: LaunchMode.externalApplication),
+            // TEMPORARY diagnostic: report what actually happens on tap
+            // (tap registers? launchUrl throws? returns false?) since the
+            // real failure mode isn't visible from the deployed preview.
+            // Remove once we know the root cause.
+            onPressed: () async {
+              final messenger = ScaffoldMessenger.of(context);
+              messenger.showSnackBar(
+                const SnackBar(content: Text('tapped — launching…')),
+              );
+              try {
+                final launched = await launchUrl(
+                  Uri.parse(shelterUrl),
+                  mode: LaunchMode.externalApplication,
+                );
+                messenger.showSnackBar(
+                  SnackBar(content: Text('launchUrl returned: $launched')),
+                );
+              } catch (e) {
+                messenger.showSnackBar(
+                  SnackBar(content: Text('launchUrl threw: $e')),
+                );
+              }
+            },
             icon: const Icon(Icons.open_in_new_rounded, size: 16),
             label: Text(l10n.shelterWebsiteLink),
             style: TextButton.styleFrom(
