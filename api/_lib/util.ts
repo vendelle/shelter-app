@@ -34,3 +34,15 @@ export async function hasColumn(table: string, column: string): Promise<boolean>
 export function clearColumnCache(): void {
 	_columnCache.clear();
 }
+
+/**
+ * Formats a Postgres DATE/TIMESTAMP value as YYYY-MM-DD. `pg` decodes those
+ * columns as JS `Date`, but accepts a plain string too (already-formatted
+ * values, e.g. from test fixtures). Returns null for anything else,
+ * including missing columns (selected conditionally via hasColumn).
+ */
+export function formatDateOnly(value: unknown): string | null {
+	if (value instanceof Date) return value.toISOString().slice(0, 10);
+	if (typeof value === 'string') return value;
+	return null;
+}

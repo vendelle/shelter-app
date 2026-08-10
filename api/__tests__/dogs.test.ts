@@ -41,12 +41,50 @@ describe('GET /api/dogs', () => {
 
 		expect(res._status).toBe(200);
 		expect(res._body).toEqual([
-			{ ...dogs[0], region: 'R5', region_override: null },
-			{ ...dogs[1], region: 'R5', region_override: null },
+			{ ...dogs[0], region: 'R5', region_override: null, arrival_date: null, departure_date: null, shelter_url: null },
+			{ ...dogs[1], region: 'R5', region_override: null, arrival_date: null, departure_date: null, shelter_url: null },
 		]);
 		expect(mockPool.query).toHaveBeenCalledWith(
 			expect.stringContaining('archived IS NOT TRUE'),
 		);
+	});
+
+	it('formats arrival/departure dates and builds a shelter_url from shelterid', async () => {
+		const dogs = [
+			{
+				id: 4,
+				name: 'Piku',
+				shelterid: '573/26',
+				kennel: 'A1',
+				arrival_date: new Date('2026-01-15'),
+				departure_date: null,
+			},
+		];
+		mockPool._setResults([{ rows: dogs }]);
+
+		await handler(mockRequest({ method: 'GET' }), res);
+
+		expect(res._status).toBe(200);
+		expect(res._body).toEqual([
+			{
+				...dogs[0],
+				region: 'R5',
+				region_override: null,
+				arrival_date: '2026-01-15',
+				departure_date: null,
+				shelter_url: 'https://napaluchu.waw.pl/animal/0573-26p/',
+			},
+		]);
+	});
+
+	it('omits shelter_url when shelterid does not match the number/year shape', async () => {
+		const dogs = [{ id: 5, name: 'Mystery', shelterid: 'S010', kennel: 'A1' }];
+		mockPool._setResults([{ rows: dogs }]);
+
+		await handler(mockRequest({ method: 'GET' }), res);
+
+		expect(res._status).toBe(200);
+		expect((res._body as Array<Record<string, unknown>>)[0].shelter_url).toBeNull();
 	});
 
 	it('returns only archived dogs when only_archived=true', async () => {
@@ -135,7 +173,50 @@ describe('POST /api/dogs', () => {
 		);
 
 		expect(res._status).toBe(201);
-		expect(res._body).toEqual({ ...newDog, region: 'R5', region_override: null });
+		expect(res._body).toEqual({
+			...newDog,
+			region: 'R5',
+			region_override: null,
+			arrival_date: null,
+			departure_date: null,
+			shelter_url: null,
+		});
+	});
+
+	it('passes arrival_date and departure_date through on create', async () => {
+		const newDog = {
+			id: 11,
+			name: 'Fido',
+			shelterid: '2222/26',
+			kennel: 'C4',
+			archived: false,
+			arrival_date: new Date('2026-02-01'),
+			departure_date: null,
+		};
+		mockPool._setResults([{ rows: [newDog] }]);
+
+		await handler(
+			mockRequest({
+				method: 'POST',
+				body: {
+					name: 'Fido',
+					shelterid: '2222/26',
+					kennel: 'C4',
+					arrival_date: '2026-02-01',
+				},
+			}),
+			res,
+		);
+
+		expect(res._status).toBe(201);
+		expect(mockPool.query).toHaveBeenCalledWith(
+			expect.stringContaining('arrival_date'),
+			expect.arrayContaining(['2026-02-01']),
+		);
+		expect((res._body as Record<string, unknown>).arrival_date).toBe('2026-02-01');
+		expect((res._body as Record<string, unknown>).shelter_url).toBe(
+			'https://napaluchu.waw.pl/animal/2222-26p/',
+		);
 	});
 
 	it('returns 400 when name is missing', async () => {
@@ -184,7 +265,39 @@ describe('PATCH /api/dogs', () => {
 		);
 
 		expect(res._status).toBe(200);
-		expect(res._body).toEqual({ ...updated, region: 'R5', region_override: null });
+		expect(res._body).toEqual({
+			...updated,
+			region: 'R5',
+			region_override: null,
+			arrival_date: null,
+			departure_date: null,
+			shelter_url: null,
+		});
+	});
+
+	it('updates departure_date', async () => {
+		const updated = {
+			id: 1,
+			name: 'Burek',
+			shelterid: 'S001',
+			kennel: 'A1',
+			archived: false,
+			arrival_date: null,
+			departure_date: new Date('2026-03-01'),
+		};
+		mockPool._setResults([{ rows: [updated] }]);
+
+		await handler(
+			mockRequest({ method: 'PATCH', body: { id: 1, departure_date: '2026-03-01' } }),
+			res,
+		);
+
+		expect(res._status).toBe(200);
+		expect(mockPool.query).toHaveBeenCalledWith(
+			expect.stringContaining('departure_date'),
+			expect.arrayContaining(['2026-03-01', 1]),
+		);
+		expect((res._body as Record<string, unknown>).departure_date).toBe('2026-03-01');
 	});
 
 	it('updates multiple fields', async () => {
@@ -253,7 +366,14 @@ describe('PUT /api/dogs', () => {
 		);
 
 		expect(res._status).toBe(200);
-		expect(res._body).toEqual({ ...archived, region: 'R5', region_override: null });
+		expect(res._body).toEqual({
+			...archived,
+			region: 'R5',
+			region_override: null,
+			arrival_date: null,
+			departure_date: null,
+			shelter_url: null,
+		});
 	});
 
 	it('unarchives a dog', async () => {
@@ -266,7 +386,14 @@ describe('PUT /api/dogs', () => {
 		);
 
 		expect(res._status).toBe(200);
-		expect(res._body).toEqual({ ...unarchived, region: 'R5', region_override: null });
+		expect(res._body).toEqual({
+			...unarchived,
+			region: 'R5',
+			region_override: null,
+			arrival_date: null,
+			departure_date: null,
+			shelter_url: null,
+		});
 	});
 
 	it('returns 400 when id query param is missing', async () => {
