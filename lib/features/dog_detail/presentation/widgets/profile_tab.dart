@@ -73,22 +73,23 @@ class ProfileTab extends StatelessWidget {
             // real failure mode isn't visible from the deployed preview.
             // Remove once we know the root cause.
             onPressed: () async {
-              final messenger = ScaffoldMessenger.of(context);
-              messenger.showSnackBar(
-                const SnackBar(content: Text('tapped — launching…')),
-              );
+              const tag = '[shelter-link-debug]';
+              void report(String message) {
+                debugPrint('$tag $message');
+                ScaffoldMessenger.of(context)
+                    .showSnackBar(SnackBar(content: Text(message)));
+              }
+
+              report('tapped, url=$shelterUrl, launching…');
               try {
                 final launched = await launchUrl(
                   Uri.parse(shelterUrl),
                   mode: LaunchMode.externalApplication,
+                  webOnlyWindowName: '_blank',
                 );
-                messenger.showSnackBar(
-                  SnackBar(content: Text('launchUrl returned: $launched')),
-                );
+                report('launchUrl returned: $launched');
               } catch (e) {
-                messenger.showSnackBar(
-                  SnackBar(content: Text('launchUrl threw: $e')),
-                );
+                report('launchUrl threw: $e');
               }
             },
             icon: const Icon(Icons.open_in_new_rounded, size: 16),
