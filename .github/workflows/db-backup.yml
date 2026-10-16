@@ -52,6 +52,21 @@ jobs:
             --passphrase-fd 0 --symmetric --cipher-algo AES256 \
             --output backup.dump.gpg backup.dump
           rm backup.dump
+
+          # Prove the encrypted file opens with the passphrase and holds a
+          # complete dump. Logs table names only, never data.
+          printf '%s' "$BACKUP_PASSPHRASE" | gpg --batch --quiet --pinentry-mode loopback \
+            --passphrase-fd 0 --decrypt backup.dump.gpg > check.dump
+          # TOC lines look like "123; 0 16390 TABLE DATA public walks owner".
+          pg_restore --list check.dump | sed -nE 's/.* TABLE DATA [^ ]+ ([^ ]+).*/\1/p' > tables.txt
+          rm check.dump
+          if ! grep -qx 'walks' tables.txt; then
+            echo "::error::Backup doesn't contain the walks table"
+            exit 1
+          fi
+          echo "Backup OK — $(wc -l < tables.txt) tables:"
+          cat tables.txt
+
           echo "BACKUP_NAME=db-backup-$(date -u +%Y-%m-%d)-run$GITHUB_RUN_NUMBER" >> "$GITHUB_ENV"
 
       - uses: actions/upload-artifact@v4
