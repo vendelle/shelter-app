@@ -89,6 +89,8 @@ describe('/api/dogs?shelter=', () => {
 			expect(fetchMock).not.toHaveBeenCalled();
 			expect(res._body).toMatchObject({
 				dog_id: 12,
+				kennel: '412',
+				region: 'R12',
 				url: 'https://napaluchu.waw.pl/animal/0573-26p/',
 				found: true,
 				status: 'Do adopcji',

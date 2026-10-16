@@ -147,6 +147,10 @@ export function locationSuggestion(
 function profileJson(dog: Dog, row: ProfileRow | null) {
 	return {
 		dog_id: dog.id,
+		// Our current kennel/region, so the app shows an accepted suggestion
+		// without reloading the dog.
+		kennel: dog.kennel,
+		region: dog.region || getRegionForKennel(dog.kennel),
 		url: buildShelterUrl(dog.shelterid),
 		found: row?.found ?? false,
 		status: row?.status ?? null,
