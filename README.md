@@ -20,7 +20,7 @@ A full-stack web application for managing daily dog walk schedules at an animal 
 - **Walk Planner** — Assign dogs to volunteers for a specific date. Supports group walks (color-coded), drag-to-reorder dogs within a volunteer, auto-save, per-dog/per-volunteer notes, a compact overview mode, and sharing the day's plan as an image (with a tick-check reminder).
 - **Walk Overview** — Dashboard showing all dogs with this-week and last-week walk counts, sorted by urgency, plus CSV export of walk history with a date range filter.
 - **Manage** — CRUD for dogs and volunteers, volunteer roles, per-volunteer dog familiarity ratings, dark mode and language toggle.
-- **Dog Detail** — Per-dog profile, color-coded relationship levels with other dogs ("buddies"), and recent walk history.
+- **Dog Detail** — Per-dog profile with data from the shelter website (photo, age, weight, arrival, description…, refreshed nightly or with "Odśwież teraz"), color-coded relationship levels with other dogs ("buddies"), and recent walk history. Admins accept or ignore the website's kennel/region when it differs from ours.
 - **Volunteer Profile** — Per-volunteer stats (avg visits/month, avg walks/visit), dogs walked most often in the last 90 days (color-coded by frequency, with familiarity), and a 6-month visit history grouped by month.
 - **Accounts & Permissions** — Google sign-in (Firebase Auth); the app is visible only to approved accounts. Volunteers and admins edit day plans from 2 days back to 2 days ahead, volunteers their own dog familiarity, admins dogs/volunteers/relationships; the super admin edits any day and invites people by email. See DECISIONS.md.
 - **Responsive Layout** — 1-column on mobile, 2+ columns on wider screens using `Wrap`.
@@ -90,7 +90,7 @@ api/                            # Vercel serverless functions
 │   ├── auth.ts                   # Token → user, requireRole()
 │   └── permissions.ts            # Roles + edit rules (single source of truth)
 ├── users.ts                     # GET ?me (sign in) / GET/POST/PATCH/DELETE accounts & invites
-├── dogs.ts                      # GET/POST/PATCH/PUT /api/dogs
+├── dogs.ts                      # GET/POST/PATCH/PUT /api/dogs (?shelter=… → shelter website data)
 ├── volunteers.ts                # GET/POST/PATCH/PUT /api/volunteers (?id=X → one volunteer's profile stats)
 ├── walks.ts                     # GET/POST/DELETE /api/walks (?format=csv → date-range export)
 ├── dogs-walks.ts                 # GET /api/dogs-walks (this/last-week walk counts)
@@ -145,6 +145,7 @@ Set in Vercel dashboard (Settings → Environment Variables):
 | Variable | Description |
 |----------|-------------|
 | `DEV_DATABASE_URL` | Neon PostgreSQL connection string |
+| `CRON_SECRET` | Random string; Vercel Cron sends it to the nightly shelter-website sync (`/api/dogs?shelter=sync`). Crons run on production deployments only |
 | `SUPER_ADMIN_EMAILS` | Comma-separated Google emails that always get `super_admin` on sign-in (bootstraps the first admin) |
 | `FIREBASE_PROJECT_ID` | Optional — defaults to `shelter-app-cf77a` (must match `lib/firebase_options.dart`) |
 
@@ -177,6 +178,7 @@ PostgreSQL hosted on Neon. Migrations in `api/migrations/` are idempotent (`IF N
 - `volunteers` — Volunteer roster (first/last name)
 - `walks` — Walk assignments (dog, volunteer, date, notes, group_index, soft-delete via `deleted_at`)
 - `day_plan_volunteer_notes` — Per-volunteer notes for a specific date
+- `dog_shelter_profiles` — What the shelter website says about each dog (one row per dog, rebuilt from the site; never overwrites `dogs`)
 - `users` — App accounts: Google email, role, optional linked volunteer; invites have no `firebase_uid` yet
 
 ## Backups
