@@ -288,5 +288,82 @@
       "name": { "type": "String" }
     }
   },
-  "deleteUserContent": "They lose their access. If they sign in again, they'll wait for approval like a new account."
+  "deleteUserContent": "They lose their access. If they sign in again, they'll wait for approval like a new account.",
+
+  "shelterSectionTitle": "From the shelter website",
+  "shelterWebsiteLink": "See on the shelter website",
+  "shelterRefresh": "Refresh now",
+  "shelterFetchedJustNow": "refreshed just now",
+  "shelterFetchedMinutesAgo": "refreshed {minutes} min ago",
+  "@shelterFetchedMinutesAgo": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "shelterFetchedHoursAgo": "refreshed {hours} h ago",
+  "@shelterFetchedHoursAgo": {
+    "placeholders": {
+      "hours": { "type": "int" }
+    }
+  },
+  "shelterFetchedOn": "refreshed {date}",
+  "@shelterFetchedOn": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "shelterRefreshFailed": "The shelter website isn't responding — showing the last data we got.",
+  "shelterLoadFailed": "Couldn't get data from the shelter website.",
+  "shelterNotFound": "The shelter website has no dog with number {shelterId}.",
+  "@shelterNotFound": {
+    "placeholders": {
+      "shelterId": { "type": "String" }
+    }
+  },
+  "shelterNoPage": "This shelter ID doesn't match a page on the shelter website.",
+  "shelterStatus": "Status",
+  "shelterAge": "Age",
+  "shelterSex": "Sex",
+  "shelterWeight": "Weight",
+  "shelterBreed": "Breed",
+  "shelterColor": "Colour",
+  "shelterNeutered": "Neutered",
+  "shelterArrival": "At the shelter since",
+  "shelterDeparture": "Left the shelter",
+  "shelterLocation": "Kennel (website)",
+  "yes": "Yes",
+  "no": "No",
+  "ageYearsMonths": "{years, plural, one{1 year} other{{years} years}}, {months} mo.",
+  "@ageYearsMonths": {
+    "placeholders": {
+      "years": { "type": "int" },
+      "months": { "type": "int" }
+    }
+  },
+  "ageMonths": "{months} mo.",
+  "@ageMonths": {
+    "placeholders": {
+      "months": { "type": "int" }
+    }
+  },
+  "locationSuggestionTitle": "Website says: {location}",
+  "@locationSuggestionTitle": {
+    "placeholders": {
+      "location": { "type": "String" }
+    }
+  },
+  "locationSuggestionOurs": "We have: {ours}",
+  "@locationSuggestionOurs": {
+    "placeholders": {
+      "ours": { "type": "String" }
+    }
+  },
+  "locationSuggestionAccept": "Accept",
+  "locationSuggestionIgnore": "Ignore",
+  "locationSuggestionsFilter": "Different kennel on the website ({count})",
+  "@locationSuggestionsFilter": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  }
 }

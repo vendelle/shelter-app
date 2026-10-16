@@ -46,6 +46,7 @@ class DogDetailScreen extends StatelessWidget {
         body: TabBarView(
           children: [
             ProfileTab(
+              dogId: dogId,
               dogName: dogName,
               shelterId: shelterId,
               kennel: kennel,

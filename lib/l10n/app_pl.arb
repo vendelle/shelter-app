@@ -340,5 +340,82 @@
       "name": { "type": "String" }
     }
   },
-  "deleteUserContent": "Ta osoba straci uprawnienia. Jeśli zaloguje się ponownie, będzie czekać na akceptację jak nowe konto."
+  "deleteUserContent": "Ta osoba straci uprawnienia. Jeśli zaloguje się ponownie, będzie czekać na akceptację jak nowe konto.",
+
+  "shelterSectionTitle": "Ze strony schroniska",
+  "shelterWebsiteLink": "Zobacz na stronie schroniska",
+  "shelterRefresh": "Odśwież teraz",
+  "shelterFetchedJustNow": "odświeżono przed chwilą",
+  "shelterFetchedMinutesAgo": "odświeżono {minutes} min temu",
+  "@shelterFetchedMinutesAgo": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "shelterFetchedHoursAgo": "odświeżono {hours} godz. temu",
+  "@shelterFetchedHoursAgo": {
+    "placeholders": {
+      "hours": { "type": "int" }
+    }
+  },
+  "shelterFetchedOn": "odświeżono {date}",
+  "@shelterFetchedOn": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "shelterRefreshFailed": "Strona schroniska nie odpowiada — pokazuję ostatnio pobrane dane.",
+  "shelterLoadFailed": "Nie udało się pobrać danych ze strony schroniska.",
+  "shelterNotFound": "Strona schroniska nie ma psa o numerze {shelterId}.",
+  "@shelterNotFound": {
+    "placeholders": {
+      "shelterId": { "type": "String" }
+    }
+  },
+  "shelterNoPage": "Ten numer nie pasuje do żadnej strony na stronie schroniska.",
+  "shelterStatus": "Status",
+  "shelterAge": "Wiek",
+  "shelterSex": "Płeć",
+  "shelterWeight": "Waga",
+  "shelterBreed": "Rasa",
+  "shelterColor": "Umaszczenie",
+  "shelterNeutered": "Kastracja",
+  "shelterArrival": "W schronisku od",
+  "shelterDeparture": "Wydany",
+  "shelterLocation": "Boks na stronie",
+  "yes": "Tak",
+  "no": "Nie",
+  "ageYearsMonths": "{years, plural, one{1 rok} few{{years} lata} other{{years} lat}}, {months} mies.",
+  "@ageYearsMonths": {
+    "placeholders": {
+      "years": { "type": "int" },
+      "months": { "type": "int" }
+    }
+  },
+  "ageMonths": "{months} mies.",
+  "@ageMonths": {
+    "placeholders": {
+      "months": { "type": "int" }
+    }
+  },
+  "locationSuggestionTitle": "Na stronie: {location}",
+  "@locationSuggestionTitle": {
+    "placeholders": {
+      "location": { "type": "String" }
+    }
+  },
+  "locationSuggestionOurs": "U nas: {ours}",
+  "@locationSuggestionOurs": {
+    "placeholders": {
+      "ours": { "type": "String" }
+    }
+  },
+  "locationSuggestionAccept": "Przyjmij",
+  "locationSuggestionIgnore": "Ignoruj",
+  "locationSuggestionsFilter": "Inny boks na stronie ({count})",
+  "@locationSuggestionsFilter": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  }
 }
