@@ -178,3 +178,27 @@ PostgreSQL hosted on Neon. Migrations in `api/migrations/` are idempotent (`IF N
 - `walks` — Walk assignments (dog, volunteer, date, notes, group_index, soft-delete via `deleted_at`)
 - `day_plan_volunteer_notes` — Per-volunteer notes for a specific date
 - `users` — App accounts: Google email, role, optional linked volunteer; invites have no `firebase_uid` yet
+
+## Backups
+
+The **DB backup** GitHub Action (`.github/workflows/db-backup.yml`) dumps the production database every night and keeps each dump for 90 days as an **encrypted** workflow artifact (the repo is public — never store an unencrypted dump here).
+
+**Setup** — repo Settings → Secrets and variables → Actions → *New repository secret*:
+
+| Secret | Value |
+|--------|-------|
+| `BACKUP_DATABASE_URL` | Neon connection string of the production DB (the direct one — host without `-pooler`) |
+| `BACKUP_PASSPHRASE` | Long random passphrase. Keep it in a password manager: without it the backups can't be opened |
+
+Then Actions → *DB backup* → *Run workflow* once to check it works.
+
+> GitHub pauses scheduled workflows in public repos after 60 days without commits and sends an email — re-enable it from the Actions tab.
+
+**Restore** (into a new Neon branch first, never straight over production):
+
+```bash
+# 1. Download the artifact from Actions → DB backup → a run → Artifacts, unzip it
+gpg --decrypt backup.dump.gpg > backup.dump        # asks for BACKUP_PASSPHRASE
+# 2. Restore into an empty database / fresh Neon branch
+pg_restore --no-owner --no-acl --clean --if-exists -d "<connection string>" backup.dump
+```
