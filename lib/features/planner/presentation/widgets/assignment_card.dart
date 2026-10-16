@@ -21,6 +21,7 @@ class VolunteerColumn extends StatelessWidget {
     this.relationshipLookup,
     this.compact = true,
     this.overview = false,
+    this.editable = true,
   });
 
   final VolunteerAssignment assignment;
@@ -33,6 +34,12 @@ class VolunteerColumn extends StatelessWidget {
   final void Function(int oldIndex, int newIndex) onReorderDogs;
   final bool compact;
   final bool overview;
+
+  /// False when the viewer may not change this day's plan.
+  final bool editable;
+
+  /// Overview mode looks read-only, so it never takes edits either.
+  bool get _interactive => editable && !overview;
 
   List<(String, DogRelationshipLevel)> _getRelationships(DogEntry entry) {
     final rels = <(String, DogRelationshipLevel)>[];
@@ -71,8 +78,8 @@ class VolunteerColumn extends StatelessWidget {
         children: [
           // Header row — volunteer name
           GestureDetector(
-            onTap: overview ? null : onEditVolunteerNote,
-            onLongPress: overview ? null : onRemoveVolunteer,
+            onTap: _interactive ? onEditVolunteerNote : null,
+            onLongPress: _interactive ? onRemoveVolunteer : null,
             child: Container(
               width: double.infinity,
               padding: EdgeInsets.symmetric(
@@ -110,7 +117,7 @@ class VolunteerColumn extends StatelessWidget {
             ),
           ),
           // Dog rows (reorderable via long-press)
-          if (assignment.dogs.isNotEmpty && !overview)
+          if (assignment.dogs.isNotEmpty && _interactive)
             ReorderableListView(
               shrinkWrap: true,
               buildDefaultDragHandles: false,
@@ -143,12 +150,13 @@ class VolunteerColumn extends StatelessWidget {
                   entry: entry,
                   compact: compact,
                   overview: overview,
+                  interactive: _interactive,
                   onRemove: () => onRemoveDog(entry.dogId),
                   onTap: () => onTapDog(entry.dogId),
                   relationships: _getRelationships(entry),
                 )),
-          // Add dog button — hidden in overview mode
-          if (!overview)
+          // Add dog button — hidden when read-only
+          if (_interactive)
             InkWell(
             onTap: onAddDog,
             child: Container(
@@ -182,6 +190,7 @@ class _DogRow extends StatelessWidget {
     this.relationships = const [],
     this.compact = true,
     this.overview = false,
+    this.interactive = true,
   });
 
   final DogEntry entry;
@@ -191,6 +200,9 @@ class _DogRow extends StatelessWidget {
   final List<(String, DogRelationshipLevel)> relationships;
   final bool compact;
   final bool overview;
+
+  /// False: no swipe-to-remove or tap actions.
+  final bool interactive;
 
   @override
   Widget build(BuildContext context) {
@@ -304,8 +316,7 @@ class _DogRow extends StatelessWidget {
           ),
         );
 
-    // In overview mode, skip Dismissible and InkWell for non-interactive look
-    if (overview) return dogContent;
+    if (!interactive) return dogContent;
 
     final row = Dismissible(
       key: ValueKey(entry.dogId),

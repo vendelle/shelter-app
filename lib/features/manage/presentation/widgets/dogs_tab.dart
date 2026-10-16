@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../shared/domain/dog.dart';
+import '../../../auth/presentation/auth_providers.dart';
 import '../providers/manage_providers.dart';
 import 'dog_form_dialog.dart';
 
@@ -14,6 +15,7 @@ class DogsTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final showArchived = ref.watch(showArchivedDogsProvider);
     final dogsAsync = ref.watch(managedDogsProvider);
+    final canManage = ref.watch(permissionsProvider).canManageData;
     final l10n = AppLocalizations.of(context)!;
 
     return Column(
@@ -59,7 +61,7 @@ class DogsTab extends ConsumerWidget {
             },
           ),
         ),
-        if (!showArchived)
+        if (!showArchived && canManage)
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -100,6 +102,7 @@ class _DogListTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final canManage = ref.watch(permissionsProvider).canManageData;
     return ListTile(
       onTap: () => context.push('/dog/${dog.id}', extra: {
         'dogName': dog.name,
@@ -115,11 +118,13 @@ class _DogListTile extends ConsumerWidget {
           if (dog.region != null) dog.region!,
         ].join(' · '),
       ),
-      trailing: IconButton(
-        icon: const Icon(Icons.edit_outlined),
-        tooltip: AppLocalizations.of(context)!.edit,
-        onPressed: () => _showEditDialog(context, ref),
-      ),
+      trailing: canManage
+          ? IconButton(
+              icon: const Icon(Icons.edit_outlined),
+              tooltip: AppLocalizations.of(context)!.edit,
+              onPressed: () => _showEditDialog(context, ref),
+            )
+          : null,
     );
   }
 

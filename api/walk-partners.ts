@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { handleError, setCorsHeaders } from './_lib/util';
 import pool from './_lib/connection';
+import { requireRole } from './_lib/auth';
 
 /**
  * GET /api/walk-partners?dog_id=X
@@ -17,6 +18,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 	if (req.method === 'OPTIONS') return res.status(200).end();
 
 	try {
+		if (!(await requireRole(req, res, 'volunteer'))) return;
+
 		if (req.method !== 'GET') {
 			res.setHeader('Allow', ['GET', 'OPTIONS']);
 			return res.status(405).json({ error: `Method ${req.method} Not Allowed` });

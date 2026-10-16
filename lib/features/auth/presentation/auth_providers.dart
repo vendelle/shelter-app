@@ -1,0 +1,36 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../core/api/api_providers.dart';
+import '../data/auth_service.dart';
+import '../data/user_repository.dart';
+import '../domain/app_user.dart';
+import '../domain/user_account.dart';
+
+final authServiceProvider = Provider<AuthService>((ref) {
+  return FirebaseAuthService();
+});
+
+final userRepositoryProvider = Provider<UserRepository>((ref) {
+  return UserRepository(ref.watch(apiClientProvider));
+});
+
+/// The signed-in account, or null when signed out. Follows Google sign-in
+/// state; invalidate it to re-fetch after a role change.
+final currentUserProvider = StreamProvider<AppUser?>((ref) {
+  final repo = ref.watch(userRepositoryProvider);
+  return ref
+      .watch(authServiceProvider)
+      .accountChanges()
+      .asyncMap((uid) => uid == null ? null : repo.fetchMe());
+});
+
+/// What the current visitor may change. Anonymous until the account loads.
+final permissionsProvider = Provider<Permissions>((ref) {
+  return Permissions(ref.watch(currentUserProvider).valueOrNull);
+});
+
+/// All accounts and invites (user management, super_admin only).
+final userAccountsProvider =
+    FutureProvider.autoDispose<List<UserAccount>>((ref) {
+  return ref.watch(userRepositoryProvider).getAccounts();
+});

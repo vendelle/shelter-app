@@ -8,6 +8,8 @@ import 'package:shelter_app/core/api/api_client.dart';
 import 'package:shelter_app/core/api/api_providers.dart';
 import 'package:shelter_app/core/locale/locale_provider.dart';
 
+import '../fakes/fake_auth_service.dart';
+
 class FakeApiClient extends ApiClient {
   FakeApiClient() : super(baseUrl: 'https://fake.test');
 }
@@ -27,6 +29,7 @@ void main() {
         ProviderScope(
           overrides: [
             apiClientProvider.overrideWithValue(FakeApiClient()),
+            ...signedInAs(testVolunteer),
             sharedPreferencesProvider.overrideWithValue(prefs),
             localeProvider.overrideWith((_) => LocaleNotifier(prefs)
               ..setLocale(const Locale('pl'))),
@@ -49,6 +52,7 @@ void main() {
         ProviderScope(
           overrides: [
             apiClientProvider.overrideWithValue(FakeApiClient()),
+            ...signedInAs(testVolunteer),
             sharedPreferencesProvider.overrideWithValue(prefs),
             localeProvider.overrideWith((_) => LocaleNotifier(prefs)
               ..setLocale(const Locale('en'))),
@@ -70,6 +74,7 @@ void main() {
         ProviderScope(
           overrides: [
             apiClientProvider.overrideWithValue(FakeApiClient()),
+            ...signedInAs(testVolunteer),
             sharedPreferencesProvider.overrideWithValue(prefs),
             localeProvider.overrideWith((_) => LocaleNotifier(prefs)
               ..setLocale(const Locale('pl'))),
@@ -92,6 +97,7 @@ void main() {
         ProviderScope(
           overrides: [
             apiClientProvider.overrideWithValue(FakeApiClient()),
+            ...signedInAs(testVolunteer),
             sharedPreferencesProvider.overrideWithValue(prefs),
             localeProvider.overrideWith((_) => LocaleNotifier(prefs)
               ..setLocale(const Locale('pl'))),

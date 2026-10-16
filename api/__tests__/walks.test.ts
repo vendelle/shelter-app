@@ -1,4 +1,13 @@
 import { createMockPool, mockRequest, mockResponse, type MockPool, type MockResponse } from './helpers';
+import { mockAuth, shiftDays, TEST_USERS } from './helpers';
+import { DAY_LOCKED, editableDateRange } from '../_lib/permissions';
+
+jest.mock('../_lib/auth', () => require('./helpers').authModuleMock);
+
+// Callers can do anything unless a test says otherwise.
+beforeEach(() => {
+	mockAuth.user = TEST_USERS.super_admin;
+});
 
 let mockPool: MockPool;
 
@@ -284,7 +293,7 @@ describe('DELETE /api/walks', () => {
 	});
 
 	it('soft-deletes a walk', async () => {
-		mockPool._setResults([{ rows: [] }]);
+		mockPool._setResults([{ rows: [{ walk_date: '2026-03-31' }] }, { rows: [] }]);
 
 		await handler(mockRequest({
 			method: 'DELETE',
@@ -324,5 +333,63 @@ describe('Unsupported methods', () => {
 
 		expect(res._status).toBe(405);
 		expect(res._headers['Allow']).toContain('GET');
+	});
+});
+
+describe('/api/walks permissions', () => {
+	let res: MockResponse;
+	const { from } = editableDateRange();
+	const tooOld = shiftDays(from, -1);
+
+	beforeEach(() => {
+		res = mockResponse();
+	});
+
+	it('hides walks from anonymous visitors', async () => {
+		mockAuth.user = null;
+		await handler(mockRequest({ method: 'GET', query: {} }), res);
+		expect(res._status).toBe(401);
+		expect(mockPool.query).not.toHaveBeenCalled();
+	});
+
+	it('rejects pending accounts with 403', async () => {
+		mockAuth.user = TEST_USERS.pending;
+		await handler(mockRequest({ method: 'DELETE', query: { walk_id: '100' } }), res);
+		expect(res._status).toBe(403);
+	});
+
+	it('lets a volunteer add a walk inside the edit window', async () => {
+		mockAuth.user = TEST_USERS.volunteer;
+		mockPool._setResults([{ rows: [{ id: 1 }] }]);
+		await handler(mockRequest({ method: 'POST', body: { dog_id: 10, walk_date: from } }), res);
+		expect(res._status).toBe(201);
+	});
+
+	it('stops a volunteer adding a walk outside the edit window', async () => {
+		mockAuth.user = TEST_USERS.volunteer;
+		await handler(mockRequest({ method: 'POST', body: { dog_id: 10, walk_date: tooOld } }), res);
+		expect(res._status).toBe(403);
+		expect(res._body).toEqual({ error: DAY_LOCKED });
+		expect(mockPool.query).not.toHaveBeenCalled();
+	});
+
+	it('stops an admin deleting a walk outside the edit window', async () => {
+		mockAuth.user = TEST_USERS.admin;
+		mockPool._setResults([{ rows: [{ walk_date: tooOld }] }]);
+		await handler(mockRequest({ method: 'DELETE', query: { walk_id: '100' } }), res);
+		expect(res._status).toBe(403);
+		expect(mockPool.query).toHaveBeenCalledTimes(1);
+	});
+
+	it('lets the super admin delete an old walk', async () => {
+		mockPool._setResults([{ rows: [{ walk_date: tooOld }] }, { rows: [] }]);
+		await handler(mockRequest({ method: 'DELETE', query: { walk_id: '100' } }), res);
+		expect(res._status).toBe(200);
+	});
+
+	it('returns 404 when deleting an unknown walk', async () => {
+		mockPool._setResults([{ rows: [] }]);
+		await handler(mockRequest({ method: 'DELETE', query: { walk_id: '999' } }), res);
+		expect(res._status).toBe(404);
 	});
 });

@@ -1,4 +1,12 @@
 import { createMockPool, mockRequest, mockResponse, type MockPool, type MockResponse } from './helpers';
+import { mockAuth, TEST_USERS } from './helpers';
+
+jest.mock('../_lib/auth', () => require('./helpers').authModuleMock);
+
+// Callers can do anything unless a test says otherwise.
+beforeEach(() => {
+	mockAuth.user = TEST_USERS.super_admin;
+});
 
 // Mock the connection module before importing the handler
 let mockPool: MockPool;
@@ -289,5 +297,21 @@ describe('PUT /api/dogs', () => {
 
 		expect(res._status).toBe(404);
 		expect(res._body).toEqual({ error: 'Dog not found' });
+	});
+});
+
+describe('/api/dogs permissions', () => {
+	it('rejects anonymous changes with 401', async () => {
+		mockAuth.user = null;
+		const res = mockResponse();
+		await handler(mockRequest({ method: 'PUT', query: { id: '1' } }), res);
+		expect(res._status).toBe(401);
+	});
+
+	it('rejects volunteers with 403 — changes need an admin', async () => {
+		mockAuth.user = TEST_USERS.volunteer;
+		const res = mockResponse();
+		await handler(mockRequest({ method: 'PUT', query: { id: '1' } }), res);
+		expect(res._status).toBe(403);
 	});
 });

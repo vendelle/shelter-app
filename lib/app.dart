@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/locale/locale_provider.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_providers.dart';
+import 'features/auth/presentation/widgets/auth_gate.dart';
 import 'routing/app_router.dart';
 
 class ShelterApp extends ConsumerWidget {
@@ -25,6 +26,7 @@ class ShelterApp extends ConsumerWidget {
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       routerConfig: router,
+      builder: (context, child) => AuthGate(child: child!),
       debugShowCheckedModeBanner: false,
     );
   }

@@ -1,12 +1,16 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { handleError, setCorsHeaders } from './_lib/util';
 import pool from './_lib/connection';
+import { requireRole } from './_lib/auth';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
 	setCorsHeaders(res);
 	if (req.method === 'OPTIONS') return res.status(200).end();
 
 	try {
+		// Volunteers can look; every change needs an admin.
+		if (!(await requireRole(req, res, req.method === 'GET' ? 'volunteer' : 'admin'))) return;
+
 		if (req.method === 'GET') {
 			// Single-volunteer profile mode: aggregated visit/dog stats for one
 			// volunteer, used by the volunteer profile screen. Kept on this

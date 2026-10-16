@@ -86,15 +86,55 @@ Within each feature, we use a lightweight `data/domain/presentation` split:
 
 ---
 
-## No Auth in v1
+## Authentication: Google Sign-In via Firebase Auth
 
-**Decision**: Skip authentication entirely in v1. Volunteer picks their name from a dropdown.
+**Decision**: Volunteers sign in with Google through Firebase Auth (popup on web). The API verifies the Firebase ID token and maps it to a row in our own `users` table, which holds the role. *(Replaces "No Auth in v1".)*
 
 **Why?**
-- Fastest path to a working MVP that the shelter can actually use.
-- Auth (email/password, JWT tokens, secure storage) is significant infrastructure for mobile.
-- The existing Vue app also runs without auth — so the API doesn't enforce it yet.
-- v2 will add auth (email/password with JWT), at which point we'll add `flutter_secure_storage` and an auth interceptor.
+- Volunteers already have Google accounts — no passwords, resets or email verification to build.
+- Firebase Auth is free and handles token refresh; the Flutter app just sends `Authorization: Bearer <ID token>`.
+- Tokens are verified with Google's public certificates (`api/_lib/firebase-token.ts`) instead of `firebase-admin` (~50MB, slow cold starts).
+- Roles live in Postgres, not Firebase custom claims, so changing someone's access is one `UPDATE` and takes effect on their next request.
+
+**Details:**
+- Only tokens with `email_verified: true` are accepted — accounts and invites are matched by email.
+- `GET /api/users?me` is the sign-in call: it creates the account (or claims an invite) and refreshes name/photo. Other endpoints only look the user up.
+- `SUPER_ADMIN_EMAILS` (env var) always gets `super_admin` on sign-in, so the owner can get in on a fresh database without SQL.
+- Popup only, no redirect fallback: `signInWithRedirect` breaks in browsers that partition third-party storage unless `/__/auth` is proxied through our domain. Not worth it while popups work.
+- **Facebook/Messenger in-app browsers**: Google refuses OAuth there (`disallowed_useragent`). The app detects them by user agent and asks the volunteer to open the page in Chrome/Safari instead of failing.
+
+---
+
+## Authorization: Four Roles, Enforced by the API
+
+**Decision**: `pending` → `volunteer` → `admin` → `super_admin`. All rules live in `api/_lib/permissions.ts`; the Flutter `Permissions` class mirrors them only to decide what the UI shows.
+
+| | View anything | Day plans | Own dog familiarity | Others' familiarity, dogs, volunteers, dog relationships | Users & roles |
+|---|---|---|---|---|---|
+| Anonymous / `pending` | — | — | — | — | — |
+| `volunteer` | ✅ | ✅ 2 days back – 2 days ahead | ✅ (linked volunteer profile) | — | — |
+| `admin` | ✅ | ✅ 2 days back – 2 days ahead | ✅ | ✅ | — |
+| `super_admin` | ✅ | ✅ any date | ✅ | ✅ | ✅ |
+
+**Why?**
+- Nothing is public: the data includes volunteers' full names, notes and walk history. Every endpoint except sign-in requires an approved account, and the app shows only a sign-in screen (`AuthGate`) until then. `pending` sees nothing either — otherwise anyone with a Google account could read it.
+- Edit window (`PLAN_EDIT_DAYS_BACK` / `PLAN_EDIT_DAYS_AHEAD`, shelter timezone Europe/Warsaw): recent plans can be corrected after the walk, and the shelter doesn't plan further than two days ahead. History shouldn't be rewritten — exceptions go through the super admin, admins included.
+- Admins manage shelter data, the super admin manages access — an admin can't grant themselves more.
+- A super admin can't change their own role or delete their own account, so the last one can't lock everyone out.
+- `GET /api/health` stays public: it's diagnostics with no personal data.
+
+---
+
+## Accounts: Invite by Email, or Approve Self-Sign-Ups
+
+**Decision**: A super admin can invite a Google email with a role (and optional volunteer profile link) before the person has ever signed in. Anyone else who signs in gets a `pending` account to approve in Manage → Users.
+
+**Why?**
+- Inviting lets the admin set people up ahead of time; approving lets volunteers just sign in and wait.
+- An invite is just a `users` row with `firebase_uid = NULL` — no separate table or token emails. It's claimed by the first sign-in with that (verified) email.
+- One account per volunteer profile (`UNIQUE (volunteer_id)`) — the link is what "my own familiarity" means.
+
+**Function budget:** all of this is one endpoint (`api/users.ts`), keeping the deployment within the 12-function Vercel Hobby limit.
 
 ---
 

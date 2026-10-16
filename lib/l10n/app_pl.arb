@@ -291,5 +291,54 @@
   },
   "noVisitsInPast6Months": "Brak wizyt w ostatnich 6 miesiącach",
   "archivedBadge": "Zarchiwizowany",
-  "noActiveDogs": "Brak aktywnych psów"
+  "noActiveDogs": "Brak aktywnych psów",
+
+  "signIn": "Zaloguj się",
+  "signInWithGoogle": "Zaloguj się przez Google",
+  "signOut": "Wyloguj się",
+  "account": "Konto",
+  "signInExplanation": "Aplikacja jest dla wolontariuszy schroniska. Zaloguj się kontem Google, żeby zobaczyć plany spacerów.",
+  "signInPopupBlocked": "Przeglądarka zablokowała okno logowania Google. Zezwól na wyskakujące okna dla tej strony i spróbuj ponownie.",
+  "signInUnauthorizedDomain": "Logowanie nie jest jeszcze włączone dla tego adresu. Zgłoś to osobie zarządzającej aplikacją.",
+  "signInNetworkError": "Brak połączenia. Sprawdź internet i spróbuj ponownie.",
+  "signInFailed": "Logowanie nie powiodło się ({code}).",
+  "@signInFailed": {
+    "placeholders": {
+      "code": { "type": "String" }
+    }
+  },
+  "openInBrowserTitle": "Otwórz w przeglądarce",
+  "openInBrowserMessage": "Google nie pozwala logować się w Facebooku ani Messengerze. Otwórz tę stronę w Chrome lub Safari (menu ⋯ → Otwórz w przeglądarce) albo skopiuj link i wklej go tam.",
+  "copyLink": "Kopiuj link",
+  "linkCopied": "Skopiowano link",
+  "accessLevel": "Uprawnienia",
+  "accountPendingMessage": "Twoje konto czeka na akceptację administratora. Do tego czasu możesz przeglądać plany.",
+  "accountLoadFailed": "Nie udało się wczytać konta: {error}",
+  "@accountLoadFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "userRolePending": "Czeka na akceptację",
+  "userRoleVolunteer": "Wolontariusz",
+  "userRoleAdmin": "Administrator",
+  "userRoleSuperAdmin": "Superadministrator",
+  "planDayLocked": "Ten dzień jest zamknięty do edycji. Jeśli trzeba coś zmienić, napisz do osoby zarządzającej aplikacją.",
+  "usersTab": "Użytkownicy",
+  "inviteUser": "Zaproś",
+  "inviteUserTitle": "Zaproś użytkownika",
+  "inviteUserExplanation": "Wpisz adres konta Google tej osoby. Dostanie te uprawnienia od razu po zalogowaniu.",
+  "googleEmail": "E-mail Google",
+  "invalidEmail": "Podaj poprawny adres e-mail",
+  "linkedVolunteerProfile": "Profil wolontariusza",
+  "none": "Brak",
+  "invitePending": "Zaproszenie — jeszcze się nie zalogowano",
+  "you": "Ty",
+  "deleteUserTitle": "Usunąć {name}?",
+  "@deleteUserTitle": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "deleteUserContent": "Ta osoba straci uprawnienia. Jeśli zaloguje się ponownie, będzie czekać na akceptację jak nowe konto."
 }
