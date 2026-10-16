@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS dog_shelter_profiles (
     -- false: the website has no animal with this dog's shelterid
     found             BOOLEAN NOT NULL,
     status            TEXT,           -- "Do adopcji", "Kwarantanna", "Adopcja", …
-    photo_url         TEXT,           -- link to the shelter's image; not copied
+    photo_url         TEXT,           -- link to the shelter's main image; not copied
     breed             TEXT,
     color             TEXT,
     sex               TEXT,

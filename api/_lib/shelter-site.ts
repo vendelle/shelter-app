@@ -36,6 +36,7 @@ const FIELDS = [
 		'data_wydania',
 		'boks_lokalizacja',
 		'description',
+		'main_photo',
 		'photos',
 	].map((f) => `acf.${f}`),
 ].join(',');
@@ -56,6 +57,7 @@ interface WpAnimal {
 		data_wydania?: string | null;
 		boks_lokalizacja?: string;
 		description?: string;
+		main_photo?: string | null;
 		photos?: Array<{ photo_url?: string }> | null;
 	};
 }
@@ -108,9 +110,9 @@ export function toShelterAnimal(wp: WpAnimal): ShelterAnimal {
 	const statusId = wp['status-zwierzecia']?.[0];
 	return {
 		status: statusId !== undefined ? (STATUS_NAMES[statusId] ?? null) : null,
-		// The site's own page shows the first gallery photo; `main_photo`
-		// points at files that no longer exist.
-		photoUrl: text(acf.photos?.[0]?.photo_url),
+		// The main photo is what the site's page shows first; many dogs have
+		// no gallery at all.
+		photoUrl: text(acf.main_photo) ?? text(acf.photos?.[0]?.photo_url),
 		breed: text(acf.breed),
 		color: text(acf.color),
 		sex: text(acf.gender_id),

@@ -17,6 +17,7 @@ const AMIGO = {
 		data_wydania: null,
 		boks_lokalizacja: '430 R12 (domek)',
 		description: 'Amigo to mądry,<br/>wierny przyjaciel &amp; kompan.',
+		main_photo: 'https://images.example/main.jpg',
 		photos: [{ photo_url: 'https://images.example/1.jpg' }, { photo_url: 'https://images.example/2.jpg' }],
 	},
 };
@@ -25,7 +26,7 @@ describe('toShelterAnimal', () => {
 	it('normalises a website entry', () => {
 		expect(toShelterAnimal(AMIGO)).toEqual({
 			status: 'Do adopcji',
-			photoUrl: 'https://images.example/1.jpg',
+			photoUrl: 'https://images.example/main.jpg',
 			breed: 'MIX OGAR P',
 			color: 'czarna podpalana',
 			sex: 'Samiec',
@@ -39,6 +40,12 @@ describe('toShelterAnimal', () => {
 			description: 'Amigo to mądry,\nwierny przyjaciel & kompan.',
 			siteModifiedAt: '2026-08-05T06:30:42Z',
 		});
+	});
+
+	it('falls back to the first gallery photo without a main photo', () => {
+		expect(toShelterAnimal({ ...AMIGO, acf: { ...AMIGO.acf, main_photo: '' } }).photoUrl).toBe(
+			'https://images.example/1.jpg',
+		);
 	});
 
 	it('treats the 0.1 kg placeholder and missing values as unknown', () => {
