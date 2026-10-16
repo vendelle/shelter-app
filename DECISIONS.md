@@ -107,20 +107,21 @@ Within each feature, we use a lightweight `data/domain/presentation` split:
 
 ## Authorization: Four Roles, Enforced by the API
 
-**Decision**: `pending` → `volunteer` → `admin` → `super_admin`. All rules live in `api/_lib/permissions.ts`; the Flutter `Permissions` class mirrors them only to hide controls.
+**Decision**: `pending` → `volunteer` → `admin` → `super_admin`. All rules live in `api/_lib/permissions.ts`; the Flutter `Permissions` class mirrors them only to decide what the UI shows.
 
-| | View | Day plans | Own dog familiarity | Others' familiarity, dogs, volunteers, dog relationships | Users & roles |
+| | View anything | Day plans | Own dog familiarity | Others' familiarity, dogs, volunteers, dog relationships | Users & roles |
 |---|---|---|---|---|---|
-| Anonymous / `pending` | ✅ | — | — | — | — |
-| `volunteer` | ✅ | ✅ from 3 days ago onward | ✅ (linked volunteer profile) | — | — |
-| `admin` | ✅ | ✅ any date | ✅ | ✅ | — |
+| Anonymous / `pending` | — | — | — | — | — |
+| `volunteer` | ✅ | ✅ 2 days back – 2 days ahead | ✅ (linked volunteer profile) | — | — |
+| `admin` | ✅ | ✅ 2 days back – 2 days ahead | ✅ | ✅ | — |
 | `super_admin` | ✅ | ✅ any date | ✅ | ✅ | ✅ |
 
 **Why?**
-- Viewing stays open: checking the plan on a phone must stay one tap away.
-- Edit window (`PLAN_EDIT_WINDOW_DAYS = 3`, shelter timezone Europe/Warsaw): recent plans can still be corrected after the walk; walk history older than that is only changed by admins.
-- Admins manage shelter data, super admins manage access — an admin can't grant themselves more.
+- Nothing is public: the data includes volunteers' full names, notes and walk history. Every endpoint except sign-in requires an approved account, and the app shows only a sign-in screen (`AuthGate`) until then. `pending` sees nothing either — otherwise anyone with a Google account could read it.
+- Edit window (`PLAN_EDIT_DAYS_BACK` / `PLAN_EDIT_DAYS_AHEAD`, shelter timezone Europe/Warsaw): recent plans can be corrected after the walk, and the shelter doesn't plan further than two days ahead. History shouldn't be rewritten — exceptions go through the super admin, admins included.
+- Admins manage shelter data, the super admin manages access — an admin can't grant themselves more.
 - A super admin can't change their own role or delete their own account, so the last one can't lock everyone out.
+- `GET /api/health` stays public: it's diagnostics with no personal data.
 
 ---
 

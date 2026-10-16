@@ -1,6 +1,19 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shelter_app/features/auth/data/auth_service.dart';
+import 'package:shelter_app/features/auth/domain/app_user.dart';
+import 'package:shelter_app/features/auth/presentation/auth_providers.dart';
+
+const testVolunteer =
+    AppUser(id: 1, email: 'anna@gmail.com', role: UserRole.volunteer);
+
+/// Provider overrides for pumping the whole app as a signed-in [user] —
+/// otherwise the AuthGate shows only the sign-in screen.
+List<Override> signedInAs(AppUser user) => [
+      authServiceProvider.overrideWithValue(FakeAuthService(uid: 'uid')),
+      currentUserProvider.overrideWith((ref) => Stream.value(user)),
+    ];
 
 /// In-memory [AuthService]: starts signed in as [uid] (or signed out).
 class FakeAuthService implements AuthService {

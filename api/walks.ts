@@ -2,7 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { handleError, setCorsHeaders } from './_lib/util';
 import pool from './_lib/connection';
 import { requireRole } from './_lib/auth';
-import { canEditWalkDate, PLAN_EDIT_WINDOW_DAYS } from './_lib/permissions';
+import { canEditWalkDate, DAY_LOCKED } from './_lib/permissions';
 
 /** Escape a value for CSV — wraps in quotes if it contains comma, quote, or newline. */
 function csvEscape(value: string): string {
@@ -17,6 +17,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 	if (req.method === 'OPTIONS') return res.status(200).end();
 
 	try {
+		const user = await requireRole(req, res, 'volunteer');
+		if (!user) return;
+
 		if (req.method === 'GET') {
 			const { date, volunteer, dog, format, from, to } = req.query;
 
@@ -104,8 +107,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 		}
 
 		if (req.method === 'POST') {
-			const user = await requireRole(req, res, 'volunteer');
-			if (!user) return;
 			const { dog_id, volunteer_id, walk_date, notes } = req.body;
 
 			if (!dog_id || !walk_date) {
@@ -117,7 +118,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 			}
 
 			if (!canEditWalkDate(user, walk_date)) {
-				return res.status(403).json({ error: `Walks older than ${PLAN_EDIT_WINDOW_DAYS} days can only be changed by an admin` });
+				return res.status(403).json({ error: DAY_LOCKED });
 			}
 
 			const result = await pool.query(
@@ -130,8 +131,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 		}
 
 		if (req.method === 'DELETE') {
-			const user = await requireRole(req, res, 'volunteer');
-			if (!user) return;
 			const { walk_id } = req.query;
 
 			if (!walk_id) {
@@ -143,7 +142,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 				return res.status(404).json({ error: 'Walk not found' });
 			}
 			if (!canEditWalkDate(user, walk.rows[0].walk_date)) {
-				return res.status(403).json({ error: `Walks older than ${PLAN_EDIT_WINDOW_DAYS} days can only be changed by an admin` });
+				return res.status(403).json({ error: DAY_LOCKED });
 			}
 
 			await pool.query(

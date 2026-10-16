@@ -132,9 +132,9 @@ export const authModuleMock = {
 	}),
 };
 
-/** The YYYY-MM-DD date [days] before [isoDate]. */
-export function daysBefore(isoDate: string, days: number): string {
+/** The YYYY-MM-DD date [days] after [isoDate] (negative = before). */
+export function shiftDays(isoDate: string, days: number): string {
 	const date = new Date(`${isoDate}T00:00:00Z`);
-	date.setUTCDate(date.getUTCDate() - days);
+	date.setUTCDate(date.getUTCDate() + days);
 	return date.toISOString().slice(0, 10);
 }

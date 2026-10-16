@@ -43,14 +43,16 @@ Future<void> showAccountSheet(BuildContext context) {
     builder: (_) => const SafeArea(
       child: Padding(
         padding: EdgeInsets.fromLTRB(24, 0, 24, 24),
-        child: _AccountSheet(),
+        child: AccountPanel(),
       ),
     ),
   );
 }
 
-class _AccountSheet extends ConsumerWidget {
-  const _AccountSheet();
+/// Sign-in / account details, shown in the account sheet and on the
+/// [AuthGate] screen.
+class AccountPanel extends ConsumerWidget {
+  const AccountPanel({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -201,7 +203,8 @@ class _SignedIn extends ConsumerWidget {
         const SizedBox(height: 20),
         OutlinedButton.icon(
           onPressed: () {
-            Navigator.pop(context);
+            // Closes the account sheet; on the AuthGate there is none.
+            Navigator.maybeOf(context)?.pop();
             ref.read(authServiceProvider).signOut();
           },
           icon: const Icon(Icons.logout),

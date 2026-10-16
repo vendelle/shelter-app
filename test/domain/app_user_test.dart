@@ -67,53 +67,59 @@ void main() {
   group('Permissions', () {
     final today = DateTime(2026, 10, 16);
 
-    test('anonymous visitors can only view', () {
+    test('anonymous visitors see nothing', () {
       const p = Permissions(null);
       expect(p.isSignedIn, isFalse);
+      expect(p.canView, isFalse);
       expect(p.canEditPlanOn(today, today: today), isFalse);
-      expect(p.canManageData, isFalse);
       expect(p.canEditFamiliarityOf(1), isFalse);
     });
 
-    test('pending accounts can only view', () {
+    test('pending accounts see nothing', () {
       final p = Permissions(_user(UserRole.pending, volunteerId: 1));
       expect(p.isPending, isTrue);
+      expect(p.canView, isFalse);
       expect(p.canEditPlanOn(today, today: today), isFalse);
       expect(p.canEditFamiliarityOf(1), isFalse);
     });
 
-    test('volunteers edit plans from 3 days ago onward', () {
-      final p = Permissions(_user(UserRole.volunteer));
-      expect(p.canEditPlanOn(DateTime(2026, 12, 1), today: today), isTrue);
-      expect(p.canEditPlanOn(today, today: today), isTrue);
-      expect(p.canEditPlanOn(DateTime(2026, 10, 13), today: today), isTrue);
-      expect(p.canEditPlanOn(DateTime(2026, 10, 12), today: today), isFalse);
-      expect(p.canManageData, isFalse);
-    });
+    for (final role in [UserRole.volunteer, UserRole.admin]) {
+      test('${role.name}s edit plans from 2 days ago to 2 days ahead', () {
+        final p = Permissions(_user(role));
+        expect(p.canView, isTrue);
+        expect(p.canEditPlanOn(DateTime(2026, 10, 14), today: today), isTrue);
+        expect(p.canEditPlanOn(DateTime(2026, 10, 18), today: today), isTrue);
+        expect(p.canEditPlanOn(DateTime(2026, 10, 13), today: today), isFalse);
+        expect(p.canEditPlanOn(DateTime(2026, 10, 19), today: today), isFalse);
+      });
+    }
 
     test('the edit window crosses month boundaries', () {
       final p = Permissions(_user(UserRole.volunteer));
-      final march2 = DateTime(2026, 3, 2);
-      expect(p.canEditPlanOn(DateTime(2026, 2, 27), today: march2), isTrue);
-      expect(p.canEditPlanOn(DateTime(2026, 2, 26), today: march2), isFalse);
+      final march1 = DateTime(2026, 3, 1);
+      expect(p.canEditPlanOn(DateTime(2026, 2, 27), today: march1), isTrue);
+      expect(p.canEditPlanOn(DateTime(2026, 2, 26), today: march1), isFalse);
     });
 
-    test('volunteers edit only their own familiarity', () {
+    test('volunteers edit only their own familiarity, not shelter data', () {
       final p = Permissions(_user(UserRole.volunteer, volunteerId: 7));
       expect(p.canEditFamiliarityOf(7), isTrue);
       expect(p.canEditFamiliarityOf(8), isFalse);
+      expect(p.canManageData, isFalse);
     });
 
-    test('admins edit anything but users', () {
+    test('admins manage shelter data but not users', () {
       final p = Permissions(_user(UserRole.admin));
-      expect(p.canEditPlanOn(DateTime(2020), today: today), isTrue);
       expect(p.canManageData, isTrue);
       expect(p.canEditFamiliarityOf(8), isTrue);
       expect(p.canManageUsers, isFalse);
     });
 
-    test('super admins also manage users', () {
-      expect(Permissions(_user(UserRole.superAdmin)).canManageUsers, isTrue);
+    test('the super admin edits any day and manages users', () {
+      final p = Permissions(_user(UserRole.superAdmin));
+      expect(p.canManageUsers, isTrue);
+      expect(p.canEditPlanOn(DateTime(2020), today: today), isTrue);
+      expect(p.canEditPlanOn(DateTime(2030), today: today), isTrue);
     });
   });
 }

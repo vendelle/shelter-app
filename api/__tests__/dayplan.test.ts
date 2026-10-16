@@ -1,12 +1,12 @@
 import { createMockPool, mockRequest, mockResponse, type MockPool, type MockResponse } from './helpers';
-import { daysBefore, mockAuth, TEST_USERS } from './helpers';
-import { earliestEditableDate } from '../_lib/permissions';
+import { mockAuth, shiftDays, TEST_USERS } from './helpers';
+import { DAY_LOCKED, editableDateRange } from '../_lib/permissions';
 
 jest.mock('../_lib/auth', () => require('./helpers').authModuleMock);
 
-// Callers are admins unless a test says otherwise.
+// Callers can do anything unless a test says otherwise.
 beforeEach(() => {
-	mockAuth.user = TEST_USERS.admin;
+	mockAuth.user = TEST_USERS.super_admin;
 });
 
 let mockPool: MockPool;
@@ -433,8 +433,9 @@ describe('/api/dayplan', () => {
 
 describe('/api/dayplan permissions', () => {
 	let res: MockResponse;
-	const editable = earliestEditableDate();
-	const locked = daysBefore(editable, 1);
+	const { from, to } = editableDateRange();
+	const tooOld = shiftDays(from, -1);
+	const tooFar = shiftDays(to, 1);
 	const body = (walk_date: string) => ({ walk_date, walks: [], volunteer_notes: [] });
 
 	beforeEach(() => {
@@ -443,41 +444,55 @@ describe('/api/dayplan permissions', () => {
 		mockPool.query.mockResolvedValue({ rows: [] });
 	});
 
-	it('keeps reading open to anonymous visitors', async () => {
+	it('hides plans from anonymous visitors', async () => {
 		mockAuth.user = null;
-		await handler(mockRequest({ method: 'GET', query: { date: editable } }), res);
+		await handler(mockRequest({ method: 'GET', query: { date: from } }), res);
+		expect(res._status).toBe(401);
+		expect(mockPool.query).not.toHaveBeenCalled();
+	});
+
+	it('hides plans from pending accounts', async () => {
+		mockAuth.user = TEST_USERS.pending;
+		await handler(mockRequest({ method: 'GET', query: { date: from } }), res);
+		expect(res._status).toBe(403);
+	});
+
+	it('shows plans to volunteers', async () => {
+		mockAuth.user = TEST_USERS.volunteer;
+		await handler(mockRequest({ method: 'GET', query: { date: from } }), res);
 		expect(res._status).toBe(200);
 	});
 
 	it('rejects anonymous saves with 401', async () => {
 		mockAuth.user = null;
-		await handler(mockRequest({ method: 'POST', body: body(editable) }), res);
+		await handler(mockRequest({ method: 'POST', body: body(from) }), res);
 		expect(res._status).toBe(401);
-		expect(mockPool.query).not.toHaveBeenCalled();
 	});
 
-	it('rejects pending accounts with 403', async () => {
-		mockAuth.user = TEST_USERS.pending;
-		await handler(mockRequest({ method: 'POST', body: body(editable) }), res);
-		expect(res._status).toBe(403);
-	});
-
-	it('lets a volunteer save a plan inside the edit window', async () => {
-		mockAuth.user = TEST_USERS.volunteer;
-		await handler(mockRequest({ method: 'POST', body: body(editable) }), res);
+	it.each([
+		['volunteer', 'the first open day', () => from],
+		['volunteer', 'the last open day', () => to],
+		['admin', 'the first open day', () => from],
+	])('lets a %s save %s', async (role, _label, date) => {
+		mockAuth.user = TEST_USERS[role as 'volunteer' | 'admin'];
+		await handler(mockRequest({ method: 'POST', body: body(date()) }), res);
 		expect(res._status).toBe(200);
 	});
 
-	it('stops a volunteer saving a plan older than the edit window', async () => {
-		mockAuth.user = TEST_USERS.volunteer;
-		await handler(mockRequest({ method: 'POST', body: body(locked) }), res);
+	it.each([
+		['volunteer', 'before the window', tooOld],
+		['volunteer', 'after the window', tooFar],
+		['admin', 'before the window', tooOld],
+	])('stops a %s saving a day %s', async (role, _label, date) => {
+		mockAuth.user = TEST_USERS[role as 'volunteer' | 'admin'];
+		await handler(mockRequest({ method: 'POST', body: body(date) }), res);
 		expect(res._status).toBe(403);
-		expect(res._body).toEqual({ error: 'Walks older than 3 days can only be changed by an admin' });
+		expect(res._body).toEqual({ error: DAY_LOCKED });
 		expect(mockPool.query).not.toHaveBeenCalled();
 	});
 
-	it('lets an admin save a plan older than the edit window', async () => {
-		await handler(mockRequest({ method: 'POST', body: body(locked) }), res);
+	it('lets the super admin fix history', async () => {
+		await handler(mockRequest({ method: 'POST', body: body('2020-01-01') }), res);
 		expect(res._status).toBe(200);
 	});
 });

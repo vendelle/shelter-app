@@ -22,7 +22,7 @@ A full-stack web application for managing daily dog walk schedules at an animal 
 - **Manage** — CRUD for dogs and volunteers, volunteer roles, per-volunteer dog familiarity ratings, dark mode and language toggle.
 - **Dog Detail** — Per-dog profile, color-coded relationship levels with other dogs ("buddies"), and recent walk history.
 - **Volunteer Profile** — Per-volunteer stats (avg visits/month, avg walks/visit), dogs walked most often in the last 90 days (color-coded by frequency, with familiarity), and a 6-month visit history grouped by month.
-- **Accounts & Permissions** — Google sign-in (Firebase Auth). Anyone can view; volunteers edit day plans (from 3 days ago onward) and their own dog familiarity; admins edit everything; super admins invite people by email and manage roles. See DECISIONS.md.
+- **Accounts & Permissions** — Google sign-in (Firebase Auth); the app is visible only to approved accounts. Volunteers and admins edit day plans from 2 days back to 2 days ahead, volunteers their own dog familiarity, admins dogs/volunteers/relationships; the super admin edits any day and invites people by email. See DECISIONS.md.
 - **Responsive Layout** — 1-column on mobile, 2+ columns on wider screens using `Wrap`.
 
 ## Localization (i18n)
@@ -100,7 +100,7 @@ api/                            # Vercel serverless functions
 ├── familiarity.ts                # GET/PUT/DELETE /api/familiarity
 ├── dayplan.ts                    # GET/POST /api/dayplan (full planner state)
 ├── health.ts                     # GET /api/health (diagnostics)
-├── __tests__/                    # Jest tests (278 tests; coverage enforced in CI)
+├── __tests__/                    # Jest tests (289 tests; coverage enforced in CI)
 └── migrations/                   # SQL migration scripts
 ```
 
@@ -162,8 +162,8 @@ Push to `main` → Vercel auto-deploys. The build:
 
 | Suite | Command | Tests | Coverage |
 |-------|---------|-------|----------|
-| Backend (Jest) | `npm test` | 278 | ~97% statements/lines |
-| Frontend (Flutter) | `flutter test` | 232 | Models, state, widgets |
+| Backend (Jest) | `npm test` | 289 | ~97% statements/lines |
+| Frontend (Flutter) | `flutter test` | 236 | Models, state, widgets |
 
 CI runs automatically on push/PR to `main` via GitHub Actions. Coverage thresholds enforced: 90% statements, 80% branches.
 

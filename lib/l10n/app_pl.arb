@@ -297,7 +297,7 @@
   "signInWithGoogle": "Zaloguj się przez Google",
   "signOut": "Wyloguj się",
   "account": "Konto",
-  "signInExplanation": "Plany może przeglądać każdy. Zaloguj się kontem Google, żeby je edytować.",
+  "signInExplanation": "Aplikacja jest dla wolontariuszy schroniska. Zaloguj się kontem Google, żeby zobaczyć plany spacerów.",
   "signInPopupBlocked": "Przeglądarka zablokowała okno logowania Google. Zezwól na wyskakujące okna dla tej strony i spróbuj ponownie.",
   "signInUnauthorizedDomain": "Logowanie nie jest jeszcze włączone dla tego adresu. Zgłoś to osobie zarządzającej aplikacją.",
   "signInNetworkError": "Brak połączenia. Sprawdź internet i spróbuj ponownie.",
@@ -323,14 +323,7 @@
   "userRoleVolunteer": "Wolontariusz",
   "userRoleAdmin": "Administrator",
   "userRoleSuperAdmin": "Superadministrator",
-  "planReadOnlySignedOut": "Tylko podgląd — dotknij, żeby się zalogować i edytować plan.",
-  "planReadOnlyPending": "Tylko podgląd — konto czeka na akceptację.",
-  "planReadOnlyTooOld": "Tylko podgląd — spacery starsze niż {days} dni może zmieniać tylko administrator.",
-  "@planReadOnlyTooOld": {
-    "placeholders": {
-      "days": { "type": "int" }
-    }
-  },
+  "planDayLocked": "Ten dzień jest zamknięty do edycji. Jeśli trzeba coś zmienić, napisz do osoby zarządzającej aplikacją.",
   "usersTab": "Użytkownicy",
   "inviteUser": "Zaproś",
   "inviteUserTitle": "Zaproś użytkownika",

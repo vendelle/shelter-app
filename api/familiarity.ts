@@ -9,6 +9,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 	if (req.method === 'OPTIONS') return res.status(200).end();
 
 	try {
+		const user = await requireRole(req, res, 'volunteer');
+		if (!user) return;
+
 		if (req.method === 'GET') {
 			const volunteerId = req.query.volunteer_id;
 			if (!volunteerId) {
@@ -22,8 +25,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 		}
 
 		if (req.method === 'PUT') {
-			const user = await requireRole(req, res, 'volunteer');
-			if (!user) return;
 			const { volunteer_id, dog_id, level } = req.body;
 			if (!volunteer_id || !dog_id || !level) {
 				return res.status(400).json({ error: 'volunteer_id, dog_id, and level are required' });
@@ -45,8 +46,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 		}
 
 		if (req.method === 'DELETE') {
-			const user = await requireRole(req, res, 'volunteer');
-			if (!user) return;
 			const volunteerId = req.query.volunteer_id;
 			const dogId = req.query.dog_id;
 			if (!volunteerId || !dogId) {

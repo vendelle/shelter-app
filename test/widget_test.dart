@@ -7,7 +7,6 @@ import 'package:shelter_app/app.dart';
 import 'package:shelter_app/core/api/api_client.dart';
 import 'package:shelter_app/core/api/api_providers.dart';
 import 'package:shelter_app/core/locale/locale_provider.dart';
-import 'package:shelter_app/features/auth/presentation/auth_providers.dart';
 
 import 'fakes/fake_auth_service.dart';
 
@@ -31,7 +30,7 @@ void main() {
       ProviderScope(
         overrides: [
           apiClientProvider.overrideWithValue(FakeApiClient()),
-          authServiceProvider.overrideWithValue(FakeAuthService()),
+          ...signedInAs(testVolunteer),
           sharedPreferencesProvider.overrideWithValue(prefs),
         ],
         child: const ShelterApp(),
@@ -52,7 +51,7 @@ void main() {
       ProviderScope(
         overrides: [
           apiClientProvider.overrideWithValue(FakeApiClient()),
-          authServiceProvider.overrideWithValue(FakeAuthService()),
+          ...signedInAs(testVolunteer),
           sharedPreferencesProvider.overrideWithValue(prefs),
         ],
         child: const ShelterApp(),

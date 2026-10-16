@@ -10,8 +10,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 	if (req.method === 'OPTIONS') return res.status(200).end();
 
 	try {
-		// Reads are public; every change needs an admin.
-		if (req.method !== 'GET' && !(await requireRole(req, res, 'admin'))) return;
+		// Volunteers can look; every change needs an admin.
+		if (!(await requireRole(req, res, req.method === 'GET' ? 'volunteer' : 'admin'))) return;
 
 		if (req.method === 'GET') {
 			const dogId = req.query.dog_id;

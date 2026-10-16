@@ -1,7 +1,7 @@
 import {
 	canEditFamiliarity,
 	canEditWalkDate,
-	earliestEditableDate,
+	editableDateRange,
 	hasRole,
 	isRole,
 	shelterToday,
@@ -34,30 +34,37 @@ describe('permissions', () => {
 			expect(shelterToday(new Date('2026-10-16T23:30:00Z'))).toBe('2026-10-17');
 		});
 
-		it('allows edits from 3 days ago onward', () => {
-			expect(earliestEditableDate(new Date('2026-10-16T10:00:00Z'))).toBe('2026-10-13');
+		it('opens today ±2 days for editing', () => {
+			expect(editableDateRange(new Date('2026-10-16T10:00:00Z'))).toEqual({ from: '2026-10-14', to: '2026-10-18' });
 		});
 
-		it('handles month boundaries', () => {
-			expect(earliestEditableDate(new Date('2026-03-02T10:00:00Z'))).toBe('2026-02-27');
+		it('handles month and year boundaries', () => {
+			expect(editableDateRange(new Date('2026-03-01T10:00:00Z')).from).toBe('2026-02-27');
+			expect(editableDateRange(new Date('2026-12-30T10:00:00Z')).to).toBe('2027-01-01');
 		});
 	});
 
 	describe('canEditWalkDate', () => {
 		const now = new Date('2026-10-16T10:00:00Z');
 
-		it('lets volunteers edit today, the future, and up to 3 days back', () => {
-			for (const date of ['2026-10-13', '2026-10-16', '2026-12-01']) {
-				expect(canEditWalkDate(TEST_USERS.volunteer, date, now)).toBe(true);
+		it('lets volunteers and admins edit from 2 days ago to 2 days ahead', () => {
+			for (const user of [TEST_USERS.volunteer, TEST_USERS.admin]) {
+				for (const date of ['2026-10-14', '2026-10-16', '2026-10-18']) {
+					expect(canEditWalkDate(user, date, now)).toBe(true);
+				}
 			}
 		});
 
-		it('locks older walks for volunteers', () => {
-			expect(canEditWalkDate(TEST_USERS.volunteer, '2026-10-12', now)).toBe(false);
+		it('locks days outside the window for volunteers and admins', () => {
+			for (const user of [TEST_USERS.volunteer, TEST_USERS.admin]) {
+				expect(canEditWalkDate(user, '2026-10-13', now)).toBe(false);
+				expect(canEditWalkDate(user, '2026-10-19', now)).toBe(false);
+			}
 		});
 
-		it('lets admins edit any date', () => {
-			expect(canEditWalkDate(TEST_USERS.admin, '2020-01-01', now)).toBe(true);
+		it('lets the super admin edit any date', () => {
+			expect(canEditWalkDate(TEST_USERS.super_admin, '2020-01-01', now)).toBe(true);
+			expect(canEditWalkDate(TEST_USERS.super_admin, '2030-01-01', now)).toBe(true);
 		});
 
 		it('never lets anonymous or pending users edit', () => {
@@ -65,7 +72,7 @@ describe('permissions', () => {
 			expect(canEditWalkDate(TEST_USERS.pending, '2026-10-16', now)).toBe(false);
 		});
 
-		it('rejects malformed dates for volunteers', () => {
+		it('rejects malformed dates', () => {
 			expect(canEditWalkDate(TEST_USERS.volunteer, '16.10.2026', now)).toBe(false);
 		});
 	});

@@ -3,9 +3,9 @@ import { mockAuth, TEST_USERS } from './helpers';
 
 jest.mock('../_lib/auth', () => require('./helpers').authModuleMock);
 
-// Callers are admins unless a test says otherwise.
+// Callers can do anything unless a test says otherwise.
 beforeEach(() => {
-	mockAuth.user = TEST_USERS.admin;
+	mockAuth.user = TEST_USERS.super_admin;
 });
 
 // Mock the connection module before importing the handler

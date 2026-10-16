@@ -245,7 +245,7 @@
   "signInWithGoogle": "Sign in with Google",
   "signOut": "Sign out",
   "account": "Account",
-  "signInExplanation": "Anyone can view the plans. Sign in with your Google account to edit them.",
+  "signInExplanation": "This app is for the shelter's volunteers. Sign in with your Google account to see the walk plans.",
   "signInPopupBlocked": "The browser blocked the Google sign-in window. Allow pop-ups for this site and try again.",
   "signInUnauthorizedDomain": "Sign-in isn't enabled for this address yet. Please tell whoever runs the app.",
   "signInNetworkError": "No connection. Check your internet and try again.",
@@ -271,14 +271,7 @@
   "userRoleVolunteer": "Volunteer",
   "userRoleAdmin": "Admin",
   "userRoleSuperAdmin": "Super admin",
-  "planReadOnlySignedOut": "View only — tap to sign in and edit the plan.",
-  "planReadOnlyPending": "View only — your account is waiting for approval.",
-  "planReadOnlyTooOld": "View only — walks older than {days} days can only be changed by an admin.",
-  "@planReadOnlyTooOld": {
-    "placeholders": {
-      "days": { "type": "int" }
-    }
-  },
+  "planDayLocked": "This day is closed for editing. If something needs changing, contact whoever runs the app.",
   "usersTab": "Users",
   "inviteUser": "Invite",
   "inviteUserTitle": "Invite user",

@@ -4,13 +4,12 @@
  *
  * | Role        | Can                                                             |
  * |-------------|-----------------------------------------------------------------|
- * | (anonymous) | View everything                                                 |
- * | pending     | Same as anonymous (signed in, waiting for a role)               |
- * | volunteer   | Edit day plans from PLAN_EDIT_WINDOW_DAYS ago onward, edit      |
- * |             | their own dog familiarity                                       |
- * | admin       | Edit any day plan, dogs, volunteers, dog relationships,         |
- * |             | anyone's familiarity                                            |
- * | super_admin | Everything above + manage user accounts and roles               |
+ * | (anonymous) | Nothing — every endpoint except sign-in needs a volunteer       |
+ * | pending     | Nothing (signed in, waiting for a super_admin to grant a role)  |
+ * | volunteer   | View everything; edit day plans inside the edit window (see     |
+ * |             | editableDateRange) and their own dog familiarity                |
+ * | admin       | + dogs, volunteers, dog relationships, anyone's familiarity     |
+ * | super_admin | + day plans on any date (history fixes), user accounts & roles  |
  */
 
 export const ROLES = ['pending', 'volunteer', 'admin', 'super_admin'] as const;
@@ -24,8 +23,10 @@ export function hasRole(user: { role: Role } | null, minimum: Role): boolean {
 	return user !== null && ROLES.indexOf(user.role) >= ROLES.indexOf(minimum);
 }
 
-/** Volunteers may edit walks up to this many days in the past. */
-export const PLAN_EDIT_WINDOW_DAYS = 3;
+/** Day plans are editable from this many days ago… */
+export const PLAN_EDIT_DAYS_BACK = 2;
+/** …to this many days ahead. Outside that, only a super_admin can edit. */
+export const PLAN_EDIT_DAYS_AHEAD = 2;
 
 /** Dates are compared in the shelter's timezone, not the server's (UTC). */
 const SHELTER_TIME_ZONE = 'Europe/Warsaw';
@@ -38,11 +39,16 @@ export function shelterToday(now: Date = new Date()): string {
 	return new Intl.DateTimeFormat('en-CA', { timeZone: SHELTER_TIME_ZONE }).format(now);
 }
 
-/** The earliest walk date a volunteer may still edit, as YYYY-MM-DD. */
-export function earliestEditableDate(now: Date = new Date()): string {
-	const today = new Date(`${shelterToday(now)}T00:00:00Z`);
-	today.setUTCDate(today.getUTCDate() - PLAN_EDIT_WINDOW_DAYS);
-	return today.toISOString().slice(0, 10);
+function shiftDays(isoDate: string, days: number): string {
+	const date = new Date(`${isoDate}T00:00:00Z`);
+	date.setUTCDate(date.getUTCDate() + days);
+	return date.toISOString().slice(0, 10);
+}
+
+/** First and last walk date (YYYY-MM-DD, inclusive) open for editing. */
+export function editableDateRange(now: Date = new Date()): { from: string; to: string } {
+	const today = shelterToday(now);
+	return { from: shiftDays(today, -PLAN_EDIT_DAYS_BACK), to: shiftDays(today, PLAN_EDIT_DAYS_AHEAD) };
 }
 
 /** Whether [user] may create/change/delete walks on [walkDate] (YYYY-MM-DD). */
@@ -51,10 +57,11 @@ export function canEditWalkDate(
 	walkDate: string,
 	now: Date = new Date(),
 ): boolean {
-	if (hasRole(user, 'admin')) return true;
+	if (hasRole(user, 'super_admin')) return true;
 	if (!hasRole(user, 'volunteer')) return false;
+	const { from, to } = editableDateRange(now);
 	// ISO dates compare correctly as strings.
-	return ISO_DATE.test(walkDate) && walkDate >= earliestEditableDate(now);
+	return ISO_DATE.test(walkDate) && walkDate >= from && walkDate <= to;
 }
 
 /** Whether [user] may edit the dog familiarity of volunteer [volunteerId]. */
@@ -65,3 +72,6 @@ export function canEditFamiliarity(
 	if (hasRole(user, 'admin')) return true;
 	return hasRole(user, 'volunteer') && user!.volunteerId === volunteerId;
 }
+
+/** API error for a day plan change outside the edit window. */
+export const DAY_LOCKED = `Only days from ${PLAN_EDIT_DAYS_BACK} days ago to ${PLAN_EDIT_DAYS_AHEAD} days ahead can be edited — ask the app owner`;

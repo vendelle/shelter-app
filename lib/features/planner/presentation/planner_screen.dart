@@ -3,7 +3,6 @@ import 'package:shelter_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../auth/domain/app_user.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../../auth/presentation/widgets/account_button.dart';
 import '../../dog_detail/presentation/providers/dog_detail_providers.dart';
@@ -27,8 +26,7 @@ class PlannerScreen extends ConsumerWidget {
     final detailLevel = ref.watch(plannerDetailLevelProvider);
     final isOverview = detailLevel == PlannerDetailLevel.overview;
     final isCompact = detailLevel != PlannerDetailLevel.detailed;
-    final permissions = ref.watch(permissionsProvider);
-    final editable = permissions.canEditPlanOn(date);
+    final editable = ref.watch(permissionsProvider).canEditPlanOn(date);
 
     return Scaffold(
       appBar: AppBar(
@@ -83,7 +81,7 @@ class PlannerScreen extends ConsumerWidget {
             onDateChanged: (newDate) =>
                 ref.read(selectedDateProvider.notifier).state = newDate,
           ),
-          if (!editable) _ReadOnlyBanner(permissions: permissions),
+          if (!editable) const _ReadOnlyBanner(),
 
           // Main content — horizontal scrolling columns
           Expanded(
@@ -630,48 +628,36 @@ class _EmptyBody extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Read-only notice — says why the plan can't be edited
+// Notice shown on days outside the edit window
 // ---------------------------------------------------------------------------
 
 class _ReadOnlyBanner extends StatelessWidget {
-  const _ReadOnlyBanner({required this.permissions});
-
-  final Permissions permissions;
+  const _ReadOnlyBanner();
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final (message, canAct) = !permissions.isSignedIn
-        ? (l10n.planReadOnlySignedOut, true)
-        : permissions.isPending
-        ? (l10n.planReadOnlyPending, true)
-        : (l10n.planReadOnlyTooOld(Permissions.planEditWindowDays), false);
-
     return Material(
       color: theme.colorScheme.surfaceContainerHigh,
-      child: InkWell(
-        onTap: canAct ? () => showAccountSheet(context) : null,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
-            children: [
-              Icon(
-                Icons.visibility_outlined,
-                size: 18,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  message,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          children: [
+            Icon(
+              Icons.lock_outline,
+              size: 18,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                AppLocalizations.of(context)!.planDayLocked,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

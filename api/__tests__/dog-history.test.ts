@@ -1,4 +1,12 @@
 import { createMockPool, mockRequest, mockResponse, MockResponse } from './helpers';
+import { mockAuth, TEST_USERS } from './helpers';
+
+jest.mock('../_lib/auth', () => require('./helpers').authModuleMock);
+
+// Callers can do anything unless a test says otherwise.
+beforeEach(() => {
+	mockAuth.user = TEST_USERS.super_admin;
+});
 
 const mockPool = createMockPool();
 jest.mock('../_lib/connection', () => mockPool);
@@ -78,5 +86,17 @@ describe('GET /api/dog-history', () => {
 	it('returns 405 for unsupported methods', async () => {
 		await handler(mockRequest({ method: 'POST' }), res);
 		expect(res._status).toBe(405);
+	});
+});
+
+describe('/api/dog-history access', () => {
+	it.each([
+		['anonymous visitors', null, 401],
+		['pending accounts', TEST_USERS.pending, 403],
+	])('is closed to %s', async (_label, user, status) => {
+		mockAuth.user = user;
+		const res = mockResponse();
+		await handler(mockRequest({ method: 'GET', query: { dog_id: '1' } }), res);
+		expect(res._status).toBe(status);
 	});
 });

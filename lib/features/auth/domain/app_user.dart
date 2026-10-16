@@ -78,23 +78,30 @@ class Permissions {
 
   final AppUser? user;
 
-  /// Volunteers may edit walks up to this many days in the past.
-  static const planEditWindowDays = 3;
+  /// Day plans are editable from this many days ago to [planEditDaysAhead]
+  /// days ahead; only a super admin can edit outside that.
+  static const planEditDaysBack = 2;
+  static const planEditDaysAhead = 2;
 
   bool _isAtLeast(UserRole role) => user?.role.isAtLeast(role) ?? false;
 
   bool get isSignedIn => user != null;
   bool get isPending => user?.role == UserRole.pending;
+
+  /// Signed in and approved — the app shows nothing to anyone else.
+  bool get canView => _isAtLeast(UserRole.volunteer);
   bool get canManageData => _isAtLeast(UserRole.admin);
   bool get canManageUsers => _isAtLeast(UserRole.superAdmin);
 
   /// Whether the walk plan for [date] may be changed. [today] is for tests.
   bool canEditPlanOn(DateTime date, {DateTime? today}) {
-    if (canManageData) return true;
-    if (!_isAtLeast(UserRole.volunteer)) return false;
+    if (_isAtLeast(UserRole.superAdmin)) return true;
+    if (!canView) return false;
     final now = today ?? DateTime.now();
-    final earliest = DateTime(now.year, now.month, now.day - planEditWindowDays);
-    return !DateTime(date.year, date.month, date.day).isBefore(earliest);
+    final day = DateTime(date.year, date.month, date.day);
+    final from = DateTime(now.year, now.month, now.day - planEditDaysBack);
+    final to = DateTime(now.year, now.month, now.day + planEditDaysAhead);
+    return !day.isBefore(from) && !day.isAfter(to);
   }
 
   bool canEditFamiliarityOf(int volunteerId) {
