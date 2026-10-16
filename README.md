@@ -194,11 +194,10 @@ Then Actions → *DB backup* → *Run workflow* once to check it works.
 
 > GitHub pauses scheduled workflows in public repos after 60 days without commits and sends an email — re-enable it from the Actions tab.
 
-**Restore** (into a new Neon branch first, never straight over production):
+**Restore** — no local tools needed, the **DB restore** Action does it:
 
-```bash
-# 1. Download the artifact from Actions → DB backup → a run → Artifacts, unzip it
-gpg --decrypt backup.dump.gpg > backup.dump        # asks for BACKUP_PASSPHRASE
-# 2. Restore into an empty database / fresh Neon branch
-pg_restore --no-owner --no-acl --clean --if-exists -d "<connection string>" backup.dump
-```
+1. Neon → create a new branch (e.g. `restore`) and copy its connection string.
+2. GitHub → Settings → Secrets → set `RESTORE_DATABASE_URL` to that string. (The workflow refuses to run against production.)
+3. Actions → *DB backup* → open the run you want → copy the number from its URL (`…/actions/runs/<ID>`).
+4. Actions → *DB restore* → *Run workflow* → paste the ID.
+5. Check the data on the `restore` branch in Neon before deciding what to do with it.

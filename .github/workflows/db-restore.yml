@@ -1,0 +1,65 @@
+# Restores a "DB backup" run into a database of your choice — no local tools
+# needed. Steps: README → "Backups".
+#
+# Needs, besides BACKUP_PASSPHRASE:
+#   RESTORE_DATABASE_URL  Connection string of the database to restore INTO —
+#                         a fresh Neon branch, never production. Refuses to run
+#                         if it equals BACKUP_DATABASE_URL.
+
+name: DB restore
+
+on:
+  workflow_dispatch:
+    inputs:
+      backup_run_id:
+        description: 'ID of the DB backup run to restore (the number in its URL: …/actions/runs/<ID>)'
+        required: true
+
+permissions:
+  contents: read
+  actions: read # to download another run's artifact
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check secrets
+        env:
+          RESTORE_DATABASE_URL: ${{ secrets.RESTORE_DATABASE_URL }}
+          BACKUP_DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          if [ -z "$RESTORE_DATABASE_URL" ] || [ -z "$BACKUP_PASSPHRASE" ]; then
+            echo "::error::Set RESTORE_DATABASE_URL (a fresh Neon branch) and BACKUP_PASSPHRASE in the repo's Actions secrets"
+            exit 1
+          fi
+          if [ "$RESTORE_DATABASE_URL" = "$BACKUP_DATABASE_URL" ]; then
+            echo "::error::RESTORE_DATABASE_URL points at production — restore into a new Neon branch instead"
+            exit 1
+          fi
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get install -y postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y postgresql-client
+
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: ${{ inputs.backup_run_id }}
+          github-token: ${{ github.token }}
+          pattern: db-backup-*
+          merge-multiple: true
+
+      - name: Decrypt and restore
+        env:
+          RESTORE_DATABASE_URL: ${{ secrets.RESTORE_DATABASE_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          printf '%s' "$BACKUP_PASSPHRASE" | gpg --batch --quiet --pinentry-mode loopback \
+            --passphrase-fd 0 --decrypt backup.dump.gpg > backup.dump
+          # --clean replaces tables that already exist (e.g. in a branch of production).
+          pg_restore --no-owner --no-acl --clean --if-exists --single-transaction --exit-on-error \
+            -d "$RESTORE_DATABASE_URL" backup.dump
+          rm backup.dump
+          echo "Restored backup from run ${{ inputs.backup_run_id }}"
