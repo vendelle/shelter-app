@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { handleError, setCorsHeaders, hasColumn } from './_lib/util';
 import pool from './_lib/connection';
+import { requireRole } from './_lib/auth';
 import { getRegionForKennel } from './_lib/kennel-regions';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -8,6 +9,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 	if (req.method === 'OPTIONS') return res.status(200).end();
 
 	try {
+		// Reads are public; every change needs an admin.
+		if (req.method !== 'GET' && !(await requireRole(req, res, 'admin'))) return;
+
 		// Check if region column exists (cached per request is fine for serverless)
 		const hasRegionCol = await hasColumn('dogs', 'region');
 

@@ -1,6 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { handleError, setCorsHeaders } from './_lib/util';
 import pool from './_lib/connection';
+import { requireRole } from './_lib/auth';
+import { canEditFamiliarity } from './_lib/permissions';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
 	setCorsHeaders(res);
@@ -20,9 +22,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 		}
 
 		if (req.method === 'PUT') {
+			const user = await requireRole(req, res, 'volunteer');
+			if (!user) return;
 			const { volunteer_id, dog_id, level } = req.body;
 			if (!volunteer_id || !dog_id || !level) {
 				return res.status(400).json({ error: 'volunteer_id, dog_id, and level are required' });
+			}
+			if (!canEditFamiliarity(user, Number(volunteer_id))) {
+				return res.status(403).json({ error: "Only an admin can edit another volunteer's preferences" });
 			}
 			if (!['good', 'difficult', 'never'].includes(level)) {
 				return res.status(400).json({ error: 'level must be one of: good, difficult, never' });
@@ -38,10 +45,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 		}
 
 		if (req.method === 'DELETE') {
+			const user = await requireRole(req, res, 'volunteer');
+			if (!user) return;
 			const volunteerId = req.query.volunteer_id;
 			const dogId = req.query.dog_id;
 			if (!volunteerId || !dogId) {
 				return res.status(400).json({ error: 'volunteer_id and dog_id query params are required' });
+			}
+			if (!canEditFamiliarity(user, Number(volunteerId))) {
+				return res.status(403).json({ error: "Only an admin can edit another volunteer's preferences" });
 			}
 			await pool.query(
 				'DELETE FROM volunteer_dog_familiarity WHERE volunteer_id = $1 AND dog_id = $2',

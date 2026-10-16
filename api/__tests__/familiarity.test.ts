@@ -1,4 +1,12 @@
 import { createMockPool, mockRequest, mockResponse, type MockPool, type MockResponse } from './helpers';
+import { mockAuth, TEST_USERS } from './helpers';
+
+jest.mock('../_lib/auth', () => require('./helpers').authModuleMock);
+
+// Callers are admins unless a test says otherwise.
+beforeEach(() => {
+	mockAuth.user = TEST_USERS.admin;
+});
 
 let mockPool: MockPool;
 
@@ -141,5 +149,52 @@ describe('/api/familiarity', () => {
 
 		expect(res._status).toBe(500);
 		expect(res._body).toEqual({ error: 'DB down' });
+	});
+});
+
+describe('/api/familiarity permissions', () => {
+	let res: MockResponse;
+	const ownVolunteerId = TEST_USERS.volunteer.volunteerId!;
+
+	beforeEach(() => {
+		res = mockResponse();
+		mockPool.query.mockReset();
+		mockPool.query.mockResolvedValue({ rows: [{}] });
+	});
+
+	it('rejects anonymous changes with 401', async () => {
+		mockAuth.user = null;
+		await handler(mockRequest({ method: 'PUT', body: { volunteer_id: ownVolunteerId, dog_id: 10, level: 'good' } }), res);
+		expect(res._status).toBe(401);
+	});
+
+	it("lets a volunteer edit their own preferences", async () => {
+		mockAuth.user = TEST_USERS.volunteer;
+		await handler(mockRequest({ method: 'PUT', body: { volunteer_id: ownVolunteerId, dog_id: 10, level: 'good' } }), res);
+		expect(res._status).toBe(200);
+	});
+
+	it("stops a volunteer editing someone else's preferences", async () => {
+		mockAuth.user = TEST_USERS.volunteer;
+		await handler(mockRequest({ method: 'PUT', body: { volunteer_id: 99, dog_id: 10, level: 'good' } }), res);
+		expect(res._status).toBe(403);
+		expect(mockPool.query).not.toHaveBeenCalled();
+	});
+
+	it("stops a volunteer deleting someone else's preference", async () => {
+		mockAuth.user = TEST_USERS.volunteer;
+		await handler(mockRequest({ method: 'DELETE', query: { volunteer_id: '99', dog_id: '10' } }), res);
+		expect(res._status).toBe(403);
+	});
+
+	it('rejects pending accounts deleting preferences with 403', async () => {
+		mockAuth.user = TEST_USERS.pending;
+		await handler(mockRequest({ method: 'DELETE', query: { volunteer_id: '1', dog_id: '10' } }), res);
+		expect(res._status).toBe(403);
+	});
+
+	it("lets an admin edit anyone's preferences", async () => {
+		await handler(mockRequest({ method: 'DELETE', query: { volunteer_id: '99', dog_id: '10' } }), res);
+		expect(res._status).toBe(204);
 	});
 });

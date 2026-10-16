@@ -3,6 +3,9 @@ import 'package:shelter_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../auth/domain/app_user.dart';
+import '../../auth/presentation/auth_providers.dart';
+import '../../auth/presentation/widgets/account_button.dart';
 import '../../dog_detail/presentation/providers/dog_detail_providers.dart';
 import '../domain/volunteer_assignment.dart';
 import 'providers/planner_providers.dart';
@@ -24,6 +27,8 @@ class PlannerScreen extends ConsumerWidget {
     final detailLevel = ref.watch(plannerDetailLevelProvider);
     final isOverview = detailLevel == PlannerDetailLevel.overview;
     final isCompact = detailLevel != PlannerDetailLevel.detailed;
+    final permissions = ref.watch(permissionsProvider);
+    final editable = permissions.canEditPlanOn(date);
 
     return Scaffold(
       appBar: AppBar(
@@ -67,6 +72,7 @@ class PlannerScreen extends ConsumerWidget {
               ref.read(plannerDetailLevelProvider.notifier).state = next;
             },
           ),
+          const AccountButton(),
         ],
       ),
       body: Column(
@@ -77,6 +83,7 @@ class PlannerScreen extends ConsumerWidget {
             onDateChanged: (newDate) =>
                 ref.read(selectedDateProvider.notifier).state = newDate,
           ),
+          if (!editable) _ReadOnlyBanner(permissions: permissions),
 
           // Main content — horizontal scrolling columns
           Expanded(
@@ -88,12 +95,16 @@ class PlannerScreen extends ConsumerWidget {
                     onRetry: notifier.reload,
                   )
                 : plannerState.assignments.isEmpty
-                ? _EmptyBody(onAddVolunteer: () => _addVolunteer(context, ref))
+                ? _EmptyBody(
+                    onAddVolunteer:
+                        editable ? () => _addVolunteer(context, ref) : null,
+                  )
                 : _ColumnsGrid(
                     plannerState: plannerState,
                     ref: ref,
                     compact: isCompact,
                     overview: isOverview,
+                    editable: editable,
                     onAddVolunteer: () => _addVolunteer(context, ref),
                   ),
           ),
@@ -105,6 +116,7 @@ class PlannerScreen extends ConsumerWidget {
             assignmentCount: plannerState.assignments.length,
             dogCount: plannerState.assignedDogIds.length,
             totalDogs: ref.watch(totalDogCountProvider).valueOrNull ?? 0,
+            editable: editable,
             onToggleAutoSave: notifier.toggleAutoSave,
             onSave: notifier.save,
           ),
@@ -132,6 +144,7 @@ class _ColumnsGrid extends StatelessWidget {
     required this.onAddVolunteer,
     this.compact = true,
     this.overview = false,
+    this.editable = true,
   });
 
   final PlannerState plannerState;
@@ -139,6 +152,7 @@ class _ColumnsGrid extends StatelessWidget {
   final VoidCallback onAddVolunteer;
   final bool compact;
   final bool overview;
+  final bool editable;
 
   @override
   Widget build(BuildContext context) {
@@ -186,6 +200,7 @@ class _ColumnsGrid extends StatelessWidget {
                     relationshipLookup: ref.watch(relationshipLookupProvider).valueOrNull,
                     compact: compact,
                     overview: overview,
+                    editable: editable,
                     onRemoveVolunteer: () =>
                         _confirmRemove(context, ref, assignment),
                     onRemoveDog: (dogId) => ref
@@ -205,7 +220,7 @@ class _ColumnsGrid extends StatelessWidget {
                         ),
                   ),
                 ),
-              if (!overview)
+              if (!overview && editable)
                 SizedBox(
                   width: colWidth,
                   child: _AddVolunteerButton(onTap: onAddVolunteer),
@@ -577,7 +592,9 @@ class _GroupChip extends StatelessWidget {
 
 class _EmptyBody extends StatelessWidget {
   const _EmptyBody({required this.onAddVolunteer});
-  final VoidCallback onAddVolunteer;
+
+  /// Null when the viewer may not edit this day.
+  final VoidCallback? onAddVolunteer;
 
   @override
   Widget build(BuildContext context) {
@@ -598,13 +615,64 @@ class _EmptyBody extends StatelessWidget {
               color: theme.colorScheme.outline,
             ),
           ),
-          const SizedBox(height: 8),
-          FilledButton.tonalIcon(
-            onPressed: onAddVolunteer,
-            icon: const Icon(Icons.person_add_rounded, size: 18),
-            label: Text(AppLocalizations.of(context)!.addFirstVolunteer),
-          ),
+          if (onAddVolunteer != null) ...[
+            const SizedBox(height: 8),
+            FilledButton.tonalIcon(
+              onPressed: onAddVolunteer,
+              icon: const Icon(Icons.person_add_rounded, size: 18),
+              label: Text(AppLocalizations.of(context)!.addFirstVolunteer),
+            ),
+          ],
         ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Read-only notice — says why the plan can't be edited
+// ---------------------------------------------------------------------------
+
+class _ReadOnlyBanner extends StatelessWidget {
+  const _ReadOnlyBanner({required this.permissions});
+
+  final Permissions permissions;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final (message, canAct) = !permissions.isSignedIn
+        ? (l10n.planReadOnlySignedOut, true)
+        : permissions.isPending
+        ? (l10n.planReadOnlyPending, true)
+        : (l10n.planReadOnlyTooOld(Permissions.planEditWindowDays), false);
+
+    return Material(
+      color: theme.colorScheme.surfaceContainerHigh,
+      child: InkWell(
+        onTap: canAct ? () => showAccountSheet(context) : null,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              Icon(
+                Icons.visibility_outlined,
+                size: 18,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  message,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -669,6 +737,7 @@ class _StatusBar extends StatelessWidget {
     required this.assignmentCount,
     required this.dogCount,
     required this.totalDogs,
+    required this.editable,
     required this.onToggleAutoSave,
     required this.onSave,
   });
@@ -678,6 +747,9 @@ class _StatusBar extends StatelessWidget {
   final int assignmentCount;
   final int dogCount;
   final int totalDogs;
+
+  /// Hides the save controls when the viewer can't edit.
+  final bool editable;
   final VoidCallback onToggleAutoSave;
   final VoidCallback onSave;
 
@@ -709,15 +781,17 @@ class _StatusBar extends StatelessWidget {
                 ),
               ),
             ),
-            if (autoSaveEnabled)
-              _SaveStatusIndicator(status: saveStatus)
-            else
-              _ManualSaveButton(status: saveStatus, onSave: onSave),
-            const SizedBox(width: 8),
-            _AutoSaveToggle(
-              enabled: autoSaveEnabled,
-              onToggle: onToggleAutoSave,
-            ),
+            if (editable) ...[
+              if (autoSaveEnabled)
+                _SaveStatusIndicator(status: saveStatus)
+              else
+                _ManualSaveButton(status: saveStatus, onSave: onSave),
+              const SizedBox(width: 8),
+              _AutoSaveToggle(
+                enabled: autoSaveEnabled,
+                onToggle: onToggleAutoSave,
+              ),
+            ],
           ],
         ),
       ),

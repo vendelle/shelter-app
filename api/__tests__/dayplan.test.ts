@@ -1,4 +1,13 @@
 import { createMockPool, mockRequest, mockResponse, type MockPool, type MockResponse } from './helpers';
+import { daysBefore, mockAuth, TEST_USERS } from './helpers';
+import { earliestEditableDate } from '../_lib/permissions';
+
+jest.mock('../_lib/auth', () => require('./helpers').authModuleMock);
+
+// Callers are admins unless a test says otherwise.
+beforeEach(() => {
+	mockAuth.user = TEST_USERS.admin;
+});
 
 let mockPool: MockPool;
 
@@ -419,5 +428,56 @@ describe('/api/dayplan', () => {
 		await handler(mockRequest({ method: 'DELETE' }), res);
 
 		expect(res._status).toBe(405);
+	});
+});
+
+describe('/api/dayplan permissions', () => {
+	let res: MockResponse;
+	const editable = earliestEditableDate();
+	const locked = daysBefore(editable, 1);
+	const body = (walk_date: string) => ({ walk_date, walks: [], volunteer_notes: [] });
+
+	beforeEach(() => {
+		res = mockResponse();
+		mockPool.query.mockReset();
+		mockPool.query.mockResolvedValue({ rows: [] });
+	});
+
+	it('keeps reading open to anonymous visitors', async () => {
+		mockAuth.user = null;
+		await handler(mockRequest({ method: 'GET', query: { date: editable } }), res);
+		expect(res._status).toBe(200);
+	});
+
+	it('rejects anonymous saves with 401', async () => {
+		mockAuth.user = null;
+		await handler(mockRequest({ method: 'POST', body: body(editable) }), res);
+		expect(res._status).toBe(401);
+		expect(mockPool.query).not.toHaveBeenCalled();
+	});
+
+	it('rejects pending accounts with 403', async () => {
+		mockAuth.user = TEST_USERS.pending;
+		await handler(mockRequest({ method: 'POST', body: body(editable) }), res);
+		expect(res._status).toBe(403);
+	});
+
+	it('lets a volunteer save a plan inside the edit window', async () => {
+		mockAuth.user = TEST_USERS.volunteer;
+		await handler(mockRequest({ method: 'POST', body: body(editable) }), res);
+		expect(res._status).toBe(200);
+	});
+
+	it('stops a volunteer saving a plan older than the edit window', async () => {
+		mockAuth.user = TEST_USERS.volunteer;
+		await handler(mockRequest({ method: 'POST', body: body(locked) }), res);
+		expect(res._status).toBe(403);
+		expect(res._body).toEqual({ error: 'Walks older than 3 days can only be changed by an admin' });
+		expect(mockPool.query).not.toHaveBeenCalled();
+	});
+
+	it('lets an admin save a plan older than the edit window', async () => {
+		await handler(mockRequest({ method: 'POST', body: body(locked) }), res);
+		expect(res._status).toBe(200);
 	});
 });

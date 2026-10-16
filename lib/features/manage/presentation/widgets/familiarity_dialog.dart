@@ -6,6 +6,7 @@ import '../../../shared/domain/dog.dart';
 import '../../../shared/domain/volunteer.dart';
 import '../../../planner/domain/planner_dog.dart';
 import '../familiarity_colors.dart';
+import '../../../auth/presentation/auth_providers.dart';
 import '../providers/manage_providers.dart';
 
 class FamiliarityDialog extends ConsumerStatefulWidget {
@@ -27,6 +28,10 @@ class _FamiliarityDialogState extends ConsumerState<FamiliarityDialog> {
     final dogsAsync = ref.watch(managedDogsProvider);
     final familiarityAsync =
         ref.watch(familiarityProvider(widget.volunteer.id));
+    // Everyone can look; only the volunteer themself or an admin can change.
+    final canEdit = ref
+        .watch(permissionsProvider)
+        .canEditFamiliarityOf(widget.volunteer.id);
 
     return AlertDialog(
       title: Text(AppLocalizations.of(context)!.dogFamiliarity(widget.volunteer.fullName)),
@@ -53,8 +58,9 @@ class _FamiliarityDialogState extends ConsumerState<FamiliarityDialog> {
                     return _DogFamiliarityRow(
                       dog: dog,
                       level: level,
-                      onChanged: (newLevel) =>
-                          _onLevelChanged(dog.id, newLevel),
+                      onChanged: canEdit
+                          ? (newLevel) => _onLevelChanged(dog.id, newLevel)
+                          : null,
                     );
                   },
                 );
@@ -116,7 +122,17 @@ class _DogFamiliarityRow extends StatelessWidget {
 
   final Dog dog;
   final DogFamiliarityLevel level;
-  final ValueChanged<DogFamiliarityLevel> onChanged;
+  /// Null makes the row read-only.
+  final ValueChanged<DogFamiliarityLevel>? onChanged;
+
+  /// Tapping the selected level clears it.
+  VoidCallback? _toggle(DogFamiliarityLevel tapped) {
+    final onChanged = this.onChanged;
+    if (onChanged == null) return null;
+    return () => onChanged(
+          level == tapped ? DogFamiliarityLevel.unknown : tapped,
+        );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -143,11 +159,7 @@ class _DogFamiliarityRow extends StatelessWidget {
             color: familiarityColor(DogFamiliarityLevel.good),
             icon: Icons.sentiment_very_satisfied,
             tooltip: AppLocalizations.of(context)!.allGood,
-            onTap: () => onChanged(
-              level == DogFamiliarityLevel.good
-                  ? DogFamiliarityLevel.unknown
-                  : DogFamiliarityLevel.good,
-            ),
+            onTap: _toggle(DogFamiliarityLevel.good),
           ),
           const SizedBox(width: 4),
           _LevelButton(
@@ -156,11 +168,7 @@ class _DogFamiliarityRow extends StatelessWidget {
             color: familiarityColor(DogFamiliarityLevel.difficult),
             icon: Icons.sentiment_neutral,
             tooltip: AppLocalizations.of(context)!.difficultButPossible,
-            onTap: () => onChanged(
-              level == DogFamiliarityLevel.difficult
-                  ? DogFamiliarityLevel.unknown
-                  : DogFamiliarityLevel.difficult,
-            ),
+            onTap: _toggle(DogFamiliarityLevel.difficult),
           ),
           const SizedBox(width: 4),
           _LevelButton(
@@ -169,11 +177,7 @@ class _DogFamiliarityRow extends StatelessWidget {
             color: familiarityColor(DogFamiliarityLevel.never),
             icon: Icons.sentiment_very_dissatisfied,
             tooltip: AppLocalizations.of(context)!.noChance,
-            onTap: () => onChanged(
-              level == DogFamiliarityLevel.never
-                  ? DogFamiliarityLevel.unknown
-                  : DogFamiliarityLevel.never,
-            ),
+            onTap: _toggle(DogFamiliarityLevel.never),
           ),
         ],
       ),
@@ -196,7 +200,7 @@ class _LevelButton extends StatelessWidget {
   final Color color;
   final IconData icon;
   final String tooltip;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {

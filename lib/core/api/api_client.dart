@@ -7,12 +7,29 @@ import 'package:http/http.dart' as http;
 ///
 /// On web, requests go to the same origin (`/api/...`).
 /// On mobile local dev, point to your local machine or Vercel URL.
+///
+/// When signed in, [idToken] supplies the Firebase ID token sent as
+/// `Authorization: Bearer …`; the API uses it for edit permissions.
 class ApiClient {
-  ApiClient({String? baseUrl})
-      : _baseUrl = baseUrl ?? const String.fromEnvironment('API_BASE_URL');
+  ApiClient({
+    String? baseUrl,
+    Future<String?> Function()? idToken,
+    http.Client? client,
+  })  : _baseUrl = baseUrl ?? const String.fromEnvironment('API_BASE_URL'),
+        _idToken = idToken,
+        _client = client ?? http.Client();
 
   final String _baseUrl;
-  final http.Client _client = http.Client();
+  final Future<String?> Function()? _idToken;
+  final http.Client _client;
+
+  Future<Map<String, String>> _headers() async {
+    final token = await _idToken?.call();
+    return {
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
+  }
 
   Uri _uri(String path, [Map<String, String>? queryParams]) {
     final url = '$_baseUrl$path';
@@ -27,7 +44,7 @@ class ApiClient {
       {Map<String, String>? queryParams}) async {
     final response = await _client.get(
       _uri(path, queryParams),
-      headers: {'Content-Type': 'application/json'},
+      headers: await _headers(),
     );
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return jsonDecode(response.body);
@@ -38,7 +55,7 @@ class ApiClient {
   Future<dynamic> post(String path, {Object? body}) async {
     final response = await _client.post(
       _uri(path),
-      headers: {'Content-Type': 'application/json'},
+      headers: await _headers(),
       body: body != null ? jsonEncode(body) : null,
     );
     if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -50,7 +67,7 @@ class ApiClient {
   Future<dynamic> patch(String path, {Object? body}) async {
     final response = await _client.patch(
       _uri(path),
-      headers: {'Content-Type': 'application/json'},
+      headers: await _headers(),
       body: body != null ? jsonEncode(body) : null,
     );
     if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -63,7 +80,7 @@ class ApiClient {
       {Map<String, String>? queryParams, Object? body}) async {
     final response = await _client.put(
       _uri(path, queryParams),
-      headers: {'Content-Type': 'application/json'},
+      headers: await _headers(),
       body: body != null ? jsonEncode(body) : null,
     );
     if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -77,7 +94,7 @@ class ApiClient {
       {Map<String, String>? queryParams}) async {
     final response = await _client.delete(
       _uri(path, queryParams),
-      headers: {'Content-Type': 'application/json'},
+      headers: await _headers(),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(response.statusCode, response.body);
@@ -108,6 +125,15 @@ class ApiException implements Exception {
   final String body;
 
   ApiException(this.statusCode, this.body);
+
+  /// The API's `{"error": "..."}` message, falling back to the raw body.
+  String get message {
+    try {
+      final error = (jsonDecode(body) as Map<String, dynamic>)['error'];
+      if (error is String) return error;
+    } catch (_) {}
+    return body;
+  }
 
   @override
   String toString() => 'ApiException($statusCode): $body';

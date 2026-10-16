@@ -1,6 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { handleError, setCorsHeaders, hasColumn } from './_lib/util';
 import pool from './_lib/connection';
+import { requireRole } from './_lib/auth';
+import { canEditWalkDate, PLAN_EDIT_WINDOW_DAYS } from './_lib/permissions';
 import { getRegionForKennel } from './_lib/kennel-regions';
 
 /**
@@ -100,6 +102,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 		}
 
 		if (req.method === 'POST') {
+			const user = await requireRole(req, res, 'volunteer');
+			if (!user) return;
 			const { walk_date, walks, volunteer_notes } = req.body;
 
 			if (!walk_date || !Array.isArray(walks)) {
@@ -120,6 +124,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 				)
 			) {
 				return res.status(400).json({ error: 'Invalid walk data' });
+			}
+
+			if (!canEditWalkDate(user, walk_date)) {
+				return res.status(403).json({ error: `Walks older than ${PLAN_EDIT_WINDOW_DAYS} days can only be changed by an admin` });
 			}
 
 			await pool.query('BEGIN');

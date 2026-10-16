@@ -239,5 +239,61 @@
   },
   "noVisitsInPast6Months": "No visits in the past 6 months",
   "archivedBadge": "Archived",
-  "noActiveDogs": "No active dogs"
+  "noActiveDogs": "No active dogs",
+
+  "signIn": "Sign in",
+  "signInWithGoogle": "Sign in with Google",
+  "signOut": "Sign out",
+  "account": "Account",
+  "signInExplanation": "Anyone can view the plans. Sign in with your Google account to edit them.",
+  "signInPopupBlocked": "The browser blocked the Google sign-in window. Allow pop-ups for this site and try again.",
+  "signInUnauthorizedDomain": "Sign-in isn't enabled for this address yet. Please tell whoever runs the app.",
+  "signInNetworkError": "No connection. Check your internet and try again.",
+  "signInFailed": "Sign-in failed ({code}).",
+  "@signInFailed": {
+    "placeholders": {
+      "code": { "type": "String" }
+    }
+  },
+  "openInBrowserTitle": "Open in your browser",
+  "openInBrowserMessage": "Google doesn't allow signing in inside Facebook or Messenger. Open this page in Chrome or Safari (⋯ menu → Open in browser), or copy the link and paste it there.",
+  "copyLink": "Copy link",
+  "linkCopied": "Link copied",
+  "accessLevel": "Access",
+  "accountPendingMessage": "Your account is waiting for an admin to approve it. Until then you can view the plans.",
+  "accountLoadFailed": "Couldn't load your account: {error}",
+  "@accountLoadFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "userRolePending": "Waiting for approval",
+  "userRoleVolunteer": "Volunteer",
+  "userRoleAdmin": "Admin",
+  "userRoleSuperAdmin": "Super admin",
+  "planReadOnlySignedOut": "View only — tap to sign in and edit the plan.",
+  "planReadOnlyPending": "View only — your account is waiting for approval.",
+  "planReadOnlyTooOld": "View only — walks older than {days} days can only be changed by an admin.",
+  "@planReadOnlyTooOld": {
+    "placeholders": {
+      "days": { "type": "int" }
+    }
+  },
+  "usersTab": "Users",
+  "inviteUser": "Invite",
+  "inviteUserTitle": "Invite user",
+  "inviteUserExplanation": "Enter the person's Google account email. They get this access as soon as they sign in.",
+  "googleEmail": "Google email",
+  "invalidEmail": "Enter a valid email",
+  "linkedVolunteerProfile": "Volunteer profile",
+  "none": "None",
+  "invitePending": "Invited, hasn't signed in yet",
+  "you": "you",
+  "deleteUserTitle": "Remove {name}?",
+  "@deleteUserTitle": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "deleteUserContent": "They lose their access. If they sign in again, they'll wait for approval like a new account."
 }
