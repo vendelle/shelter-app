@@ -71,14 +71,18 @@ void main() {
   testWidgets('shows what the shelter website says', (tester) async {
     await pumpTab(tester, _profile());
 
-    expect(find.text('Ze strony schroniska'), findsOneWidget);
     expect(find.text('Do adopcji'), findsOneWidget);
+    expect(find.text('K: 412 · R12'), findsOneWidget);
+    expect(find.text('Samiec'), findsOneWidget);
     expect(find.text('24,5 kg'), findsOneWidget);
-    expect(find.text('20.06.2026 · zwrot z adopcji'), findsOneWidget);
-    expect(find.text('430 R12 (domek)'), findsOneWidget);
+    expect(find.text('Tak'), findsOneWidget);
+    expect(find.textContaining('(20.06.2026)'), findsOneWidget);
+    expect(find.text('zwrot z adopcji'), findsOneWidget);
+    expect(find.text('boks na stronie: 430 R12 (domek)'), findsOneWidget);
     expect(find.text('Amigo to mądry pies.'), findsOneWidget);
     expect(find.text('Zobacz na stronie schroniska'), findsOneWidget);
-    expect(find.text('odświeżono przed chwilą'), findsOneWidget);
+    expect(find.text('Ze strony schroniska · odświeżono przed chwilą'),
+        findsOneWidget);
   });
 
   testWidgets('says when the website has no such dog', (tester) async {
@@ -104,13 +108,13 @@ void main() {
         _profile(fetchedAt: DateTime.now().subtract(const Duration(hours: 2))),
         afterRefresh: _profile(),
       );
-      expect(find.text('odświeżono 2 godz. temu'), findsOneWidget);
+      expect(find.textContaining('odświeżono 2 godz. temu'), findsOneWidget);
 
       await tester.tap(refreshButton());
       await tester.pumpAndSettle();
 
       expect(repo.refreshCalls, 1);
-      expect(find.text('odświeżono przed chwilą'), findsOneWidget);
+      expect(find.textContaining('odświeżono przed chwilą'), findsOneWidget);
     });
 
     testWidgets('explains when the website is down', (tester) async {
@@ -147,7 +151,7 @@ void main() {
 
       expect(repo.resolved, [true]);
       expect(find.text('Na stronie: 430 R12 (domek)'), findsNothing);
-      expect(find.text('K: 430'), findsOneWidget);
+      expect(find.text('K: 430 · R12'), findsOneWidget);
     });
 
     testWidgets('lets an admin ignore it', (tester) async {
@@ -157,7 +161,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(repo.resolved, [false]);
-      expect(find.text('K: 412'), findsOneWidget);
+      expect(find.text('K: 412 · R12'), findsOneWidget);
     });
 
     testWidgets('is not shown to volunteers', (tester) async {

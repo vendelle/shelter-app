@@ -321,16 +321,10 @@
     }
   },
   "shelterNoPage": "This shelter ID doesn't match a page on the shelter website.",
-  "shelterStatus": "Status",
   "shelterAge": "Age",
   "shelterSex": "Sex",
   "shelterWeight": "Weight",
-  "shelterBreed": "Breed",
-  "shelterColor": "Colour",
   "shelterNeutered": "Neutered",
-  "shelterArrival": "At the shelter since",
-  "shelterDeparture": "Left the shelter",
-  "shelterLocation": "Kennel (website)",
   "yes": "Yes",
   "no": "No",
   "ageYearsMonths": "{years, plural, one{1 year} other{{years} years}}, {months} mo.",
@@ -365,5 +359,37 @@
     "placeholders": {
       "count": { "type": "int" }
     }
-  }
+  },
+  "shelterSectionInShelter": "At the shelter",
+  "shelterSectionLooks": "Looks",
+  "shelterSectionDescription": "Description",
+  "shelterSince": "for {duration} (since {date})",
+  "@shelterSince": {
+    "placeholders": {
+      "duration": { "type": "String" },
+      "date": { "type": "String" }
+    }
+  },
+  "shelterLeft": "left on {date}",
+  "@shelterLeft": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "shelterKennelOnSite": "kennel on the website: {location}",
+  "@shelterKennelOnSite": {
+    "placeholders": {
+      "location": { "type": "String" }
+    }
+  },
+  "sexMale": "Male",
+  "sexFemale": "Female",
+  "durationDays": "{days, plural, one{1 day} other{{days} days}}",
+  "@durationDays": {
+    "placeholders": {
+      "days": { "type": "int" }
+    }
+  },
+  "descriptionShowMore": "Show more",
+  "descriptionShowLess": "Show less"
 }

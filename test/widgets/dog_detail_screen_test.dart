@@ -2,14 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shelter_app/features/dog_detail/domain/dog_walk_history.dart';
+import 'package:shelter_app/features/dog_detail/domain/shelter_profile.dart';
 import 'package:shelter_app/features/dog_detail/domain/walk_partner.dart';
 import 'package:shelter_app/features/dog_detail/presentation/dog_detail_screen.dart';
 import 'package:shelter_app/features/dog_detail/presentation/providers/dog_detail_providers.dart';
 import 'package:shelter_app/l10n/app_localizations.dart';
 
+import '../fakes/fake_dog_detail_repository.dart';
+
 Widget _buildTestWidget(Widget child, {List<Override> overrides = const []}) {
   return ProviderScope(
-    overrides: overrides,
+    overrides: [
+      // No shelter-website data, so the profile tab shows only our own.
+      dogDetailRepositoryProvider.overrideWithValue(
+          FakeDogDetailRepository(profile: const ShelterProfile(dogId: 0))),
+      ...overrides,
+    ],
     child: MaterialApp(
       // NoSplash avoids a shader-loading crash on tester.tap() in this test
       // environment (unrelated to app behavior — ink_sparkle.frag can't be
@@ -48,14 +56,11 @@ void main() {
       await tester.tap(find.text('Profil'));
       await tester.pumpAndSettle();
 
-      // Dog name displayed (in AppBar + profile tab header)
-      expect(find.text('Burek'), findsNWidgets(2));
-      // Shelter ID displayed inline (not as chip)
-      expect(find.text('S-123'), findsOneWidget);
-      // Kennel shown as chip
-      expect(find.text('K: 4A'), findsOneWidget);
-      // Region shown as chip
-      expect(find.text('Dolna'), findsOneWidget);
+      // Dog name in the AppBar, and with the shelter ID inline in the header
+      expect(find.text('Burek'), findsOneWidget);
+      expect(find.text('Burek  S-123'), findsOneWidget);
+      // Kennel and region on one line
+      expect(find.text('K: 4A · Dolna'), findsOneWidget);
     });
 
     testWidgets('hides shelter ID when null', (tester) async {
