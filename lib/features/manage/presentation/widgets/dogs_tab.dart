@@ -5,8 +5,13 @@ import 'package:go_router/go_router.dart';
 
 import '../../../shared/domain/dog.dart';
 import '../../../auth/presentation/auth_providers.dart';
+import '../../../dog_detail/presentation/providers/dog_detail_providers.dart';
 import '../providers/manage_providers.dart';
 import 'dog_form_dialog.dart';
+
+/// Show only dogs whose kennel/region on the shelter website differs.
+final _onlyLocationSuggestionsProvider =
+    StateProvider.autoDispose<bool>((ref) => false);
 
 class DogsTab extends ConsumerWidget {
   const DogsTab({super.key});
@@ -16,6 +21,13 @@ class DogsTab extends ConsumerWidget {
     final showArchived = ref.watch(showArchivedDogsProvider);
     final dogsAsync = ref.watch(managedDogsProvider);
     final canManage = ref.watch(permissionsProvider).canManageData;
+    // Website kennel suggestions are for admins to resolve.
+    final suggestionIds = canManage && !showArchived
+        ? ref.watch(locationSuggestionDogIdsProvider).valueOrNull ??
+            const <int>{}
+        : const <int>{};
+    final onlySuggestions = suggestionIds.isNotEmpty &&
+        ref.watch(_onlyLocationSuggestionsProvider);
     final l10n = AppLocalizations.of(context)!;
 
     return Column(
@@ -24,6 +36,16 @@ class DogsTab extends ConsumerWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Row(
             children: [
+              if (suggestionIds.isNotEmpty)
+                FilterChip(
+                  avatar: const Icon(Icons.swap_horiz_rounded, size: 18),
+                  label: Text(
+                      l10n.locationSuggestionsFilter(suggestionIds.length)),
+                  selected: onlySuggestions,
+                  onSelected: (selected) => ref
+                      .read(_onlyLocationSuggestionsProvider.notifier)
+                      .state = selected,
+                ),
               const Spacer(),
               SegmentedButton<bool>(
                 segments: [
@@ -43,7 +65,10 @@ class DogsTab extends ConsumerWidget {
           child: dogsAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, _) => Center(child: Text('Error: $e')),
-            data: (dogs) {
+            data: (allDogs) {
+              final dogs = onlySuggestions
+                  ? allDogs.where((d) => suggestionIds.contains(d.id)).toList()
+                  : allDogs;
               if (dogs.isEmpty) {
                 return Center(
                   child: Text(showArchived
