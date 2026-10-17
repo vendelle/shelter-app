@@ -1,6 +1,7 @@
 import '../../../core/api/api_client.dart';
 import '../domain/dog_relationship.dart';
 import '../domain/dog_walk_history.dart';
+import '../domain/shelter_profile.dart';
 import '../domain/walk_partner.dart';
 
 abstract class DogDetailRepository {
@@ -15,6 +16,19 @@ abstract class DogDetailRepository {
   Future<void> deleteRelationship(int dogId1, int dogId2);
   Future<List<DogWalkHistory>> getWalkHistory(int dogId);
   Future<List<WalkPartner>> getWalkPartners(int dogId);
+
+  /// The shelter website's data, as stored (fetched on first view).
+  Future<ShelterProfile> getShelterProfile(int dogId);
+
+  /// Fetches from the website again — a no-op within the 5-minute cooldown.
+  Future<ShelterProfile> refreshShelterProfile(int dogId);
+
+  /// Admin: take ([accept]) or dismiss the website's kennel/region.
+  Future<ShelterProfile> resolveLocationSuggestion(int dogId,
+      {required bool accept});
+
+  /// IDs of active dogs whose website kennel/region differs from ours.
+  Future<Set<int>> getLocationSuggestionDogIds();
 }
 
 class ApiDogDetailRepository implements DogDetailRepository {
@@ -83,5 +97,39 @@ class ApiDogDetailRepository implements DogDetailRepository {
     return data
         .map((j) => WalkPartner.fromJson(j as Map<String, dynamic>))
         .toList();
+  }
+
+  @override
+  Future<ShelterProfile> getShelterProfile(int dogId) async {
+    final data =
+        await _api.get('/api/dogs', queryParams: {'shelter': '$dogId'});
+    return ShelterProfile.fromJson(data as Map<String, dynamic>);
+  }
+
+  @override
+  Future<ShelterProfile> refreshShelterProfile(int dogId) async {
+    final data =
+        await _api.post('/api/dogs', queryParams: {'shelter': '$dogId'});
+    return ShelterProfile.fromJson(data as Map<String, dynamic>);
+  }
+
+  @override
+  Future<ShelterProfile> resolveLocationSuggestion(int dogId,
+      {required bool accept}) async {
+    final data = await _api.put(
+      '/api/dogs',
+      queryParams: {'shelter': '$dogId'},
+      body: {'action': accept ? 'accept' : 'ignore'},
+    );
+    return ShelterProfile.fromJson(data as Map<String, dynamic>);
+  }
+
+  @override
+  Future<Set<int>> getLocationSuggestionDogIds() async {
+    final data = await _api.get('/api/dogs',
+        queryParams: {'shelter': 'suggestions'}) as List;
+    return {
+      for (final s in data) (s as Map<String, dynamic>)['dog_id'] as int,
+    };
   }
 }

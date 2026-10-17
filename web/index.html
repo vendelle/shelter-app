@@ -24,6 +24,12 @@
   >
   <meta name="description" content="Shelter Walk Tracker">
 
+  <!-- Don't tell other sites which page a request comes from. The shelter's
+       image server (Cloudflare hotlink protection) refuses photos embedded on
+       other sites; volunteers see them here only behind sign-in. Safe for
+       Firebase Auth: its API key isn't referrer-restricted. -->
+  <meta name="referrer" content="no-referrer">
+
   <style>
     html,
     body {

@@ -52,9 +52,10 @@ class ApiClient {
     throw ApiException(response.statusCode, response.body);
   }
 
-  Future<dynamic> post(String path, {Object? body}) async {
+  Future<dynamic> post(String path,
+      {Map<String, String>? queryParams, Object? body}) async {
     final response = await _client.post(
-      _uri(path),
+      _uri(path, queryParams),
       headers: await _headers(),
       body: body != null ? jsonEncode(body) : null,
     );

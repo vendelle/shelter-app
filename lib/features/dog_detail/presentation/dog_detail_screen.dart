@@ -29,9 +29,6 @@ class DogDetailScreen extends StatelessWidget {
 
     return DefaultTabController(
       length: 3,
-      // Buddies is the default tab for now — it's what volunteers check
-      // most when opening a dog's profile.
-      initialIndex: 1,
       child: Scaffold(
         appBar: AppBar(
           title: Text(dogName),
@@ -46,6 +43,7 @@ class DogDetailScreen extends StatelessWidget {
         body: TabBarView(
           children: [
             ProfileTab(
+              dogId: dogId,
               dogName: dogName,
               shelterId: shelterId,
               kennel: kennel,

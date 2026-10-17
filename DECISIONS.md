@@ -341,3 +341,25 @@ Within each feature, we use a lightweight `data/domain/presentation` split:
 **Why drag handles (not long-press)?**
 - More discoverable — users see the handle immediately.
 - Avoids conflict with existing long-press to remove and tap to show dog actions.
+
+---
+
+## Shelter Website Data: Stored Copy, Never Overwrites Ours
+
+**Decision**: Read each dog's page data from the shelter website's public WordPress REST API (`/wp-json/wp/v2/animal?slug=…`) and store it in `dog_shelter_profiles`, separate from `dogs`. Refreshed nightly by Vercel Cron and on demand.
+
+**Why a stored copy, not a live lookup?**
+- Profiles load instantly and keep working when the shelter site is slow or down (a failed refresh returns the stored data with `refresh_failed`).
+- Changes can be detected against our data — e.g. a new kennel on the website.
+- The site gets one batched request per 100 dogs per night instead of a request per profile view.
+
+**Why a separate table?**
+- `dogs` is our data and the website only informs: a differing kennel/region is shown to admins to *accept* or *ignore*, never applied automatically. Ignoring remembers that exact website value, so the suggestion returns if the site changes again; the decision is shared by all admins.
+- The table can be emptied and rebuilt from the website at any time.
+
+**Details:**
+- "Odśwież teraz" is open to every volunteer, but the API re-fetches a dog at most every 5 minutes.
+- Photos aren't copied — we store the link to the shelter's image (`main_photo`, which their page shows first, else the first gallery photo). Their image server sends no CORS headers, so Flutter web shows it as an `<img>` element (`WebHtmlElementStrategy.prefer`). Their Cloudflare hotlink protection refuses images embedded on other sites, so `web/index.html` sets `<meta name="referrer" content="no-referrer">` — the photos are only shown to signed-in volunteers of the shelter's own group, the site's maintainer couldn't be reached to allow our domain, and the images come from their Cloudflare cache. If the shelter gets a web admin again, ask them to allow the app's domain and drop the meta tag. (Fine for Firebase Auth: its API key isn't referrer-restricted — if it ever is, sign-in breaks with this tag.)
+- The website's data has gaps (0.1 kg is its "never weighed" placeholder and is treated as unknown), so it's labelled "Ze strony schroniska" rather than shown as fact.
+- Lives on `/api/dogs?shelter=…` (logic in `api/_lib/shelter-profiles.ts`) to keep a function slot free.
+
