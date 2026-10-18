@@ -31,11 +31,12 @@ Goal: people sign in and immediately have something useful to do.
 
 ### 1.4 Release checklist (`main` → `asy-production`)
 1. Back up the production DB (Actions → DB backup → Run workflow).
-2. Run `api/migrations/007_users.sql` and `008_dog_shelter_profiles.sql` on the production DB.
+2. Run `api/migrations/007_users.sql` and `009_exporter_role.sql` on the production DB (`008_dog_shelter_profiles.sql` is already done).
 3. Vercel (asy, Production): `SUPER_ADMIN_EMAILS`, `CRON_SECRET`.
 4. Firebase → Authentication → Authorized domains: the production domain.
 5. Open a PR `main` → `asy-production`, merge.
-6. Invite volunteers (Manage → Users) and announce.
+6. Fill the dog data once, so the sign-in screen has photos right away: Vercel (asy) → Settings → Cron Jobs → Run. The cron runs only on the production deployment, never on previews; after this it runs nightly.
+7. Invite volunteers (Manage → Users) and announce.
 
 ## Release 2
 
