@@ -273,6 +273,34 @@ describe('/api/dogs?shelter=', () => {
 		});
 	});
 
+	describe('GET photos (sign-in screen)', () => {
+		it('is open to anonymous visitors and returns only photo URLs', async () => {
+			mockAuth.user = null;
+			mockPool._setResults([{ rows: [{ photo_url: 'https://images.example/1.jpg' }, { photo_url: 'https://images.example/2.jpg' }] }]);
+			await handler(shelter('photos'), res);
+
+			expect(res._status).toBe(200);
+			expect(res._body).toEqual(['https://images.example/1.jpg', 'https://images.example/2.jpg']);
+			expect(res._headers['Cache-Control']).toContain('s-maxage=3600');
+		});
+
+		it('picks 12 random active dogs that have a photo', async () => {
+			await handler(shelter('photos'), res);
+
+			const [sql, params] = mockPool.query.mock.calls[0];
+			expect(sql).toContain('archived IS NOT TRUE');
+			expect(sql).toContain('photo_url IS NOT NULL');
+			expect(sql).toContain('random()');
+			expect(params).toEqual([12]);
+		});
+
+		it('only supports GET', async () => {
+			mockAuth.user = null;
+			await handler(shelter('photos', { method: 'POST' }), res);
+			expect(res._status).toBe(405);
+		});
+	});
+
 	describe('GET sync (nightly cron)', () => {
 		const originalEnv = process.env;
 		const cronRequest = (authorization?: string) =>

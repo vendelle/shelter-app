@@ -29,6 +29,19 @@ final permissionsProvider = Provider<Permissions>((ref) {
   return Permissions(ref.watch(currentUserProvider).valueOrNull);
 });
 
+/// Photo URLs of a few current dogs for the sign-in screen (a public
+/// endpoint). Empty when they can't be loaded — the screen works without.
+final welcomePhotosProvider = FutureProvider<List<String>>((ref) async {
+  try {
+    final data = await ref
+        .read(apiClientProvider)
+        .get('/api/dogs', queryParams: {'shelter': 'photos'}) as List;
+    return data.cast<String>();
+  } catch (_) {
+    return const [];
+  }
+});
+
 /// All accounts and invites (user management, super_admin only).
 final userAccountsProvider =
     FutureProvider.autoDispose<List<UserAccount>>((ref) {

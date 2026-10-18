@@ -3,13 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shelter_app/l10n/app_localizations.dart';
 
 import '../auth_providers.dart';
+import '../in_app_browser.dart';
 import 'account_button.dart';
 import 'export_only_screen.dart';
+import 'welcome_screen.dart';
 
-/// Shows the app only to approved accounts. Everyone else — signed out or
-/// waiting for approval — gets just the [AccountPanel], so volunteers'
-/// names and walk history aren't public. The shelter's export-only accounts
-/// get just the [ExportOnlyScreen].
+/// Shows the app only to approved accounts, so volunteers' names and walk
+/// history aren't public. Signed-out visitors get the [WelcomeScreen];
+/// accounts waiting for approval, and in-app browsers where Google sign-in
+/// doesn't work, get just the [AccountPanel]. The shelter's export-only
+/// accounts get just the [ExportOnlyScreen].
 class AuthGate extends ConsumerWidget {
   const AuthGate({super.key, required this.child});
 
@@ -28,6 +31,11 @@ class AuthGate extends ConsumerWidget {
       );
     }
 
+    final account = ref.watch(currentUserProvider);
+    if (!account.hasError && account.valueOrNull == null && !isInAppBrowser()) {
+      return const WelcomeScreen();
+    }
+
     final theme = Theme.of(context);
     return Scaffold(
       body: SafeArea(
@@ -39,7 +47,11 @@ class AuthGate extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.pets, size: 48, color: theme.colorScheme.primary),
+                  Image.asset(
+                    'assets/welcome-logo.png',
+                    height: 48,
+                    excludeFromSemantics: true,
+                  ),
                   const SizedBox(height: 12),
                   Text(
                     AppLocalizations.of(context)!.appTitle,

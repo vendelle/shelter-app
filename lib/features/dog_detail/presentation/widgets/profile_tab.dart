@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/api/api_client.dart';
 import '../../../auth/presentation/auth_providers.dart';
+import '../../../shared/presentation/shelter_image.dart';
 import '../../domain/shelter_profile.dart';
 import '../providers/dog_detail_providers.dart';
 import 'detail_tab_scaffold.dart';
@@ -219,8 +220,8 @@ class _Photo extends StatelessWidget {
             ? placeholder
             : InkWell(
                 onTap: () => _showFullSize(context, url),
-                child: _shelterImage(url, BoxFit.cover,
-                    error: placeholder),
+                child: ShelterImage(url,
+                    fit: BoxFit.cover, error: placeholder),
               ),
       ),
     );
@@ -233,22 +234,11 @@ class _Photo extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: GestureDetector(
           onTap: () => Navigator.pop(ctx),
-          child: _shelterImage(url, BoxFit.contain),
+          child: ShelterImage(url, fit: BoxFit.contain),
         ),
       ),
     );
   }
-}
-
-Widget _shelterImage(String url, BoxFit fit, {Widget? error}) {
-  return Image.network(
-    url,
-    fit: fit,
-    // The shelter's image server sends no CORS headers, which Flutter web
-    // needs to draw fetched bytes — an <img> element doesn't.
-    webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
-    errorBuilder: (_, _, _) => error ?? const SizedBox.shrink(),
-  );
 }
 
 class _StatusChip extends StatelessWidget {

@@ -18,7 +18,7 @@ class ShelterApp extends ConsumerWidget {
     final locale = ref.watch(localeProvider);
 
     return MaterialApp.router(
-      title: 'Shelter Walk Tracker',
+      title: 'Asowa Psiappka',
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: themeMode,
