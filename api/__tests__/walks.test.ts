@@ -102,6 +102,32 @@ describe('GET /api/walks', () => {
 	});
 
 	describe('CSV export', () => {
+		it('lets the export-only role download the CSV', async () => {
+			mockAuth.user = TEST_USERS.exporter;
+			mockPool._setResults([{ rows: [] }]);
+
+			await handler(mockRequest({ method: 'GET', query: { format: 'csv', from: '2025-01-01', to: '2025-03-31' } }), res);
+
+			expect(res._status).toBe(200);
+			expect(res._headers['Content-Type']).toBe('text/csv; charset=utf-8');
+		});
+
+		it('rejects pending accounts', async () => {
+			mockAuth.user = TEST_USERS.pending;
+
+			await handler(mockRequest({ method: 'GET', query: { format: 'csv', from: '2025-01-01', to: '2025-03-31' } }), res);
+
+			expect(res._status).toBe(403);
+		});
+
+		it('rejects the export-only role outside the CSV export', async () => {
+			mockAuth.user = TEST_USERS.exporter;
+
+			await handler(mockRequest({ method: 'GET', query: {} }), res);
+
+			expect(res._status).toBe(403);
+		});
+
 		it('returns 400 when from/to params are missing', async () => {
 			await handler(mockRequest({ method: 'GET', query: { format: 'csv' } }), res);
 

@@ -27,6 +27,11 @@ void main() {
       expect(UserRole.admin.isAtLeast(UserRole.volunteer), isTrue);
       expect(UserRole.volunteer.isAtLeast(UserRole.admin), isFalse);
     });
+
+    test('keeps the export-only role off the ladder', () {
+      expect(UserRole.exporter.isAtLeast(UserRole.pending), isFalse);
+      expect(UserRole.superAdmin.isAtLeast(UserRole.exporter), isFalse);
+    });
   });
 
   test('AppUser.fromJson reads the API shape', () {
@@ -79,6 +84,15 @@ void main() {
       final p = Permissions(_user(UserRole.pending, volunteerId: 1));
       expect(p.isPending, isTrue);
       expect(p.canView, isFalse);
+      expect(p.canEditPlanOn(today, today: today), isFalse);
+      expect(p.canEditFamiliarityOf(1), isFalse);
+    });
+
+    test('export-only accounts see nothing but the export', () {
+      final p = Permissions(_user(UserRole.exporter));
+      expect(p.isExporter, isTrue);
+      expect(p.canView, isFalse);
+      expect(p.canManageData, isFalse);
       expect(p.canEditPlanOn(today, today: today), isFalse);
       expect(p.canEditFamiliarityOf(1), isFalse);
     });

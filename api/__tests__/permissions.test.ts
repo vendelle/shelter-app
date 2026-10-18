@@ -20,6 +20,11 @@ describe('permissions', () => {
 		it('treats anonymous as having no role', () => {
 			expect(hasRole(null, 'pending')).toBe(false);
 		});
+
+		it('never lets the export-only role through the ladder', () => {
+			expect(hasRole(TEST_USERS.exporter, 'pending')).toBe(false);
+			expect(hasRole(TEST_USERS.exporter, 'volunteer')).toBe(false);
+		});
 	});
 
 	it('isRole accepts only known roles', () => {

@@ -314,4 +314,11 @@ describe('/api/dogs permissions', () => {
 		await handler(mockRequest({ method: 'PUT', query: { id: '1' } }), res);
 		expect(res._status).toBe(403);
 	});
+
+	it('rejects the export-only role with 403', async () => {
+		mockAuth.user = TEST_USERS.exporter;
+		const res = mockResponse();
+		await handler(mockRequest({ method: 'GET', query: {} }), res);
+		expect(res._status).toBe(403);
+	});
 });

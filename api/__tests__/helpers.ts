@@ -8,7 +8,7 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { AuthUser } from '../_lib/auth';
-import { hasRole, type Role } from '../_lib/permissions';
+import { hasRole, type LadderRole, type Role } from '../_lib/permissions';
 
 // ---------------------------------------------------------------------------
 // Mock Pool
@@ -112,19 +112,20 @@ export const TEST_USERS: Record<Role, AuthUser> = {
 	volunteer: { id: 2, email: 'volunteer@test.pl', displayName: 'Vol', photoUrl: null, volunteerId: 7, role: 'volunteer' },
 	admin: { id: 3, email: 'admin@test.pl', displayName: 'Admin', photoUrl: null, volunteerId: null, role: 'admin' },
 	super_admin: { id: 4, email: 'owner@test.pl', displayName: 'Owner', photoUrl: null, volunteerId: null, role: 'super_admin' },
+	exporter: { id: 5, email: 'export@test.pl', displayName: 'Shelter', photoUrl: null, volunteerId: null, role: 'exporter' },
 };
 
 export const mockAuth: { user: AuthUser | null } = { user: TEST_USERS.admin };
 
 /** Same contract as the real `requireRole`, minus token verification. */
 export const authModuleMock = {
-	requireRole: jest.fn(async (_req: VercelRequest, res: VercelResponse, minimum: Role) => {
+	requireRole: jest.fn(async (_req: VercelRequest, res: VercelResponse, minimum: LadderRole, alsoAllow: readonly Role[] = []) => {
 		const user = mockAuth.user;
 		if (!user) {
 			res.status(401).json({ error: 'Sign in required' });
 			return null;
 		}
-		if (!hasRole(user, minimum)) {
+		if (!hasRole(user, minimum) && !alsoAllow.includes(user.role)) {
 			res.status(403).json({ error: 'Insufficient permissions' });
 			return null;
 		}
