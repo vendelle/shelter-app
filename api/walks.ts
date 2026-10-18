@@ -17,7 +17,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 	if (req.method === 'OPTIONS') return res.status(200).end();
 
 	try {
-		const user = await requireRole(req, res, 'volunteer');
+		// The shelter's export-only accounts may download the CSV, nothing else.
+		const isCsvExport = req.method === 'GET' && req.query.format === 'csv';
+		const user = await requireRole(req, res, 'volunteer', isCsvExport ? ['exporter'] : []);
 		if (!user) return;
 
 		if (req.method === 'GET') {

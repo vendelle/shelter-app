@@ -48,4 +48,11 @@ void main() {
     await pumpGate(tester, user(UserRole.volunteer));
     expect(find.text('the app'), findsOneWidget);
   });
+
+  testWidgets('exporter: only the CSV export, app stays hidden', (tester) async {
+    await pumpGate(tester, user(UserRole.exporter));
+    expect(find.text('Download CSV'), findsOneWidget);
+    expect(find.text('Sign out'), findsOneWidget);
+    expect(find.text('the app'), findsNothing);
+  });
 }

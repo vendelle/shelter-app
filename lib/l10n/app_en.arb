@@ -271,6 +271,8 @@
   "userRoleVolunteer": "Volunteer",
   "userRoleAdmin": "Admin",
   "userRoleSuperAdmin": "Super admin",
+  "userRoleExporter": "Walks export (shelter)",
+  "exportOnlyIntro": "This account can only download walks as CSV.",
   "planDayLocked": "This day is closed for editing. If something needs changing, contact whoever runs the app.",
   "usersTab": "Users",
   "inviteUser": "Invite",

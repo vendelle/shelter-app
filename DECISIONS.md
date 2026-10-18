@@ -363,3 +363,11 @@ Within each feature, we use a lightweight `data/domain/presentation` split:
 - The website's data has gaps (0.1 kg is its "never weighed" placeholder and is treated as unknown), so it's labelled "Ze strony schroniska" rather than shown as fact.
 - Lives on `/api/dogs?shelter=…` (logic in `api/_lib/shelter-profiles.ts`) to keep a function slot free.
 
+
+## Export-Only Role for the Shelter (`exporter`)
+
+The shelter needs walk data, not the planner. `exporter` is a role **outside** the pending → super_admin ladder (`ROLE_LADDER` in `api/_lib/permissions.ts`, `UserRole.isAtLeast` in the app): `hasRole` is always false for it, so every endpoint rejects it unless it opts in with `requireRole(…, alsoAllow: ['exporter'])`. Only `GET /api/walks?format=csv` does.
+
+- In the app, `AuthGate` shows such accounts just `ExportOnlyScreen` (the existing CSV export + sign out).
+- Invited like anyone else in Manage → Users; a Google account can be created for a work email.
+- Migration `009_exporter_role.sql` widens the `users.role` check.

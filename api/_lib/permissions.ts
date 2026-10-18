@@ -10,17 +10,24 @@
  * |             | editableDateRange) and their own dog familiarity                |
  * | admin       | + dogs, volunteers, dog relationships, anyone's familiarity     |
  * | super_admin | + day plans on any date (history fixes), user accounts & roles  |
+ * | exporter    | Only the walks CSV export — outside the ladder above, so it     |
+ * |             | never passes a hasRole/requireRole check on its own             |
  */
 
-export const ROLES = ['pending', 'volunteer', 'admin', 'super_admin'] as const;
+/** Roles that build on each other, lowest first. */
+export const ROLE_LADDER = ['pending', 'volunteer', 'admin', 'super_admin'] as const;
+export type LadderRole = (typeof ROLE_LADDER)[number];
+
+export const ROLES = [...ROLE_LADDER, 'exporter'] as const;
 export type Role = (typeof ROLES)[number];
 
 export function isRole(value: unknown): value is Role {
 	return typeof value === 'string' && (ROLES as readonly string[]).includes(value);
 }
 
-export function hasRole(user: { role: Role } | null, minimum: Role): boolean {
-	return user !== null && ROLES.indexOf(user.role) >= ROLES.indexOf(minimum);
+export function hasRole(user: { role: Role } | null, minimum: LadderRole): boolean {
+	if (user === null || user.role === 'exporter') return false;
+	return ROLE_LADDER.indexOf(user.role) >= ROLE_LADDER.indexOf(minimum);
 }
 
 /** Day plans are editable from this many days ago… */

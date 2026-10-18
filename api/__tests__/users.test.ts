@@ -110,7 +110,7 @@ describe('/api/users', () => {
 		it.each([
 			[{ email: 'not-an-email', role: 'volunteer' }, 'A valid email is required'],
 			[{ role: 'volunteer' }, 'A valid email is required'],
-			[{ email: 'jan@gmail.com', role: 'boss' }, 'role must be one of: pending, volunteer, admin, super_admin'],
+			[{ email: 'jan@gmail.com', role: 'boss' }, 'role must be one of: pending, volunteer, admin, super_admin, exporter'],
 			[{ email: 'jan@gmail.com', role: 'volunteer', volunteer_id: 'x' }, 'volunteer_id must be an integer'],
 		])('rejects invalid input %j', async (body, error) => {
 			await handler(mockRequest({ method: 'POST', body }), res);
@@ -171,7 +171,7 @@ describe('/api/users', () => {
 		it.each([
 			[{ role: 'admin' }, 'id is required'],
 			[{ id: 9 }, 'No fields to update'],
-			[{ id: 9, role: 'boss' }, 'role must be one of: pending, volunteer, admin, super_admin'],
+			[{ id: 9, role: 'boss' }, 'role must be one of: pending, volunteer, admin, super_admin, exporter'],
 		])('rejects invalid input %j', async (body, error) => {
 			await handler(mockRequest({ method: 'PATCH', body }), res);
 			expect(res._status).toBe(400);

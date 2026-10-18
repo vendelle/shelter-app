@@ -4,10 +4,12 @@ import 'package:shelter_app/l10n/app_localizations.dart';
 
 import '../auth_providers.dart';
 import 'account_button.dart';
+import 'export_only_screen.dart';
 
 /// Shows the app only to approved accounts. Everyone else — signed out or
 /// waiting for approval — gets just the [AccountPanel], so volunteers'
-/// names and walk history aren't public.
+/// names and walk history aren't public. The shelter's export-only accounts
+/// get just the [ExportOnlyScreen].
 class AuthGate extends ConsumerWidget {
   const AuthGate({super.key, required this.child});
 
@@ -15,7 +17,16 @@ class AuthGate extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (ref.watch(permissionsProvider).canView) return child;
+    final permissions = ref.watch(permissionsProvider);
+    if (permissions.canView) return child;
+    if (permissions.isExporter) {
+      // The gate sits above the app's navigator; the export's date pickers
+      // need one of their own.
+      return Navigator(
+        onGenerateRoute: (_) =>
+            MaterialPageRoute(builder: (_) => const ExportOnlyScreen()),
+      );
+    }
 
     final theme = Theme.of(context);
     return Scaffold(

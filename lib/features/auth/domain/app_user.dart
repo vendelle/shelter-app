@@ -1,17 +1,20 @@
 import 'package:shelter_app/l10n/app_localizations.dart';
 
 /// App access level, lowest first. Mirrors `api/_lib/permissions.ts`.
+/// [exporter] sits outside that ladder: it only downloads the walks CSV.
 enum UserRole {
   pending,
   volunteer,
   admin,
-  superAdmin;
+  superAdmin,
+  exporter;
 
   static UserRole fromJson(String? value) {
     return switch (value) {
       'volunteer' => UserRole.volunteer,
       'admin' => UserRole.admin,
       'super_admin' => UserRole.superAdmin,
+      'exporter' => UserRole.exporter,
       _ => UserRole.pending,
     };
   }
@@ -22,10 +25,12 @@ enum UserRole {
       UserRole.volunteer => 'volunteer',
       UserRole.admin => 'admin',
       UserRole.superAdmin => 'super_admin',
+      UserRole.exporter => 'exporter',
     };
   }
 
-  bool isAtLeast(UserRole other) => index >= other.index;
+  bool isAtLeast(UserRole other) =>
+      this != exporter && other != exporter && index >= other.index;
 }
 
 extension UserRoleL10n on UserRole {
@@ -35,6 +40,7 @@ extension UserRoleL10n on UserRole {
       UserRole.volunteer => l10n.userRoleVolunteer,
       UserRole.admin => l10n.userRoleAdmin,
       UserRole.superAdmin => l10n.userRoleSuperAdmin,
+      UserRole.exporter => l10n.userRoleExporter,
     };
   }
 }
@@ -87,6 +93,9 @@ class Permissions {
 
   bool get isSignedIn => user != null;
   bool get isPending => user?.role == UserRole.pending;
+
+  /// The shelter's export-only account: sees just the walks CSV export.
+  bool get isExporter => user?.role == UserRole.exporter;
 
   /// Signed in and approved — the app shows nothing to anyone else.
   bool get canView => _isAtLeast(UserRole.volunteer);

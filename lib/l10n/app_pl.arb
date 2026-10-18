@@ -323,6 +323,8 @@
   "userRoleVolunteer": "Wolontariusz",
   "userRoleAdmin": "Administrator",
   "userRoleSuperAdmin": "Superadministrator",
+  "userRoleExporter": "Eksport spacerów (schronisko)",
+  "exportOnlyIntro": "To konto służy tylko do pobierania spacerów jako CSV.",
   "planDayLocked": "Ten dzień jest zamknięty do edycji. Jeśli trzeba coś zmienić, napisz do osoby zarządzającej aplikacją.",
   "usersTab": "Użytkownicy",
   "inviteUser": "Zaproś",

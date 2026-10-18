@@ -14,7 +14,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import pool from './connection';
 import { verifyFirebaseToken, type FirebaseTokenPayload } from './firebase-token';
-import { hasRole, type Role } from './permissions';
+import { hasRole, type LadderRole, type Role } from './permissions';
 
 export interface AuthUser {
 	id: number;
@@ -134,21 +134,23 @@ export async function getAuthUser(req: VercelRequest): Promise<AuthUser | null> 
 }
 
 /**
- * Returns the user when they have at least [minimum] role. Otherwise sends
+ * Returns the user when they have at least [minimum] role, or one of
+ * [alsoAllow] (roles outside the ladder, e.g. 'exporter'). Otherwise sends
  * 401 (not signed in) or 403 (role too low) and returns null, so callers
  * can simply `if (!user) return;`.
  */
 export async function requireRole(
 	req: VercelRequest,
 	res: VercelResponse,
-	minimum: Role,
+	minimum: LadderRole,
+	alsoAllow: readonly Role[] = [],
 ): Promise<AuthUser | null> {
 	const user = await getAuthUser(req);
 	if (!user) {
 		res.status(401).json({ error: 'Sign in required' });
 		return null;
 	}
-	if (!hasRole(user, minimum)) {
+	if (!hasRole(user, minimum) && !alsoAllow.includes(user.role)) {
 		res.status(403).json({ error: 'Insufficient permissions' });
 		return null;
 	}
