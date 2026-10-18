@@ -359,7 +359,7 @@ Within each feature, we use a lightweight `data/domain/presentation` split:
 
 **Details:**
 - "Odśwież teraz" is open to every volunteer, but the API re-fetches a dog at most every 5 minutes.
-- Photos aren't copied — we store the link to the shelter's image (`main_photo`, which their page shows first, else the first gallery photo). Their image server sends no CORS headers, so Flutter web shows it as an `<img>` element (`WebHtmlElementStrategy.prefer`). Their Cloudflare hotlink protection refuses images embedded on other sites, so `web/index.html` sets `<meta name="referrer" content="no-referrer">` — the photos are only shown to signed-in volunteers of the shelter's own group, the site's maintainer couldn't be reached to allow our domain, and the images come from their Cloudflare cache. If the shelter gets a web admin again, ask them to allow the app's domain and drop the meta tag. (Fine for Firebase Auth: its API key isn't referrer-restricted — if it ever is, sign-in breaks with this tag.)
+- Photos aren't copied — we store the link to the shelter's image (`main_photo`, which their page shows first, else the first gallery photo). Their image server sends no CORS headers, so Flutter web shows it as an `<img>` element (`WebHtmlElementStrategy.prefer`). Their Cloudflare hotlink protection refuses images embedded on other sites, so `web/index.html` sets `<meta name="referrer" content="no-referrer">` — the photos are shown to the shelter's own group of volunteers (plus 12 on the sign-in screen, see below), the site's maintainer couldn't be reached to allow our domain, and the images come from their Cloudflare cache. If the shelter gets a web admin again, ask them to allow the app's domain and drop the meta tag. (Fine for Firebase Auth: its API key isn't referrer-restricted — if it ever is, sign-in breaks with this tag.)
 - The website's data has gaps (0.1 kg is its "never weighed" placeholder and is treated as unknown), so it's labelled "Ze strony schroniska" rather than shown as fact.
 - Lives on `/api/dogs?shelter=…` (logic in `api/_lib/shelter-profiles.ts`) to keep a function slot free.
 
@@ -371,3 +371,12 @@ The shelter needs walk data, not the planner. `exporter` is a role **outside** t
 - In the app, `AuthGate` shows such accounts just `ExportOnlyScreen` (the existing CSV export + sign out).
 - Invited like anyone else in Manage → Users; a Google account can be created for a work email.
 - Migration `009_exporter_role.sql` widens the `users.role` check.
+
+## Sign-In Screen: Dog Photos From a Public, Cached Endpoint
+
+Signed-out visitors see `WelcomeScreen`: a 4×4 grid of 12 photos of current dogs around the logo, "Asowa Psiappka" and the sign-in button.
+
+- Photos come from `GET /api/dogs?shelter=photos`, the only endpoint open to anonymous visitors besides health. It returns just 12 random image URLs of non-archived dogs — no names or ids — and the photos are public on the shelter's website anyway.
+- `Cache-Control: s-maxage=3600` lets Vercel's CDN serve it, so visitors don't hit the database; the random pick changes about hourly.
+- Not a static set baked into the app: it would go stale as dogs get adopted.
+- Pending accounts and in-app browsers (where Google sign-in fails) keep the plain `AccountPanel` screen: their longer messages don't fit the grid's centre.

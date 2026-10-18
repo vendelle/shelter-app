@@ -52,25 +52,41 @@ Future<void> showAccountSheet(BuildContext context) {
 /// Sign-in / account details, shown in the account sheet and on the
 /// [AuthGate] screen.
 class AccountPanel extends ConsumerWidget {
-  const AccountPanel({super.key});
+  const AccountPanel({super.key, this.compact = false});
+
+  /// Signed out: just the sign-in button, for the welcome screen's small
+  /// centre panel.
+  final bool compact;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final account = ref.watch(currentUserProvider);
     return account.when(
-      loading: () => const Padding(
-        padding: EdgeInsets.all(24),
-        child: Center(child: CircularProgressIndicator()),
-      ),
+      loading: () => compact
+          ? const SizedBox(
+              height: 40,
+              child: Center(
+                child: SizedBox.square(
+                  dimension: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            )
+          : const Padding(
+              padding: EdgeInsets.all(24),
+              child: Center(child: CircularProgressIndicator()),
+            ),
       error: (error, _) => _SignedInError(error: error),
       data: (user) =>
-          user == null ? const _SignedOut() : _SignedIn(user: user),
+          user == null ? _SignedOut(compact: compact) : _SignedIn(user: user),
     );
   }
 }
 
 class _SignedOut extends ConsumerStatefulWidget {
-  const _SignedOut();
+  const _SignedOut({required this.compact});
+
+  final bool compact;
 
   @override
   ConsumerState<_SignedOut> createState() => _SignedOutState();
@@ -101,6 +117,24 @@ class _SignedOutState extends ConsumerState<_SignedOut> {
 
     if (isInAppBrowser()) return const _OpenInBrowser();
 
+    final button = LayoutBuilder(
+      builder: (context, constraints) => FilledButton.icon(
+        onPressed: _signingIn ? null : _signIn,
+        icon: _signingIn
+            ? const SizedBox.square(
+                dimension: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Icons.account_circle_outlined),
+        // On a phone the welcome screen's centre is too narrow for the
+        // long label.
+        label: Text(constraints.maxWidth >= 220
+            ? l10n.signInWithGoogle
+            : l10n.signIn),
+      ),
+    );
+    if (widget.compact) return button;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -109,16 +143,7 @@ class _SignedOutState extends ConsumerState<_SignedOut> {
         const SizedBox(height: 8),
         Text(l10n.signInExplanation, style: theme.textTheme.bodyMedium),
         const SizedBox(height: 20),
-        FilledButton.icon(
-          onPressed: _signingIn ? null : _signIn,
-          icon: _signingIn
-              ? const SizedBox.square(
-                  dimension: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.account_circle_outlined),
-          label: Text(l10n.signInWithGoogle),
-        ),
+        button,
       ],
     );
   }

@@ -11,7 +11,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
 	try {
 		// Data from the shelter's website — its own access rules (refreshing
-		// is open to volunteers, the nightly sync uses CRON_SECRET).
+		// is open to volunteers, the nightly sync uses CRON_SECRET, the
+		// sign-in screen's photos are public).
 		if (req.query.shelter !== undefined) return await handleShelterProfiles(req, res);
 
 		// Volunteers can look; every change needs an admin.

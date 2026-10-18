@@ -11,6 +11,8 @@
  *                              differs from ours                      volunteer
  *   GET  ?shelter=sync         refresh every active dog (Vercel Cron,
  *                              authenticated with CRON_SECRET)
+ *   GET  ?shelter=photos       a few photo URLs of active dogs for the
+ *                              sign-in screen                         anyone
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
@@ -24,6 +26,9 @@ import { hasColumn } from './util';
 
 /** "Odśwież teraz" re-fetches a dog at most this often, to spare the website. */
 export const REFRESH_COOLDOWN_MINUTES = 5;
+
+/** Photos on the sign-in screen: the 4×4 grid's border. */
+export const WELCOME_PHOTO_COUNT = 12;
 
 interface Dog {
 	id: number;
@@ -187,6 +192,24 @@ export async function handleShelterProfiles(req: VercelRequest, res: VercelRespo
 		const dogs = await pool.query(`SELECT ${await dogColumns()} FROM dogs WHERE archived IS NOT TRUE`);
 		const found = await refreshDogs(dogs.rows);
 		return res.status(200).json({ dogs: dogs.rows.length, found });
+	}
+
+	// Public: the sign-in screen shows these before anyone signs in. Only the
+	// image URLs — no names or ids — and the photos are on the shelter's
+	// public website anyway. Cached by Vercel's CDN, so visitors don't hit
+	// the database.
+	if (target === 'photos') {
+		if (req.method !== 'GET') return res.status(405).json({ error: `Method ${req.method} Not Allowed` });
+		const result = await pool.query(
+			`SELECT p.photo_url
+			 FROM dogs d JOIN dog_shelter_profiles p ON p.dog_id = d.id
+			 WHERE d.archived IS NOT TRUE AND p.photo_url IS NOT NULL
+			 ORDER BY random()
+			 LIMIT $1`,
+			[WELCOME_PHOTO_COUNT],
+		);
+		res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
+		return res.status(200).json(result.rows.map((row) => row.photo_url));
 	}
 
 	const user = await requireRole(req, res, 'volunteer');

@@ -1,11 +1,11 @@
 {
-    "name": "shelter_app",
-    "short_name": "shelter_app",
+    "name": "Asowa Psiappka",
+    "short_name": "Psiappka",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#ffffff",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Spacery z psami grupy Asy",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
