@@ -43,6 +43,9 @@ class FakeDogDetailRepository implements DogDetailRepository {
   Future<Set<int>> getLocationSuggestionDogIds() async => {};
 
   @override
+  Future<Map<int, String>> getDogPhotoUrls() async => {};
+
+  @override
   Future<List<DogRelationship>> getRelationships(int dogId) async => [];
 
   @override

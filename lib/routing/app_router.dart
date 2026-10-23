@@ -3,6 +3,7 @@ import 'package:shelter_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/manage/presentation/widgets/familiarity_prompt.dart';
 import '../features/overview/presentation/overview_screen.dart';
 import '../features/planner/presentation/planner_screen.dart';
 import '../features/manage/presentation/manage_screen.dart';
@@ -15,7 +16,9 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
-          return _AppShell(navigationShell: navigationShell);
+          return FamiliarityPrompt(
+            child: _AppShell(navigationShell: navigationShell),
+          );
         },
         branches: [
           StatefulShellBranch(
