@@ -12,12 +12,21 @@ import '../../../auth/presentation/auth_providers.dart';
 import '../providers/manage_providers.dart';
 
 class FamiliarityDialog extends ConsumerStatefulWidget {
-  const FamiliarityDialog({super.key, required this.volunteer, this.intro});
+  const FamiliarityDialog({
+    super.key,
+    required this.volunteer,
+    this.intro,
+    this.onRemindLater,
+  });
 
   final Volunteer volunteer;
 
   /// Shown above the legend, e.g. to ask for the missing ratings.
   final String? intro;
+
+  /// When set, the dialog offers "remind me later" next to Close and calls
+  /// this when it's picked.
+  final VoidCallback? onRemindLater;
 
   @override
   ConsumerState<FamiliarityDialog> createState() => _FamiliarityDialogState();
@@ -31,9 +40,8 @@ class _FamiliarityDialogState extends ConsumerState<FamiliarityDialog> {
   @override
   Widget build(BuildContext context) {
     final dogsAsync = ref.watch(managedDogsProvider);
-    final familiarityAsync = ref.watch(
-      familiarityProvider(widget.volunteer.id),
-    );
+    final familiarityAsync =
+        ref.watch(familiarityProvider(widget.volunteer.id));
     final photos = ref.watch(dogPhotoUrlsProvider).valueOrNull ?? const {};
     // Everyone can look; only the volunteer themself or an admin can change.
     final canEdit = ref
@@ -41,9 +49,7 @@ class _FamiliarityDialogState extends ConsumerState<FamiliarityDialog> {
         .canEditFamiliarityOf(widget.volunteer.id);
 
     return AlertDialog(
-      title: Text(
-        AppLocalizations.of(context)!.dogFamiliarity(widget.volunteer.fullName),
-      ),
+      title: Text(AppLocalizations.of(context)!.dogFamiliarity(widget.volunteer.fullName)),
       content: SizedBox(
         width: double.maxFinite,
         height: 460,
@@ -70,8 +76,7 @@ class _FamiliarityDialogState extends ConsumerState<FamiliarityDialog> {
                         itemCount: activeDogs.length,
                         itemBuilder: (context, index) {
                           final dog = activeDogs[index];
-                          final level =
-                              _localChanges[dog.id] ??
+                          final level = _localChanges[dog.id] ??
                               familiarityMap[dog.id] ??
                               DogFamiliarityLevel.unknown;
                           return _DogFamiliarityRow(
@@ -80,7 +85,7 @@ class _FamiliarityDialogState extends ConsumerState<FamiliarityDialog> {
                             level: level,
                             onChanged: canEdit
                                 ? (newLevel) =>
-                                      _onLevelChanged(dog.id, newLevel)
+                                    _onLevelChanged(dog.id, newLevel)
                                 : null,
                           );
                         },
@@ -94,6 +99,16 @@ class _FamiliarityDialogState extends ConsumerState<FamiliarityDialog> {
         ),
       ),
       actions: [
+        if (widget.onRemindLater != null)
+          TextButton(
+            onPressed: _saving
+                ? null
+                : () {
+                    widget.onRemindLater!();
+                    Navigator.pop(context);
+                  },
+            child: Text(AppLocalizations.of(context)!.familiarityRemindLater),
+          ),
         TextButton(
           onPressed: _saving ? null : () => Navigator.pop(context),
           child: Text(AppLocalizations.of(context)!.close),
@@ -102,7 +117,8 @@ class _FamiliarityDialogState extends ConsumerState<FamiliarityDialog> {
     );
   }
 
-  Future<void> _onLevelChanged(int dogId, DogFamiliarityLevel newLevel) async {
+  Future<void> _onLevelChanged(
+      int dogId, DogFamiliarityLevel newLevel) async {
     setState(() {
       _localChanges[dogId] = newLevel;
       _saving = true;
@@ -127,11 +143,7 @@ class _FamiliarityDialogState extends ConsumerState<FamiliarityDialog> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              AppLocalizations.of(context)!.failedToSave(e.toString()),
-            ),
-          ),
+          SnackBar(content: Text(AppLocalizations.of(context)!.failedToSave(e.toString()))),
         );
       }
     } finally {
@@ -139,6 +151,13 @@ class _FamiliarityDialogState extends ConsumerState<FamiliarityDialog> {
     }
   }
 }
+
+/// Same icons as the level buttons, so the legend doesn't rely on colour alone.
+const _levelIcons = {
+  DogFamiliarityLevel.good: Icons.sentiment_very_satisfied,
+  DogFamiliarityLevel.difficult: Icons.sentiment_neutral,
+  DogFamiliarityLevel.never: Icons.sentiment_very_dissatisfied,
+};
 
 class _FamiliarityLegend extends StatelessWidget {
   const _FamiliarityLegend();
@@ -151,19 +170,19 @@ class _FamiliarityLegend extends StatelessWidget {
       runSpacing: 4,
       children: [
         _LegendItem(
-          color: familiarityColor(DogFamiliarityLevel.good),
+          level: DogFamiliarityLevel.good,
           label: l10n.familiarityLegendGood,
         ),
         _LegendItem(
-          color: familiarityColor(DogFamiliarityLevel.difficult),
+          level: DogFamiliarityLevel.difficult,
           label: l10n.familiarityLegendDifficult,
         ),
         _LegendItem(
-          color: familiarityColor(DogFamiliarityLevel.never),
+          level: DogFamiliarityLevel.never,
           label: l10n.familiarityLegendNever,
         ),
         _LegendItem(
-          color: Colors.grey.shade300,
+          level: DogFamiliarityLevel.unknown,
           label: l10n.familiarityLegendUnknown,
         ),
       ],
@@ -172,20 +191,29 @@ class _FamiliarityLegend extends StatelessWidget {
 }
 
 class _LegendItem extends StatelessWidget {
-  const _LegendItem({required this.color, required this.label});
+  const _LegendItem({required this.level, required this.label});
 
-  final Color color;
+  final DogFamiliarityLevel level;
   final String label;
 
   @override
   Widget build(BuildContext context) {
+    final icon = _levelIcons[level];
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+          width: 18,
+          height: 18,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: level == DogFamiliarityLevel.unknown
+                ? Colors.grey.shade300
+                : familiarityColor(level),
+          ),
+          child: icon == null
+              ? null
+              : Icon(icon, size: 13, color: Colors.white),
         ),
         const SizedBox(width: 6),
         Flexible(
@@ -203,17 +231,14 @@ class _DogAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final placeholder = Center(
-      child: Icon(Icons.pets, size: 20, color: Colors.grey.shade400),
-    );
+    final placeholder =
+        Center(child: Icon(Icons.pets, size: 20, color: Colors.grey.shade400));
     final url = photoUrl;
     return Container(
       width: 40,
       height: 40,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Colors.grey.shade200,
-      ),
+      decoration:
+          BoxDecoration(shape: BoxShape.circle, color: Colors.grey.shade200),
       clipBehavior: Clip.antiAlias,
       child: url == null
           ? placeholder
@@ -233,7 +258,6 @@ class _DogFamiliarityRow extends StatelessWidget {
   final Dog dog;
   final String? photoUrl;
   final DogFamiliarityLevel level;
-
   /// Null makes the row read-only.
   final ValueChanged<DogFamiliarityLevel>? onChanged;
 
@@ -241,8 +265,9 @@ class _DogFamiliarityRow extends StatelessWidget {
   VoidCallback? _toggle(DogFamiliarityLevel tapped) {
     final onChanged = this.onChanged;
     if (onChanged == null) return null;
-    return () =>
-        onChanged(level == tapped ? DogFamiliarityLevel.unknown : tapped);
+    return () => onChanged(
+          level == tapped ? DogFamiliarityLevel.unknown : tapped,
+        );
   }
 
   @override
@@ -254,7 +279,8 @@ class _DogFamiliarityRow extends StatelessWidget {
           _DogAvatar(photoUrl: photoUrl),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(dog.name, style: Theme.of(context).textTheme.bodyLarge),
+            child: Text(dog.name,
+                style: Theme.of(context).textTheme.bodyLarge),
           ),
           _LevelButton(
             level: DogFamiliarityLevel.good,
@@ -308,26 +334,32 @@ class _LevelButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isSelected = level == currentLevel;
-    return Tooltip(
-      message: tooltip,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: isSelected ? color : Colors.transparent,
-            border: Border.all(
-              color: isSelected ? color : Colors.grey.shade300,
-              width: 2,
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: tooltip,
+      excludeSemantics: true,
+      child: Tooltip(
+        message: tooltip,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isSelected ? color : Colors.transparent,
+              border: Border.all(
+                color: isSelected ? color : Colors.grey.shade300,
+                width: 2,
+              ),
             ),
-          ),
-          child: Icon(
-            icon,
-            size: 20,
-            color: isSelected ? Colors.white : Colors.grey.shade400,
+            child: Icon(
+              icon,
+              size: 20,
+              color: isSelected ? Colors.white : Colors.grey.shade400,
+            ),
           ),
         ),
       ),

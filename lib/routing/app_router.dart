@@ -16,7 +16,9 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
-          return _AppShell(navigationShell: navigationShell);
+          return FamiliarityPrompt(
+            child: _AppShell(navigationShell: navigationShell),
+          );
         },
         branches: [
           StatefulShellBranch(
@@ -78,33 +80,29 @@ class _AppShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return FamiliarityPrompt(
-      child: Scaffold(
-        body: navigationShell,
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: navigationShell.currentIndex,
-          onDestinationSelected: (index) => navigationShell.goBranch(
-            index,
-            initialLocation: index == navigationShell.currentIndex,
+    return Scaffold(
+      body: navigationShell,
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: navigationShell.currentIndex,
+        onDestinationSelected: (index) =>
+            navigationShell.goBranch(index, initialLocation: index == navigationShell.currentIndex),
+        destinations: [
+          NavigationDestination(
+            icon: const Icon(Icons.pets_outlined),
+            selectedIcon: const Icon(Icons.pets),
+            label: l10n.navOverview,
           ),
-          destinations: [
-            NavigationDestination(
-              icon: const Icon(Icons.pets_outlined),
-              selectedIcon: const Icon(Icons.pets),
-              label: l10n.navOverview,
-            ),
-            NavigationDestination(
-              icon: const Icon(Icons.calendar_today_outlined),
-              selectedIcon: const Icon(Icons.calendar_today),
-              label: l10n.navPlanner,
-            ),
-            NavigationDestination(
-              icon: const Icon(Icons.settings_outlined),
-              selectedIcon: const Icon(Icons.settings),
-              label: l10n.navManage,
-            ),
-          ],
-        ),
+          NavigationDestination(
+            icon: const Icon(Icons.calendar_today_outlined),
+            selectedIcon: const Icon(Icons.calendar_today),
+            label: l10n.navPlanner,
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.settings_outlined),
+            selectedIcon: const Icon(Icons.settings),
+            label: l10n.navManage,
+          ),
+        ],
       ),
     );
   }

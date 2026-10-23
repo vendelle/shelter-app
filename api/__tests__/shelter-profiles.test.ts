@@ -292,6 +292,12 @@ describe('/api/dogs?shelter=', () => {
 			expect(res._status).toBe(401);
 		});
 
+		it('is closed to the exporter role', async () => {
+			mockAuth.user = TEST_USERS.exporter;
+			await handler(shelter('thumbs'), res);
+			expect(res._status).toBe(403);
+		});
+
 		it('only supports GET', async () => {
 			await handler(shelter('thumbs', { method: 'POST' }), res);
 			expect(res._status).toBe(405);

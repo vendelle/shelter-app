@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shelter_app/core/locale/locale_provider.dart';
 import 'package:shelter_app/features/auth/domain/app_user.dart';
 import 'package:shelter_app/features/dog_detail/presentation/providers/dog_detail_providers.dart';
 import 'package:shelter_app/features/manage/presentation/providers/manage_providers.dart';
@@ -31,21 +33,29 @@ AppUser _user({int? volunteerId = 7}) => AppUser(
 );
 
 void main() {
+  late SharedPreferences prefs;
+
   Future<void> pumpPrompt(
     WidgetTester tester, {
     AppUser? user,
     Map<int, DogFamiliarityLevel> ratings = const {},
+    Object? ratingsError,
+    Map<int, String> photos = const {},
   }) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           ...signedInAs(user ?? _user()),
+          sharedPreferencesProvider.overrideWithValue(prefs),
           managedDogsProvider.overrideWith(
             (ref) async => [_burek, _luna, _old],
           ),
           managedVolunteersProvider.overrideWith((ref) async => [_anna]),
-          familiarityProvider.overrideWith((ref, id) async => ratings),
-          dogPhotoUrlsProvider.overrideWith((ref) async => const {}),
+          familiarityProvider.overrideWith((ref, id) async {
+            if (ratingsError != null) throw ratingsError;
+            return ratings;
+          }),
+          dogPhotoUrlsProvider.overrideWith((ref) async => photos),
         ],
         child: MaterialApp(
           locale: const Locale('en'),
@@ -58,15 +68,17 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    prefs = await SharedPreferences.getInstance();
+  });
+
   testWidgets('asks for the missing ratings, with a legend and no kennels', (
     tester,
   ) async {
     await pumpPrompt(tester, ratings: {1: DogFamiliarityLevel.good});
 
-    expect(
-      find.text('Mark which dogs you walk'),
-      findsOneWidget,
-    );
+    expect(find.text('Mark which dogs you walk'), findsOneWidget);
     expect(find.text('I walk them with no problem'), findsOneWidget);
     expect(
       find.text("Sometimes hard, but I'll walk them if I have to"),
@@ -105,5 +117,59 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(AlertDialog), findsNothing);
+  });
+
+  testWidgets('stays quiet when the ratings cannot be loaded', (tester) async {
+    await pumpPrompt(tester, ratingsError: Exception('network down'));
+
+    expect(find.byType(AlertDialog), findsNothing);
+  });
+
+  testWidgets('"remind me later" keeps it away for two weeks', (tester) async {
+    await pumpPrompt(tester);
+    await tester.tap(find.text('Remind me in 2 weeks'));
+    await tester.pumpAndSettle();
+    expect(find.byType(AlertDialog), findsNothing);
+
+    final until = prefs.getInt(familiarityPromptSnoozeKey(7))!;
+    final inDays = Duration(
+      milliseconds: until - DateTime.now().millisecondsSinceEpoch,
+    ).inDays;
+    expect(inDays, anyOf(13, 14));
+
+    // A new page load, same browser storage.
+    await tester.pumpWidget(const SizedBox());
+    await pumpPrompt(tester);
+    expect(find.byType(AlertDialog), findsNothing);
+  });
+
+  testWidgets('asks again once the reminder time has passed', (tester) async {
+    await prefs.setInt(
+      familiarityPromptSnoozeKey(7),
+      DateTime.now().subtract(const Duration(days: 1)).millisecondsSinceEpoch,
+    );
+    await pumpPrompt(tester);
+
+    expect(find.byType(AlertDialog), findsOneWidget);
+  });
+
+  testWidgets("one volunteer's reminder does not silence another's", (
+    tester,
+  ) async {
+    await prefs.setInt(
+      familiarityPromptSnoozeKey(99),
+      DateTime.now().add(const Duration(days: 5)).millisecondsSinceEpoch,
+    );
+    await pumpPrompt(tester);
+
+    expect(find.byType(AlertDialog), findsOneWidget);
+  });
+
+  testWidgets('shows a photo only for dogs that have one', (tester) async {
+    await pumpPrompt(tester, photos: {1: 'https://images.example/1.jpg'});
+
+    // Luna has no photo, so only Burek gets an image (the test environment
+    // refuses the download itself, which falls back to the paw).
+    expect(find.byType(Image), findsOneWidget);
   });
 }
