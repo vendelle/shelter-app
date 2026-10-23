@@ -3,6 +3,7 @@ import 'package:shelter_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/manage/presentation/widgets/familiarity_prompt.dart';
 import '../features/overview/presentation/overview_screen.dart';
 import '../features/planner/presentation/planner_screen.dart';
 import '../features/manage/presentation/manage_screen.dart';
@@ -77,29 +78,33 @@ class _AppShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return Scaffold(
-      body: navigationShell,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: navigationShell.currentIndex,
-        onDestinationSelected: (index) =>
-            navigationShell.goBranch(index, initialLocation: index == navigationShell.currentIndex),
-        destinations: [
-          NavigationDestination(
-            icon: const Icon(Icons.pets_outlined),
-            selectedIcon: const Icon(Icons.pets),
-            label: l10n.navOverview,
+    return FamiliarityPrompt(
+      child: Scaffold(
+        body: navigationShell,
+        bottomNavigationBar: NavigationBar(
+          selectedIndex: navigationShell.currentIndex,
+          onDestinationSelected: (index) => navigationShell.goBranch(
+            index,
+            initialLocation: index == navigationShell.currentIndex,
           ),
-          NavigationDestination(
-            icon: const Icon(Icons.calendar_today_outlined),
-            selectedIcon: const Icon(Icons.calendar_today),
-            label: l10n.navPlanner,
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.settings_outlined),
-            selectedIcon: const Icon(Icons.settings),
-            label: l10n.navManage,
-          ),
-        ],
+          destinations: [
+            NavigationDestination(
+              icon: const Icon(Icons.pets_outlined),
+              selectedIcon: const Icon(Icons.pets),
+              label: l10n.navOverview,
+            ),
+            NavigationDestination(
+              icon: const Icon(Icons.calendar_today_outlined),
+              selectedIcon: const Icon(Icons.calendar_today),
+              label: l10n.navPlanner,
+            ),
+            NavigationDestination(
+              icon: const Icon(Icons.settings_outlined),
+              selectedIcon: const Icon(Icons.settings),
+              label: l10n.navManage,
+            ),
+          ],
+        ),
       ),
     );
   }

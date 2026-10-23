@@ -215,6 +215,18 @@ export async function handleShelterProfiles(req: VercelRequest, res: VercelRespo
 	const user = await requireRole(req, res, 'volunteer');
 	if (!user) return;
 
+	// Photos of all active dogs, for the small pictures next to a dog's name
+	// in lists. Read from what's stored — never contacts the website.
+	if (target === 'thumbs') {
+		if (req.method !== 'GET') return res.status(405).json({ error: `Method ${req.method} Not Allowed` });
+		const result = await pool.query(
+			`SELECT d.id AS dog_id, p.photo_url
+			 FROM dogs d JOIN dog_shelter_profiles p ON p.dog_id = d.id
+			 WHERE d.archived IS NOT TRUE AND p.photo_url IS NOT NULL`,
+		);
+		return res.status(200).json(result.rows);
+	}
+
 	if (target === 'suggestions') {
 		if (req.method !== 'GET') return res.status(405).json({ error: `Method ${req.method} Not Allowed` });
 		const result = await pool.query(

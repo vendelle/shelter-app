@@ -273,6 +273,31 @@ describe('/api/dogs?shelter=', () => {
 		});
 	});
 
+	describe('GET thumbs', () => {
+		it('lists the photo of every active dog that has one, without contacting the website', async () => {
+			mockPool._setResults([{ rows: [{ dog_id: 12, photo_url: 'https://images.example/1.jpg' }] }]);
+			await handler(shelter('thumbs'), res);
+
+			expect(res._status).toBe(200);
+			expect(res._body).toEqual([{ dog_id: 12, photo_url: 'https://images.example/1.jpg' }]);
+			const [sql] = mockPool.query.mock.calls[0];
+			expect(sql).toContain('archived IS NOT TRUE');
+			expect(sql).toContain('photo_url IS NOT NULL');
+			expect(fetchMock).not.toHaveBeenCalled();
+		});
+
+		it('is closed to anonymous visitors', async () => {
+			mockAuth.user = null;
+			await handler(shelter('thumbs'), res);
+			expect(res._status).toBe(401);
+		});
+
+		it('only supports GET', async () => {
+			await handler(shelter('thumbs', { method: 'POST' }), res);
+			expect(res._status).toBe(405);
+		});
+	});
+
 	describe('GET photos (sign-in screen)', () => {
 		it('is open to anonymous visitors and returns only photo URLs', async () => {
 			mockAuth.user = null;

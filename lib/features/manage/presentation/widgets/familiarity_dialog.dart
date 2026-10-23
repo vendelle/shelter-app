@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:shelter_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../dog_detail/presentation/providers/dog_detail_providers.dart';
 import '../../../shared/domain/dog.dart';
+import '../../../shared/presentation/shelter_image.dart';
 import '../../../shared/domain/volunteer.dart';
 import '../../../planner/domain/planner_dog.dart';
 import '../familiarity_colors.dart';
@@ -10,9 +12,12 @@ import '../../../auth/presentation/auth_providers.dart';
 import '../providers/manage_providers.dart';
 
 class FamiliarityDialog extends ConsumerStatefulWidget {
-  const FamiliarityDialog({super.key, required this.volunteer});
+  const FamiliarityDialog({super.key, required this.volunteer, this.intro});
 
   final Volunteer volunteer;
+
+  /// Shown above the legend, e.g. to ask for the missing ratings.
+  final String? intro;
 
   @override
   ConsumerState<FamiliarityDialog> createState() => _FamiliarityDialogState();
@@ -26,47 +31,66 @@ class _FamiliarityDialogState extends ConsumerState<FamiliarityDialog> {
   @override
   Widget build(BuildContext context) {
     final dogsAsync = ref.watch(managedDogsProvider);
-    final familiarityAsync =
-        ref.watch(familiarityProvider(widget.volunteer.id));
+    final familiarityAsync = ref.watch(
+      familiarityProvider(widget.volunteer.id),
+    );
+    final photos = ref.watch(dogPhotoUrlsProvider).valueOrNull ?? const {};
     // Everyone can look; only the volunteer themself or an admin can change.
     final canEdit = ref
         .watch(permissionsProvider)
         .canEditFamiliarityOf(widget.volunteer.id);
 
     return AlertDialog(
-      title: Text(AppLocalizations.of(context)!.dogFamiliarity(widget.volunteer.fullName)),
+      title: Text(
+        AppLocalizations.of(context)!.dogFamiliarity(widget.volunteer.fullName),
+      ),
       content: SizedBox(
         width: double.maxFinite,
-        height: 400,
-        child: dogsAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('Error: $e')),
-          data: (dogs) {
-            final activeDogs =
-                dogs.where((d) => !d.archived).toList();
-            return familiarityAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text('Error: $e')),
-              data: (familiarityMap) {
-                return ListView.builder(
-                  itemCount: activeDogs.length,
-                  itemBuilder: (context, index) {
-                    final dog = activeDogs[index];
-                    final level = _localChanges[dog.id] ??
-                        familiarityMap[dog.id] ??
-                        DogFamiliarityLevel.unknown;
-                    return _DogFamiliarityRow(
-                      dog: dog,
-                      level: level,
-                      onChanged: canEdit
-                          ? (newLevel) => _onLevelChanged(dog.id, newLevel)
-                          : null,
-                    );
-                  },
-                );
-              },
-            );
-          },
+        height: 460,
+        child: Column(
+          children: [
+            if (widget.intro != null) ...[
+              Text(widget.intro!),
+              const SizedBox(height: 12),
+            ],
+            const _FamiliarityLegend(),
+            const SizedBox(height: 8),
+            Expanded(
+              child: dogsAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Center(child: Text('Error: $e')),
+                data: (dogs) {
+                  final activeDogs = dogs.where((d) => !d.archived).toList();
+                  return familiarityAsync.when(
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
+                    error: (e, _) => Center(child: Text('Error: $e')),
+                    data: (familiarityMap) {
+                      return ListView.builder(
+                        itemCount: activeDogs.length,
+                        itemBuilder: (context, index) {
+                          final dog = activeDogs[index];
+                          final level =
+                              _localChanges[dog.id] ??
+                              familiarityMap[dog.id] ??
+                              DogFamiliarityLevel.unknown;
+                          return _DogFamiliarityRow(
+                            dog: dog,
+                            photoUrl: photos[dog.id],
+                            level: level,
+                            onChanged: canEdit
+                                ? (newLevel) =>
+                                      _onLevelChanged(dog.id, newLevel)
+                                : null,
+                          );
+                        },
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
       actions: [
@@ -78,8 +102,7 @@ class _FamiliarityDialogState extends ConsumerState<FamiliarityDialog> {
     );
   }
 
-  Future<void> _onLevelChanged(
-      int dogId, DogFamiliarityLevel newLevel) async {
+  Future<void> _onLevelChanged(int dogId, DogFamiliarityLevel newLevel) async {
     setState(() {
       _localChanges[dogId] = newLevel;
       _saving = true;
@@ -104,7 +127,11 @@ class _FamiliarityDialogState extends ConsumerState<FamiliarityDialog> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.failedToSave(e.toString()))),
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)!.failedToSave(e.toString()),
+            ),
+          ),
         );
       }
     } finally {
@@ -113,15 +140,100 @@ class _FamiliarityDialogState extends ConsumerState<FamiliarityDialog> {
   }
 }
 
+class _FamiliarityLegend extends StatelessWidget {
+  const _FamiliarityLegend();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Wrap(
+      spacing: 16,
+      runSpacing: 4,
+      children: [
+        _LegendItem(
+          color: familiarityColor(DogFamiliarityLevel.good),
+          label: l10n.familiarityLegendGood,
+        ),
+        _LegendItem(
+          color: familiarityColor(DogFamiliarityLevel.difficult),
+          label: l10n.familiarityLegendDifficult,
+        ),
+        _LegendItem(
+          color: familiarityColor(DogFamiliarityLevel.never),
+          label: l10n.familiarityLegendNever,
+        ),
+        _LegendItem(
+          color: Colors.grey.shade300,
+          label: l10n.familiarityLegendUnknown,
+        ),
+      ],
+    );
+  }
+}
+
+class _LegendItem extends StatelessWidget {
+  const _LegendItem({required this.color, required this.label});
+
+  final Color color;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+        ),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text(label, style: Theme.of(context).textTheme.bodySmall),
+        ),
+      ],
+    );
+  }
+}
+
+class _DogAvatar extends StatelessWidget {
+  const _DogAvatar({required this.photoUrl});
+
+  final String? photoUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final placeholder = Center(
+      child: Icon(Icons.pets, size: 20, color: Colors.grey.shade400),
+    );
+    final url = photoUrl;
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.grey.shade200,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: url == null
+          ? placeholder
+          : ShelterImage(url, fit: BoxFit.cover, error: placeholder),
+    );
+  }
+}
+
 class _DogFamiliarityRow extends StatelessWidget {
   const _DogFamiliarityRow({
     required this.dog,
+    required this.photoUrl,
     required this.level,
     required this.onChanged,
   });
 
   final Dog dog;
+  final String? photoUrl;
   final DogFamiliarityLevel level;
+
   /// Null makes the row read-only.
   final ValueChanged<DogFamiliarityLevel>? onChanged;
 
@@ -129,9 +241,8 @@ class _DogFamiliarityRow extends StatelessWidget {
   VoidCallback? _toggle(DogFamiliarityLevel tapped) {
     final onChanged = this.onChanged;
     if (onChanged == null) return null;
-    return () => onChanged(
-          level == tapped ? DogFamiliarityLevel.unknown : tapped,
-        );
+    return () =>
+        onChanged(level == tapped ? DogFamiliarityLevel.unknown : tapped);
   }
 
   @override
@@ -140,18 +251,10 @@ class _DogFamiliarityRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
+          _DogAvatar(photoUrl: photoUrl),
+          const SizedBox(width: 12),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(dog.name,
-                    style: Theme.of(context).textTheme.bodyLarge),
-                Text(
-                  AppLocalizations.of(context)!.kennelLabel(dog.kennel),
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
-            ),
+            child: Text(dog.name, style: Theme.of(context).textTheme.bodyLarge),
           ),
           _LevelButton(
             level: DogFamiliarityLevel.good,
