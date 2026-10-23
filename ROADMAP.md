@@ -15,19 +15,16 @@ Details of what's already built live in DECISIONS.md.
 
 Goal: people sign in and immediately have something useful to do.
 
-### 1.1 Export role for the shelter (S)
-- New role `exporter`, **outside** the volunteer → admin ladder: after sign-in it sees only a CSV export screen (date range → download walks). No planner, dogs, volunteers or anything else.
-- API: `GET /api/walks?format=csv` allowed for `exporter` and approved volunteers; every other endpoint keeps rejecting it.
-- Invited like everyone else (Manage → Users, any Google account — a Google account can be created for a work email).
-- Logged in the audit log once 2.1 exists.
+### 1.1 Export role for the shelter (S) — done, #30
+- Role `exporter`, outside the volunteer → admin ladder: after sign-in it sees only the CSV export screen.
 
-### 1.2 Welcome / sign-in screen (S)
-- Sign-in screen (`AuthGate`) with photos of the group's dogs (from `dog_shelter_profiles.photo_url`) and a short intro.
-- Note: photos need the API to serve a few photo URLs to signed-out visitors, or a static set — decide in the session.
+### 1.2 Welcome / sign-in screen (S) — done, #31
+- Sign-in screen with photos of the group's dogs and a short intro.
 
-### 1.3 First sign-in: "which dogs do you walk?" (M)
-- On first sign-in a volunteer fills in their dog familiarity (dobrze / trudno / nigdy), pre-filled with dogs they walked in the last ~3 months.
-- Needs the account linked to a volunteer profile. Open question: let people pick "I am <volunteer>" themselves (super admin can correct it in Users), or keep linking admin-only?
+### 1.3 First sign-in: "which dogs do you walk?" (M) — PR #32
+- After sign-in, a volunteer linked to a profile is asked once per app start to rate the active dogs they haven't rated (the Manage familiarity dialog, with a legend and dog photos). No default ratings.
+- Linking an account to a volunteer stays admin-only (Manage → Users, when approving). No "I am <volunteer>" self-pick: it would show volunteers' names to people nobody has approved yet.
+- Idea if people get lost: put dogs walked in the last ~3 months on top, with their number of walks (no saved rating).
 
 ### 1.4 Release checklist (`main` → `asy-production`)
 1. Back up the production DB (Actions → DB backup → Run workflow).
