@@ -93,7 +93,7 @@
   "familiarityLegendDifficult": "Sometimes hard, but I'll walk them if I have to",
   "familiarityLegendNever": "I don't walk this dog",
   "familiarityLegendUnknown": "Not rated",
-  "familiarityPromptIntro": "Some dogs don't have your rating yet. Mark which ones you walk — it helps plan the walks.",
+  "familiarityPromptIntro": "Mark which dogs you walk",
   "close": "Close",
   "failed": "Failed: {error}",
   "failedToSave": "Failed to save: {error}",

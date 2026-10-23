@@ -130,7 +130,7 @@
   "familiarityLegendDifficult": "Bywa trudno, ale w ostateczności wyjdę",
   "familiarityLegendNever": "Nie wychodzę z tym psem",
   "familiarityLegendUnknown": "Brak oceny",
-  "familiarityPromptIntro": "Część psów nie ma jeszcze Twojej oceny. Zaznacz, z którymi chodzisz — to pomaga planować spacery.",
+  "familiarityPromptIntro": "Zaznacz, z którymi psami chodzisz",
   "close": "Zamknij",
   "failed": "Nie udało się: {error}",
   "@failed": {

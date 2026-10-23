@@ -64,7 +64,7 @@ void main() {
     await pumpPrompt(tester, ratings: {1: DogFamiliarityLevel.good});
 
     expect(
-      find.textContaining("Some dogs don't have your rating"),
+      find.text('Mark which dogs you walk'),
       findsOneWidget,
     );
     expect(find.text('I walk them with no problem'), findsOneWidget);
