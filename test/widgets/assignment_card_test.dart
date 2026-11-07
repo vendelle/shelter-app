@@ -247,4 +247,45 @@ void main() {
       expect(editNoteCalled, isFalse);
     });
   });
+
+  group('VolunteerColumn when not editable', () {
+    var editNoteCalled = false;
+    final assignment = VolunteerAssignment(
+      volunteerId: 1,
+      volunteerName: 'Anna Kowalska',
+      dogs: const [DogEntry(dogId: 10, dogName: 'Burek', kennel: 'A1')],
+    );
+
+    Widget buildSubject() {
+      return MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: VolunteerColumn(
+              assignment: assignment,
+              editable: false,
+              onAddDog: () {},
+              onRemoveDog: (_) {},
+              onRemoveVolunteer: () {},
+              onTapDog: (_) {},
+              onEditVolunteerNote: () => editNoteCalled = true,
+              onReorderDogs: (oldIndex, newIndex) {},
+            ),
+          ),
+        ),
+      );
+    }
+
+    testWidgets('keeps the regular layout but offers no edits',
+        (tester) async {
+      await tester.pumpWidget(buildSubject());
+
+      expect(find.textContaining('Burek'), findsOneWidget);
+      expect(find.byIcon(Icons.add_rounded), findsNothing);
+      expect(find.byType(Dismissible), findsNothing);
+      expect(find.byType(ReorderableListView), findsNothing);
+
+      await tester.tap(find.text('Anna Kowalska'));
+      expect(editNoteCalled, isFalse);
+    });
+  });
 }

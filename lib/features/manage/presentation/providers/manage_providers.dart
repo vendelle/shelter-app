@@ -49,11 +49,6 @@ final familiarityProvider =
     FutureProvider.family<Map<int, DogFamiliarityLevel>, int>(
         (ref, volunteerId) async {
   final repo = ref.watch(manageRepositoryProvider);
-  try {
-    final entries = await repo.getFamiliarity(volunteerId);
-    return {for (final e in entries) e.dogId: e.level};
-  } catch (_) {
-    // Gracefully handle if the familiarity table doesn't exist yet
-    return {};
-  }
+  final entries = await repo.getFamiliarity(volunteerId);
+  return {for (final e in entries) e.dogId: e.level};
 });

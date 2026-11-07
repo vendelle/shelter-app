@@ -8,6 +8,8 @@ import 'package:shelter_app/core/api/api_client.dart';
 import 'package:shelter_app/core/api/api_providers.dart';
 import 'package:shelter_app/core/locale/locale_provider.dart';
 
+import 'fakes/fake_auth_service.dart';
+
 /// A fake ApiClient that returns empty lists for all GET requests
 /// so the app can render without a real backend.
 class FakeApiClient extends ApiClient {
@@ -28,6 +30,7 @@ void main() {
       ProviderScope(
         overrides: [
           apiClientProvider.overrideWithValue(FakeApiClient()),
+          ...signedInAs(testVolunteer),
           sharedPreferencesProvider.overrideWithValue(prefs),
         ],
         child: const ShelterApp(),
@@ -48,6 +51,7 @@ void main() {
       ProviderScope(
         overrides: [
           apiClientProvider.overrideWithValue(FakeApiClient()),
+          ...signedInAs(testVolunteer),
           sharedPreferencesProvider.overrideWithValue(prefs),
         ],
         child: const ShelterApp(),

@@ -86,15 +86,55 @@ Within each feature, we use a lightweight `data/domain/presentation` split:
 
 ---
 
-## No Auth in v1
+## Authentication: Google Sign-In via Firebase Auth
 
-**Decision**: Skip authentication entirely in v1. Volunteer picks their name from a dropdown.
+**Decision**: Volunteers sign in with Google through Firebase Auth (popup on web). The API verifies the Firebase ID token and maps it to a row in our own `users` table, which holds the role. *(Replaces "No Auth in v1".)*
 
 **Why?**
-- Fastest path to a working MVP that the shelter can actually use.
-- Auth (email/password, JWT tokens, secure storage) is significant infrastructure for mobile.
-- The existing Vue app also runs without auth — so the API doesn't enforce it yet.
-- v2 will add auth (email/password with JWT), at which point we'll add `flutter_secure_storage` and an auth interceptor.
+- Volunteers already have Google accounts — no passwords, resets or email verification to build.
+- Firebase Auth is free and handles token refresh; the Flutter app just sends `Authorization: Bearer <ID token>`.
+- Tokens are verified with Google's public certificates (`api/_lib/firebase-token.ts`) instead of `firebase-admin` (~50MB, slow cold starts).
+- Roles live in Postgres, not Firebase custom claims, so changing someone's access is one `UPDATE` and takes effect on their next request.
+
+**Details:**
+- Only tokens with `email_verified: true` are accepted — accounts and invites are matched by email.
+- `GET /api/users?me` is the sign-in call: it creates the account (or claims an invite) and refreshes name/photo. Other endpoints only look the user up.
+- `SUPER_ADMIN_EMAILS` (env var) always gets `super_admin` on sign-in, so the owner can get in on a fresh database without SQL.
+- Popup only, no redirect fallback: `signInWithRedirect` breaks in browsers that partition third-party storage unless `/__/auth` is proxied through our domain. Not worth it while popups work.
+- **Facebook/Messenger in-app browsers**: Google refuses OAuth there (`disallowed_useragent`). The app detects them by user agent and asks the volunteer to open the page in Chrome/Safari instead of failing.
+
+---
+
+## Authorization: Four Roles, Enforced by the API
+
+**Decision**: `pending` → `volunteer` → `admin` → `super_admin`. All rules live in `api/_lib/permissions.ts`; the Flutter `Permissions` class mirrors them only to decide what the UI shows.
+
+| | View anything | Day plans | Own dog familiarity | Others' familiarity, dogs, volunteers, dog relationships | Users & roles |
+|---|---|---|---|---|---|
+| Anonymous / `pending` | — | — | — | — | — |
+| `volunteer` | ✅ | ✅ 2 days back – 2 days ahead | ✅ (linked volunteer profile) | — | — |
+| `admin` | ✅ | ✅ 2 days back – 2 days ahead | ✅ | ✅ | — |
+| `super_admin` | ✅ | ✅ any date | ✅ | ✅ | ✅ |
+
+**Why?**
+- Nothing is public: the data includes volunteers' full names, notes and walk history. Every endpoint except sign-in requires an approved account, and the app shows only a sign-in screen (`AuthGate`) until then. `pending` sees nothing either — otherwise anyone with a Google account could read it.
+- Edit window (`PLAN_EDIT_DAYS_BACK` / `PLAN_EDIT_DAYS_AHEAD`, shelter timezone Europe/Warsaw): recent plans can be corrected after the walk, and the shelter doesn't plan further than two days ahead. History shouldn't be rewritten — exceptions go through the super admin, admins included.
+- Admins manage shelter data, the super admin manages access — an admin can't grant themselves more.
+- A super admin can't change their own role or delete their own account, so the last one can't lock everyone out.
+- `GET /api/health` stays public: it's diagnostics with no personal data.
+
+---
+
+## Accounts: Invite by Email, or Approve Self-Sign-Ups
+
+**Decision**: A super admin can invite a Google email with a role (and optional volunteer profile link) before the person has ever signed in. Anyone else who signs in gets a `pending` account to approve in Manage → Users.
+
+**Why?**
+- Inviting lets the admin set people up ahead of time; approving lets volunteers just sign in and wait.
+- An invite is just a `users` row with `firebase_uid = NULL` — no separate table or token emails. It's claimed by the first sign-in with that (verified) email.
+- One account per volunteer profile (`UNIQUE (volunteer_id)`) — the link is what "my own familiarity" means.
+
+**Function budget:** all of this is one endpoint (`api/users.ts`), keeping the deployment within the 12-function Vercel Hobby limit.
 
 ---
 
@@ -301,3 +341,42 @@ Within each feature, we use a lightweight `data/domain/presentation` split:
 **Why drag handles (not long-press)?**
 - More discoverable — users see the handle immediately.
 - Avoids conflict with existing long-press to remove and tap to show dog actions.
+
+---
+
+## Shelter Website Data: Stored Copy, Never Overwrites Ours
+
+**Decision**: Read each dog's page data from the shelter website's public WordPress REST API (`/wp-json/wp/v2/animal?slug=…`) and store it in `dog_shelter_profiles`, separate from `dogs`. Refreshed nightly by Vercel Cron and on demand.
+
+**Why a stored copy, not a live lookup?**
+- Profiles load instantly and keep working when the shelter site is slow or down (a failed refresh returns the stored data with `refresh_failed`).
+- Changes can be detected against our data — e.g. a new kennel on the website.
+- The site gets one batched request per 100 dogs per night instead of a request per profile view.
+
+**Why a separate table?**
+- `dogs` is our data and the website only informs: a differing kennel/region is shown to admins to *accept* or *ignore*, never applied automatically. Ignoring remembers that exact website value, so the suggestion returns if the site changes again; the decision is shared by all admins.
+- The table can be emptied and rebuilt from the website at any time.
+
+**Details:**
+- "Odśwież teraz" is open to every volunteer, but the API re-fetches a dog at most every 5 minutes.
+- Photos aren't copied — we store the link to the shelter's image (`main_photo`, which their page shows first, else the first gallery photo). Their image server sends no CORS headers, so Flutter web shows it as an `<img>` element (`WebHtmlElementStrategy.prefer`). Their Cloudflare hotlink protection refuses images embedded on other sites, so `web/index.html` sets `<meta name="referrer" content="no-referrer">` — the photos are shown to the shelter's own group of volunteers (plus 12 on the sign-in screen, see below), the site's maintainer couldn't be reached to allow our domain, and the images come from their Cloudflare cache. If the shelter gets a web admin again, ask them to allow the app's domain and drop the meta tag. (Fine for Firebase Auth: its API key isn't referrer-restricted — if it ever is, sign-in breaks with this tag.)
+- The website's data has gaps (0.1 kg is its "never weighed" placeholder and is treated as unknown), so it's labelled "Ze strony schroniska" rather than shown as fact.
+- Lives on `/api/dogs?shelter=…` (logic in `api/_lib/shelter-profiles.ts`) to keep a function slot free.
+
+
+## Export-Only Role for the Shelter (`exporter`)
+
+The shelter needs walk data, not the planner. `exporter` is a role **outside** the pending → super_admin ladder (`ROLE_LADDER` in `api/_lib/permissions.ts`, `UserRole.isAtLeast` in the app): `hasRole` is always false for it, so every endpoint rejects it unless it opts in with `requireRole(…, alsoAllow: ['exporter'])`. Only `GET /api/walks?format=csv` does.
+
+- In the app, `AuthGate` shows such accounts just `ExportOnlyScreen` (the existing CSV export + sign out).
+- Invited like anyone else in Manage → Users; a Google account can be created for a work email.
+- Migration `009_exporter_role.sql` widens the `users.role` check.
+
+## Sign-In Screen: Dog Photos From a Public, Cached Endpoint
+
+Signed-out visitors see `WelcomeScreen`: a 4×4 grid of 12 photos of current dogs around the logo, "AsoPsiaki" and the sign-in button.
+
+- Photos come from `GET /api/dogs?shelter=photos`, the only endpoint open to anonymous visitors besides health. It returns just 12 random image URLs of non-archived dogs — no names or ids — and the photos are public on the shelter's website anyway.
+- `Cache-Control: s-maxage=3600` lets Vercel's CDN serve it, so visitors don't hit the database; the random pick changes about hourly.
+- Not a static set baked into the app: it would go stale as dogs get adopted.
+- Pending accounts and in-app browsers (where Google sign-in fails) keep the plain `AccountPanel` screen: their longer messages don't fit the grid's centre.

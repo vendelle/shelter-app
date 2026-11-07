@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shelter_app/l10n/app_localizations.dart';
 
+import '../../../auth/presentation/auth_providers.dart';
 import '../../domain/dog_relationship.dart';
 import '../../domain/walk_partner.dart';
 import '../providers/dog_detail_providers.dart';
@@ -127,6 +128,7 @@ class _PartnerTile extends ConsumerWidget {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
     final hasLevel = partner.level != null;
+    final canEdit = ref.watch(permissionsProvider).canManageData;
 
     // Format last walk date as dd.MM
     final parts = partner.lastSharedWalk.split('-');
@@ -134,7 +136,7 @@ class _PartnerTile extends ConsumerWidget {
         parts.length == 3 ? '${parts[2]}.${parts[1]}' : partner.lastSharedWalk;
 
     return InkWell(
-      onTap: () => _showEditLevel(context, ref),
+      onTap: canEdit ? () => _showEditLevel(context, ref) : null,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
         child: Row(

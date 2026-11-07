@@ -1,6 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { handleError, setCorsHeaders } from './_lib/util';
 import pool from './_lib/connection';
+import { requireRole } from './_lib/auth';
+import { canEditWalkDate, DAY_LOCKED } from './_lib/permissions';
 
 /** Escape a value for CSV — wraps in quotes if it contains comma, quote, or newline. */
 function csvEscape(value: string): string {
@@ -15,6 +17,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 	if (req.method === 'OPTIONS') return res.status(200).end();
 
 	try {
+		// The shelter's export-only accounts may download the CSV, nothing else.
+		const isCsvExport = req.method === 'GET' && req.query.format === 'csv';
+		const user = await requireRole(req, res, 'volunteer', isCsvExport ? ['exporter'] : []);
+		if (!user) return;
+
 		if (req.method === 'GET') {
 			const { date, volunteer, dog, format, from, to } = req.query;
 
@@ -112,6 +119,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 				return res.status(400).json({ error: 'dog_id must be an integer' });
 			}
 
+			if (!canEditWalkDate(user, walk_date)) {
+				return res.status(403).json({ error: DAY_LOCKED });
+			}
+
 			const result = await pool.query(
 				`INSERT INTO walks (dog_id, volunteer_id, walk_date, notes)
 				 VALUES ($1, $2, $3, $4) RETURNING *`,
@@ -126,6 +137,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
 			if (!walk_id) {
 				return res.status(400).json({ error: 'walk_id is required' });
+			}
+
+			const walk = await pool.query('SELECT walk_date::text AS walk_date FROM walks WHERE id = $1', [walk_id]);
+			if (walk.rows.length === 0) {
+				return res.status(404).json({ error: 'Walk not found' });
+			}
+			if (!canEditWalkDate(user, walk.rows[0].walk_date)) {
+				return res.status(403).json({ error: DAY_LOCKED });
 			}
 
 			await pool.query(

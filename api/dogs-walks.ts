@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { handleError, setCorsHeaders, hasColumn } from './_lib/util';
 import pool from './_lib/connection';
+import { requireRole } from './_lib/auth';
 import { getRegionForKennel } from './_lib/kennel-regions';
 
 /**
@@ -15,6 +16,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 	if (req.method === 'OPTIONS') return res.status(200).end();
 
 	try {
+		if (!(await requireRole(req, res, 'volunteer'))) return;
+
 		if (req.method === 'GET') {
 			console.log('[dogs-walks] Querying database...');
 			const hasRegionCol = await hasColumn('dogs', 'region');

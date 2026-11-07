@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../shared/domain/volunteer.dart';
+import '../../../auth/presentation/auth_providers.dart';
 import '../providers/manage_providers.dart';
 import 'volunteer_form_dialog.dart';
 import 'familiarity_dialog.dart';
@@ -33,6 +34,7 @@ class VolunteersTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final showArchived = ref.watch(showArchivedVolunteersProvider);
     final volunteersAsync = ref.watch(managedVolunteersProvider);
+    final canManage = ref.watch(permissionsProvider).canManageData;
     final l10n = AppLocalizations.of(context)!;
 
     return Column(
@@ -78,7 +80,7 @@ class VolunteersTab extends ConsumerWidget {
             },
           ),
         ),
-        if (!showArchived)
+        if (!showArchived && canManage)
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -118,6 +120,7 @@ class _VolunteerListTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final canManage = ref.watch(permissionsProvider).canManageData;
     final bgColor = volunteer.archived
         ? Theme.of(context).colorScheme.surfaceContainerHighest
         : roleColor(volunteer.role);
@@ -144,11 +147,12 @@ class _VolunteerListTile extends ConsumerWidget {
               tooltip: AppLocalizations.of(context)!.dogFamiliarity(volunteer.fullName),
               onPressed: () => _showFamiliarityDialog(context, ref),
             ),
-          IconButton(
-            icon: const Icon(Icons.edit_outlined),
-            tooltip: AppLocalizations.of(context)!.edit,
-            onPressed: () => _showEditDialog(context, ref),
-          ),
+          if (canManage)
+            IconButton(
+              icon: const Icon(Icons.edit_outlined),
+              tooltip: AppLocalizations.of(context)!.edit,
+              onPressed: () => _showEditDialog(context, ref),
+            ),
         ],
       ),
     );

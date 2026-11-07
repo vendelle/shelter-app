@@ -1,7 +1,7 @@
 {
   "@@locale": "pl",
 
-  "appTitle": "Schroniskowy Tracker Spacerów",
+  "appTitle": "AsoPsiaki",
 
   "navOverview": "Przegląd",
   "navPlanner": "Planer",
@@ -126,6 +126,12 @@
   "allGood": "Dobrze idzie",
   "difficultButPossible": "Trudny, ale możliwy",
   "noChance": "Bez szans",
+  "familiarityLegendGood": "Chodzę bez problemu",
+  "familiarityLegendDifficult": "Bywa trudno, ale w ostateczności wyjdę",
+  "familiarityLegendNever": "Nie wychodzę z tym psem",
+  "familiarityRemindLater": "Przypomnij za 2 tygodnie",
+  "familiarityLegendUnknown": "Brak oceny",
+  "familiarityPromptIntro": "Zaznacz, z którymi psami chodzisz",
   "close": "Zamknij",
   "failed": "Nie udało się: {error}",
   "@failed": {
@@ -291,5 +297,159 @@
   },
   "noVisitsInPast6Months": "Brak wizyt w ostatnich 6 miesiącach",
   "archivedBadge": "Zarchiwizowany",
-  "noActiveDogs": "Brak aktywnych psów"
+  "noActiveDogs": "Brak aktywnych psów",
+
+  "signIn": "Zaloguj się",
+  "signInWithGoogle": "Zaloguj się przez Google",
+  "signOut": "Wyloguj się",
+  "account": "Konto",
+  "signInExplanation": "Aplikacja jest dla wolontariuszy schroniska. Zaloguj się kontem Google, żeby zobaczyć plany spacerów.",
+  "signInPopupBlocked": "Przeglądarka zablokowała okno logowania Google. Zezwól na wyskakujące okna dla tej strony i spróbuj ponownie.",
+  "signInUnauthorizedDomain": "Logowanie nie jest jeszcze włączone dla tego adresu. Zgłoś to osobie zarządzającej aplikacją.",
+  "signInNetworkError": "Brak połączenia. Sprawdź internet i spróbuj ponownie.",
+  "signInFailed": "Logowanie nie powiodło się ({code}).",
+  "@signInFailed": {
+    "placeholders": {
+      "code": { "type": "String" }
+    }
+  },
+  "openInBrowserTitle": "Otwórz w przeglądarce",
+  "openInBrowserMessage": "Google nie pozwala logować się w Facebooku ani Messengerze. Otwórz tę stronę w Chrome lub Safari (menu ⋯ → Otwórz w przeglądarce) albo skopiuj link i wklej go tam.",
+  "copyLink": "Kopiuj link",
+  "linkCopied": "Skopiowano link",
+  "accessLevel": "Uprawnienia",
+  "accountPendingMessage": "Twoje konto czeka na akceptację administratora. Do tego czasu możesz przeglądać plany.",
+  "accountLoadFailed": "Nie udało się wczytać konta: {error}",
+  "@accountLoadFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "userRolePending": "Czeka na akceptację",
+  "userRoleVolunteer": "Wolontariusz",
+  "userRoleAdmin": "Administrator",
+  "userRoleSuperAdmin": "Superadministrator",
+  "userRoleExporter": "Eksport spacerów (schronisko)",
+  "exportOnlyIntro": "To konto służy tylko do pobierania spacerów jako CSV.",
+  "planDayLocked": "Ten dzień jest zamknięty do edycji. Jeśli trzeba coś zmienić, napisz do osoby zarządzającej aplikacją.",
+  "usersTab": "Użytkownicy",
+  "inviteUser": "Zaproś",
+  "inviteUserTitle": "Zaproś użytkownika",
+  "inviteUserExplanation": "Wpisz adres konta Google tej osoby. Dostanie te uprawnienia od razu po zalogowaniu.",
+  "googleEmail": "E-mail Google",
+  "invalidEmail": "Podaj poprawny adres e-mail",
+  "linkedVolunteerProfile": "Profil wolontariusza",
+  "none": "Brak",
+  "invitePending": "Zaproszenie — jeszcze się nie zalogowano",
+  "you": "Ty",
+  "deleteUserTitle": "Usunąć {name}?",
+  "@deleteUserTitle": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "deleteUserContent": "Ta osoba straci uprawnienia. Jeśli zaloguje się ponownie, będzie czekać na akceptację jak nowe konto.",
+
+  "shelterSectionTitle": "Ze strony schroniska",
+  "shelterWebsiteLink": "Zobacz na stronie schroniska",
+  "shelterRefresh": "Odśwież teraz",
+  "shelterFetchedJustNow": "odświeżono przed chwilą",
+  "shelterFetchedMinutesAgo": "odświeżono {minutes} min temu",
+  "@shelterFetchedMinutesAgo": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "shelterFetchedHoursAgo": "odświeżono {hours} godz. temu",
+  "@shelterFetchedHoursAgo": {
+    "placeholders": {
+      "hours": { "type": "int" }
+    }
+  },
+  "shelterFetchedOn": "odświeżono {date}",
+  "@shelterFetchedOn": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "shelterRefreshFailed": "Strona schroniska nie odpowiada — pokazuję ostatnio pobrane dane.",
+  "shelterLoadFailed": "Nie udało się pobrać danych ze strony schroniska.",
+  "shelterNotFound": "Strona schroniska nie ma psa o numerze {shelterId}.",
+  "@shelterNotFound": {
+    "placeholders": {
+      "shelterId": { "type": "String" }
+    }
+  },
+  "shelterNoPage": "Ten numer nie pasuje do żadnej strony na stronie schroniska.",
+  "shelterAge": "Wiek",
+  "shelterSex": "Płeć",
+  "shelterWeight": "Waga",
+  "shelterNeutered": "Kastracja",
+  "yes": "Tak",
+  "no": "Nie",
+  "ageYearsMonths": "{years, plural, one{1 rok} few{{years} lata} other{{years} lat}}, {months} mies.",
+  "@ageYearsMonths": {
+    "placeholders": {
+      "years": { "type": "int" },
+      "months": { "type": "int" }
+    }
+  },
+  "ageMonths": "{months} mies.",
+  "@ageMonths": {
+    "placeholders": {
+      "months": { "type": "int" }
+    }
+  },
+  "locationSuggestionTitle": "Na stronie: {location}",
+  "@locationSuggestionTitle": {
+    "placeholders": {
+      "location": { "type": "String" }
+    }
+  },
+  "locationSuggestionOurs": "U nas: {ours}",
+  "@locationSuggestionOurs": {
+    "placeholders": {
+      "ours": { "type": "String" }
+    }
+  },
+  "locationSuggestionAccept": "Przyjmij",
+  "locationSuggestionIgnore": "Ignoruj",
+  "locationSuggestionsFilter": "Inny boks na stronie ({count})",
+  "@locationSuggestionsFilter": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "shelterSectionInShelter": "W schronisku",
+  "shelterSectionLooks": "Wygląd",
+  "shelterSectionDescription": "Opis",
+  "shelterSince": "od {duration} ({date})",
+  "@shelterSince": {
+    "placeholders": {
+      "duration": { "type": "String" },
+      "date": { "type": "String" }
+    }
+  },
+  "shelterLeft": "wydany {date}",
+  "@shelterLeft": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "shelterKennelOnSite": "boks na stronie: {location}",
+  "@shelterKennelOnSite": {
+    "placeholders": {
+      "location": { "type": "String" }
+    }
+  },
+  "sexMale": "Samiec",
+  "sexFemale": "Samica",
+  "durationDays": "{days, plural, one{1 dzień} other{{days} dni}}",
+  "@durationDays": {
+    "placeholders": {
+      "days": { "type": "int" }
+    }
+  },
+  "descriptionShowMore": "Pokaż więcej",
+  "descriptionShowLess": "Pokaż mniej"
 }

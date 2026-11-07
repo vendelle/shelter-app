@@ -1,4 +1,12 @@
 import { createMockPool, mockRequest, mockResponse, type MockPool, type MockResponse } from './helpers';
+import { mockAuth, TEST_USERS } from './helpers';
+
+jest.mock('../_lib/auth', () => require('./helpers').authModuleMock);
+
+// Callers can do anything unless a test says otherwise.
+beforeEach(() => {
+	mockAuth.user = TEST_USERS.super_admin;
+});
 
 let mockPool: MockPool;
 
@@ -98,5 +106,17 @@ describe('GET /api/dogs-walks', () => {
 
 		expect(res._status).toBe(500);
 		expect(res._body).toEqual({ error: 'connection lost' });
+	});
+});
+
+describe('/api/dogs-walks access', () => {
+	it.each([
+		['anonymous visitors', null, 401],
+		['pending accounts', TEST_USERS.pending, 403],
+	])('is closed to %s', async (_label, user, status) => {
+		mockAuth.user = user;
+		const res = mockResponse();
+		await handler(mockRequest({ method: 'GET', query: { dog_id: '1' } }), res);
+		expect(res._status).toBe(status);
 	});
 });

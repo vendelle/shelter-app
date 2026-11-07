@@ -1,13 +1,23 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { handleError, setCorsHeaders, hasColumn } from './_lib/util';
 import pool from './_lib/connection';
+import { requireRole } from './_lib/auth';
 import { getRegionForKennel } from './_lib/kennel-regions';
+import { handleShelterProfiles } from './_lib/shelter-profiles';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
 	setCorsHeaders(res);
 	if (req.method === 'OPTIONS') return res.status(200).end();
 
 	try {
+		// Data from the shelter's website — its own access rules (refreshing
+		// is open to volunteers, the nightly sync uses CRON_SECRET, the
+		// sign-in screen's photos are public).
+		if (req.query.shelter !== undefined) return await handleShelterProfiles(req, res);
+
+		// Volunteers can look; every change needs an admin.
+		if (!(await requireRole(req, res, req.method === 'GET' ? 'volunteer' : 'admin'))) return;
+
 		// Check if region column exists (cached per request is fine for serverless)
 		const hasRegionCol = await hasColumn('dogs', 'region');
 

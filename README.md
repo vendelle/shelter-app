@@ -20,8 +20,9 @@ A full-stack web application for managing daily dog walk schedules at an animal 
 - **Walk Planner** — Assign dogs to volunteers for a specific date. Supports group walks (color-coded), drag-to-reorder dogs within a volunteer, auto-save, per-dog/per-volunteer notes, a compact overview mode, and sharing the day's plan as an image (with a tick-check reminder).
 - **Walk Overview** — Dashboard showing all dogs with this-week and last-week walk counts, sorted by urgency, plus CSV export of walk history with a date range filter.
 - **Manage** — CRUD for dogs and volunteers, volunteer roles, per-volunteer dog familiarity ratings, dark mode and language toggle.
-- **Dog Detail** — Per-dog profile, color-coded relationship levels with other dogs ("buddies"), and recent walk history.
+- **Dog Detail** — Per-dog profile with data from the shelter website (photo, age, weight, arrival, description…, refreshed nightly or with "Odśwież teraz"), color-coded relationship levels with other dogs ("buddies"), and recent walk history. Admins accept or ignore the website's kennel/region when it differs from ours.
 - **Volunteer Profile** — Per-volunteer stats (avg visits/month, avg walks/visit), dogs walked most often in the last 90 days (color-coded by frequency, with familiarity), and a 6-month visit history grouped by month.
+- **Accounts & Permissions** — Google sign-in (Firebase Auth); the app is visible only to approved accounts. Volunteers and admins edit day plans from 2 days back to 2 days ahead, volunteers their own dog familiarity, admins dogs/volunteers/relationships; the super admin edits any day and invites people by email. See DECISIONS.md.
 - **Responsive Layout** — 1-column on mobile, 2+ columns on wider screens using `Wrap`.
 
 ## Localization (i18n)
@@ -47,12 +48,14 @@ The app supports multiple languages using Flutter's `intl` package.
 lib/
 ├── main.dart                  # Entry point
 ├── app.dart                   # MaterialApp + theme + router
+├── firebase_options.dart      # Firebase project config (FlutterFire)
 ├── core/
-│   ├── api/                   # ApiClient, providers
+│   ├── api/                   # ApiClient (adds the auth token), providers
 │   ├── locale/                # Locale persistence + provider
 │   └── theme/                 # App theme (light/dark)
 ├── routing/                   # go_router config (3 tabs + dog/volunteer detail routes)
 └── features/
+    ├── auth/                   # Google sign-in, AppUser + Permissions, account button
     ├── overview/               # Walk dashboard
     │   ├── data/                # ApiOverviewRepository
     │   ├── domain/               # DogWalkSummary model
@@ -80,9 +83,14 @@ lib/
         └── domain/                 # Dog, Volunteer models
 
 api/                            # Vercel serverless functions
-├── connection.ts                # Lazy PostgreSQL pool
-├── util.ts                      # CORS headers, error handling
-├── dogs.ts                      # GET/POST/PATCH/PUT /api/dogs
+├── _lib/                        # Shared code (not deployed as functions)
+│   ├── connection.ts             # Lazy PostgreSQL pool
+│   ├── util.ts                   # CORS headers, error handling
+│   ├── firebase-token.ts         # Firebase ID-token verification
+│   ├── auth.ts                   # Token → user, requireRole()
+│   └── permissions.ts            # Roles + edit rules (single source of truth)
+├── users.ts                     # GET ?me (sign in) / GET/POST/PATCH/DELETE accounts & invites
+├── dogs.ts                      # GET/POST/PATCH/PUT /api/dogs (?shelter=… → shelter website data)
 ├── volunteers.ts                # GET/POST/PATCH/PUT /api/volunteers (?id=X → one volunteer's profile stats)
 ├── walks.ts                     # GET/POST/DELETE /api/walks (?format=csv → date-range export)
 ├── dogs-walks.ts                 # GET /api/dogs-walks (this/last-week walk counts)
@@ -92,7 +100,7 @@ api/                            # Vercel serverless functions
 ├── familiarity.ts                # GET/PUT/DELETE /api/familiarity
 ├── dayplan.ts                    # GET/POST /api/dayplan (full planner state)
 ├── health.ts                     # GET /api/health (diagnostics)
-├── __tests__/                    # Jest tests (178 tests; coverage enforced in CI)
+├── __tests__/                    # Jest tests (289 tests; coverage enforced in CI)
 └── migrations/                   # SQL migration scripts
 ```
 
@@ -137,6 +145,9 @@ Set in Vercel dashboard (Settings → Environment Variables):
 | Variable | Description |
 |----------|-------------|
 | `DEV_DATABASE_URL` | Neon PostgreSQL connection string |
+| `CRON_SECRET` | Random string; Vercel Cron sends it to the nightly shelter-website sync (`/api/dogs?shelter=sync`). Crons run on production deployments only |
+| `SUPER_ADMIN_EMAILS` | Comma-separated Google emails that always get `super_admin` on sign-in (bootstraps the first admin) |
+| `FIREBASE_PROJECT_ID` | Optional — defaults to `shelter-app-cf77a` (must match `lib/firebase_options.dart`) |
 
 Fallback: `DATABASE_URL` (if `DEV_DATABASE_URL` is not set).
 
@@ -152,8 +163,8 @@ Push to `main` → Vercel auto-deploys. The build:
 
 | Suite | Command | Tests | Coverage |
 |-------|---------|-------|----------|
-| Backend (Jest) | `npm test` | 41 | 100% statements/lines |
-| Frontend (Flutter) | `flutter test` | 72 | Models, state, widgets |
+| Backend (Jest) | `npm test` | 289 | ~97% statements/lines |
+| Frontend (Flutter) | `flutter test` | 236 | Models, state, widgets |
 
 CI runs automatically on push/PR to `main` via GitHub Actions. Coverage thresholds enforced: 90% statements, 80% branches.
 
@@ -167,3 +178,29 @@ PostgreSQL hosted on Neon. Migrations in `api/migrations/` are idempotent (`IF N
 - `volunteers` — Volunteer roster (first/last name)
 - `walks` — Walk assignments (dog, volunteer, date, notes, group_index, soft-delete via `deleted_at`)
 - `day_plan_volunteer_notes` — Per-volunteer notes for a specific date
+- `dog_shelter_profiles` — What the shelter website says about each dog (one row per dog, rebuilt from the site; never overwrites `dogs`)
+- `users` — App accounts: Google email, role, optional linked volunteer; invites have no `firebase_uid` yet
+
+## Backups
+
+The **DB backup** GitHub Action (`.github/workflows/db-backup.yml`) dumps the production database every night and keeps each dump for 90 days as an **encrypted** workflow artifact (the repo is public — never store an unencrypted dump here).
+
+**Setup** — repo Settings → Secrets and variables → Actions → *New repository secret*:
+
+| Secret | Value |
+|--------|-------|
+| `BACKUP_DATABASE_URL` | Neon connection string of the production DB (the direct one — host without `-pooler`) |
+| `BACKUP_PASSPHRASE` | Long random passphrase. Keep it in a password manager: without it the backups can't be opened |
+
+Then Actions → *DB backup* → *Run workflow* once to check it works.
+
+> GitHub pauses scheduled workflows in public repos after 60 days without commits and sends an email — re-enable it from the Actions tab.
+
+**Restore** (into a new Neon branch first, never straight over production):
+
+```bash
+# 1. Download the artifact from Actions → DB backup → a run → Artifacts, unzip it
+gpg --decrypt backup.dump.gpg > backup.dump        # asks for BACKUP_PASSPHRASE
+# 2. Restore into an empty database / fresh Neon branch
+pg_restore --no-owner --no-acl --clean --if-exists -d "<connection string>" backup.dump
+```

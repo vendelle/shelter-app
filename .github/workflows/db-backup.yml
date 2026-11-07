@@ -1,0 +1,62 @@
+# Nightly backup of the production database (asy, on Neon).
+#
+# The repo is public, so the dump is encrypted before it leaves the runner —
+# never upload it unencrypted. How to restore: README → "Backups".
+#
+# Needs two repository secrets (Settings → Secrets and variables → Actions):
+#   BACKUP_DATABASE_URL  Neon connection string of the production DB — the
+#                        direct one (host without "-pooler")
+#   BACKUP_PASSPHRASE    Long random passphrase; keep a copy in your password
+#                        manager — backups can't be opened without it
+
+name: DB backup
+
+on:
+  schedule:
+    - cron: '0 2 * * *' # every night, 02:00 UTC
+  workflow_dispatch: # "Run workflow" button for a manual backup
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check secrets
+        env:
+          BACKUP_DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          if [ -z "$BACKUP_DATABASE_URL" ] || [ -z "$BACKUP_PASSPHRASE" ]; then
+            echo "::error::Set BACKUP_DATABASE_URL and BACKUP_PASSPHRASE in the repo's Actions secrets"
+            exit 1
+          fi
+
+      # Ubuntu's own pg_dump can be older than Neon's Postgres, and pg_dump
+      # refuses to dump a newer server — take the latest from the official repo.
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get install -y postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y postgresql-client
+          pg_dump --version
+
+      - name: Dump and encrypt
+        env:
+          BACKUP_DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          pg_dump "$BACKUP_DATABASE_URL" --format=custom --no-owner --no-acl --file=backup.dump
+          printf '%s' "$BACKUP_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback \
+            --passphrase-fd 0 --symmetric --cipher-algo AES256 \
+            --output backup.dump.gpg backup.dump
+          rm backup.dump
+          echo "BACKUP_NAME=db-backup-$(date -u +%Y-%m-%d)-run$GITHUB_RUN_NUMBER" >> "$GITHUB_ENV"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BACKUP_NAME }}
+          path: backup.dump.gpg
+          retention-days: 90
+          if-no-files-found: error
