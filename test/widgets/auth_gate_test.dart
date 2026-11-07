@@ -45,7 +45,7 @@ void main() {
 
     await pumpGate(tester, null, photos: ['https://images.example/1.jpg']);
     expect(find.byType(WelcomeScreen), findsOneWidget);
-    expect(find.text('Asowa Psiappka'), findsOneWidget);
+    expect(find.text('AsoPsiaki'), findsOneWidget);
     expect(find.text('Sign in with Google'), findsOneWidget);
     // One photo; the other 11 tiles show a paw.
     expect(
