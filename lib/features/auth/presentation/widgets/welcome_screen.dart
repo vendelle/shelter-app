@@ -121,6 +121,8 @@ class _Centre extends StatelessWidget {
             Image.asset(
               'assets/welcome-logo.png',
               height: (size * 0.28).clamp(40, 72),
+              color: theme.colorScheme.primary,
+              colorBlendMode: BlendMode.srcIn,
               excludeFromSemantics: true,
             ),
             const SizedBox(height: 8),

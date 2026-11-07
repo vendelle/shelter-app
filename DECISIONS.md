@@ -374,7 +374,7 @@ The shelter needs walk data, not the planner. `exporter` is a role **outside** t
 
 ## Sign-In Screen: Dog Photos From a Public, Cached Endpoint
 
-Signed-out visitors see `WelcomeScreen`: a 4×4 grid of 12 photos of current dogs around the logo, "Asowa Psiappka" and the sign-in button.
+Signed-out visitors see `WelcomeScreen`: a 4×4 grid of 12 photos of current dogs around the logo, "AsoPsiaki" and the sign-in button.
 
 - Photos come from `GET /api/dogs?shelter=photos`, the only endpoint open to anonymous visitors besides health. It returns just 12 random image URLs of non-archived dogs — no names or ids — and the photos are public on the shelter's website anyway.
 - `Cache-Control: s-maxage=3600` lets Vercel's CDN serve it, so visitors don't hit the database; the random pick changes about hourly.
