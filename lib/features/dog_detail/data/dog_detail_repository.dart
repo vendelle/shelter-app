@@ -29,6 +29,9 @@ abstract class DogDetailRepository {
 
   /// IDs of active dogs whose website kennel/region differs from ours.
   Future<Set<int>> getLocationSuggestionDogIds();
+
+  /// Photo URL per active dog id, for the dogs that have one.
+  Future<Map<int, String>> getDogPhotoUrls();
 }
 
 class ApiDogDetailRepository implements DogDetailRepository {
@@ -130,6 +133,16 @@ class ApiDogDetailRepository implements DogDetailRepository {
         queryParams: {'shelter': 'suggestions'}) as List;
     return {
       for (final s in data) (s as Map<String, dynamic>)['dog_id'] as int,
+    };
+  }
+
+  @override
+  Future<Map<int, String>> getDogPhotoUrls() async {
+    final data =
+        await _api.get('/api/dogs', queryParams: {'shelter': 'thumbs'}) as List;
+    return {
+      for (final p in data)
+        (p as Map<String, dynamic>)['dog_id'] as int: p['photo_url'] as String,
     };
   }
 }

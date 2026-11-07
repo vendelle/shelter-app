@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:shelter_app/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../dog_detail/presentation/providers/dog_detail_providers.dart';
 import '../../../shared/domain/dog.dart';
+import '../../../shared/presentation/shelter_image.dart';
 import '../../../shared/domain/volunteer.dart';
 import '../../../planner/domain/planner_dog.dart';
 import '../familiarity_colors.dart';
@@ -10,9 +12,21 @@ import '../../../auth/presentation/auth_providers.dart';
 import '../providers/manage_providers.dart';
 
 class FamiliarityDialog extends ConsumerStatefulWidget {
-  const FamiliarityDialog({super.key, required this.volunteer});
+  const FamiliarityDialog({
+    super.key,
+    required this.volunteer,
+    this.intro,
+    this.onRemindLater,
+  });
 
   final Volunteer volunteer;
+
+  /// Shown above the legend, e.g. to ask for the missing ratings.
+  final String? intro;
+
+  /// When set, the dialog offers "remind me later" next to Close and calls
+  /// this when it's picked.
+  final VoidCallback? onRemindLater;
 
   @override
   ConsumerState<FamiliarityDialog> createState() => _FamiliarityDialogState();
@@ -28,6 +42,7 @@ class _FamiliarityDialogState extends ConsumerState<FamiliarityDialog> {
     final dogsAsync = ref.watch(managedDogsProvider);
     final familiarityAsync =
         ref.watch(familiarityProvider(widget.volunteer.id));
+    final photos = ref.watch(dogPhotoUrlsProvider).valueOrNull ?? const {};
     // Everyone can look; only the volunteer themself or an admin can change.
     final canEdit = ref
         .watch(permissionsProvider)
@@ -37,39 +52,63 @@ class _FamiliarityDialogState extends ConsumerState<FamiliarityDialog> {
       title: Text(AppLocalizations.of(context)!.dogFamiliarity(widget.volunteer.fullName)),
       content: SizedBox(
         width: double.maxFinite,
-        height: 400,
-        child: dogsAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('Error: $e')),
-          data: (dogs) {
-            final activeDogs =
-                dogs.where((d) => !d.archived).toList();
-            return familiarityAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text('Error: $e')),
-              data: (familiarityMap) {
-                return ListView.builder(
-                  itemCount: activeDogs.length,
-                  itemBuilder: (context, index) {
-                    final dog = activeDogs[index];
-                    final level = _localChanges[dog.id] ??
-                        familiarityMap[dog.id] ??
-                        DogFamiliarityLevel.unknown;
-                    return _DogFamiliarityRow(
-                      dog: dog,
-                      level: level,
-                      onChanged: canEdit
-                          ? (newLevel) => _onLevelChanged(dog.id, newLevel)
-                          : null,
-                    );
-                  },
-                );
-              },
-            );
-          },
+        height: 460,
+        child: Column(
+          children: [
+            if (widget.intro != null) ...[
+              Text(widget.intro!),
+              const SizedBox(height: 12),
+            ],
+            const _FamiliarityLegend(),
+            const SizedBox(height: 8),
+            Expanded(
+              child: dogsAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Center(child: Text('Error: $e')),
+                data: (dogs) {
+                  final activeDogs = dogs.where((d) => !d.archived).toList();
+                  return familiarityAsync.when(
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
+                    error: (e, _) => Center(child: Text('Error: $e')),
+                    data: (familiarityMap) {
+                      return ListView.builder(
+                        itemCount: activeDogs.length,
+                        itemBuilder: (context, index) {
+                          final dog = activeDogs[index];
+                          final level = _localChanges[dog.id] ??
+                              familiarityMap[dog.id] ??
+                              DogFamiliarityLevel.unknown;
+                          return _DogFamiliarityRow(
+                            dog: dog,
+                            photoUrl: photos[dog.id],
+                            level: level,
+                            onChanged: canEdit
+                                ? (newLevel) =>
+                                    _onLevelChanged(dog.id, newLevel)
+                                : null,
+                          );
+                        },
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
       actions: [
+        if (widget.onRemindLater != null)
+          TextButton(
+            onPressed: _saving
+                ? null
+                : () {
+                    widget.onRemindLater!();
+                    Navigator.pop(context);
+                  },
+            child: Text(AppLocalizations.of(context)!.familiarityRemindLater),
+          ),
         TextButton(
           onPressed: _saving ? null : () => Navigator.pop(context),
           child: Text(AppLocalizations.of(context)!.close),
@@ -113,14 +152,111 @@ class _FamiliarityDialogState extends ConsumerState<FamiliarityDialog> {
   }
 }
 
+/// Same icons as the level buttons, so the legend doesn't rely on colour alone.
+const _levelIcons = {
+  DogFamiliarityLevel.good: Icons.sentiment_very_satisfied,
+  DogFamiliarityLevel.difficult: Icons.sentiment_neutral,
+  DogFamiliarityLevel.never: Icons.sentiment_very_dissatisfied,
+};
+
+class _FamiliarityLegend extends StatelessWidget {
+  const _FamiliarityLegend();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Wrap(
+      spacing: 16,
+      runSpacing: 4,
+      children: [
+        _LegendItem(
+          level: DogFamiliarityLevel.good,
+          label: l10n.familiarityLegendGood,
+        ),
+        _LegendItem(
+          level: DogFamiliarityLevel.difficult,
+          label: l10n.familiarityLegendDifficult,
+        ),
+        _LegendItem(
+          level: DogFamiliarityLevel.never,
+          label: l10n.familiarityLegendNever,
+        ),
+        _LegendItem(
+          level: DogFamiliarityLevel.unknown,
+          label: l10n.familiarityLegendUnknown,
+        ),
+      ],
+    );
+  }
+}
+
+class _LegendItem extends StatelessWidget {
+  const _LegendItem({required this.level, required this.label});
+
+  final DogFamiliarityLevel level;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final icon = _levelIcons[level];
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 18,
+          height: 18,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: level == DogFamiliarityLevel.unknown
+                ? Colors.grey.shade300
+                : familiarityColor(level),
+          ),
+          child: icon == null
+              ? null
+              : Icon(icon, size: 13, color: Colors.white),
+        ),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text(label, style: Theme.of(context).textTheme.bodySmall),
+        ),
+      ],
+    );
+  }
+}
+
+class _DogAvatar extends StatelessWidget {
+  const _DogAvatar({required this.photoUrl});
+
+  final String? photoUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final placeholder =
+        Center(child: Icon(Icons.pets, size: 20, color: Colors.grey.shade400));
+    final url = photoUrl;
+    return Container(
+      width: 40,
+      height: 40,
+      decoration:
+          BoxDecoration(shape: BoxShape.circle, color: Colors.grey.shade200),
+      clipBehavior: Clip.antiAlias,
+      child: url == null
+          ? placeholder
+          : ShelterImage(url, fit: BoxFit.cover, error: placeholder),
+    );
+  }
+}
+
 class _DogFamiliarityRow extends StatelessWidget {
   const _DogFamiliarityRow({
     required this.dog,
+    required this.photoUrl,
     required this.level,
     required this.onChanged,
   });
 
   final Dog dog;
+  final String? photoUrl;
   final DogFamiliarityLevel level;
   /// Null makes the row read-only.
   final ValueChanged<DogFamiliarityLevel>? onChanged;
@@ -140,18 +276,11 @@ class _DogFamiliarityRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
+          _DogAvatar(photoUrl: photoUrl),
+          const SizedBox(width: 12),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(dog.name,
-                    style: Theme.of(context).textTheme.bodyLarge),
-                Text(
-                  AppLocalizations.of(context)!.kennelLabel(dog.kennel),
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
-            ),
+            child: Text(dog.name,
+                style: Theme.of(context).textTheme.bodyLarge),
           ),
           _LevelButton(
             level: DogFamiliarityLevel.good,
@@ -205,26 +334,32 @@ class _LevelButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isSelected = level == currentLevel;
-    return Tooltip(
-      message: tooltip,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: isSelected ? color : Colors.transparent,
-            border: Border.all(
-              color: isSelected ? color : Colors.grey.shade300,
-              width: 2,
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: tooltip,
+      excludeSemantics: true,
+      child: Tooltip(
+        message: tooltip,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isSelected ? color : Colors.transparent,
+              border: Border.all(
+                color: isSelected ? color : Colors.grey.shade300,
+                width: 2,
+              ),
             ),
-          ),
-          child: Icon(
-            icon,
-            size: 20,
-            color: isSelected ? Colors.white : Colors.grey.shade400,
+            child: Icon(
+              icon,
+              size: 20,
+              color: isSelected ? Colors.white : Colors.grey.shade400,
+            ),
           ),
         ),
       ),

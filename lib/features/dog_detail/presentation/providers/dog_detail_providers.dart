@@ -76,6 +76,16 @@ class ShelterProfileNotifier
   }
 }
 
+/// Photo URL per active dog id. Empty when they can't be loaded — lists
+/// show a placeholder instead.
+final dogPhotoUrlsProvider = FutureProvider<Map<int, String>>((ref) async {
+  try {
+    return await ref.watch(dogDetailRepositoryProvider).getDogPhotoUrls();
+  } catch (_) {
+    return const {};
+  }
+});
+
 /// Active dogs whose website kennel/region differs from ours (admin view).
 final locationSuggestionDogIdsProvider =
     FutureProvider.autoDispose<Set<int>>((ref) {
